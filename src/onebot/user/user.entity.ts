@@ -1,12 +1,11 @@
-import { OneBotClient } from "../onebot.client";
+import { onebot } from '../../main';
 
 export class User {
-  public bot: OneBotClient;
   public id: number;
   public groupId: number | null = null; // 所在群ID
 
-  public nickname: string | null = null;  // 昵称
-  public remark: string | null = null;  // 备注
+  public nickname: string | null = null; // 昵称
+  public remark: string | null = null; // 备注
   public sex: 'male' | 'female' | 'unknown' | null = null; // 性别
   public age: number | null = null; // 年龄
   public qqLevel: number | null = null; // QQ等级
@@ -37,14 +36,13 @@ export class User {
     return `https://q1.qlogo.cn/g?b=qq&nk=${this.id}&s=0`;
   }
 
-  constructor(bot: OneBotClient, id: number, groupId: number | null = null) {
-    this.bot = bot;
+  constructor(id: number, groupId: number | null = null) {
     this.id = id;
     this.groupId = groupId;
   }
 
   public async init() {
-    const info = await this.bot.action('get_stranger_info', {
+    const info = await onebot.action('get_stranger_info', {
       user_id: this.id,
     });
     const data = info.data;
@@ -54,7 +52,11 @@ export class User {
     this.sex = data.sex;
     this.age = data.age;
     this.qqLevel = data.qqLevel;
-    this.birthday = new Date(data.birthday_year, data.birthday_month - 1, data.birthday_day);
+    this.birthday = new Date(
+      data.birthday_year,
+      data.birthday_month - 1,
+      data.birthday_day
+    );
     this.longNick = data.longNick;
     this.country = data.country;
     this.province = data.province;
@@ -66,12 +68,12 @@ export class User {
     this.vipLevel = data.vip_level;
 
     if (this.groupId) {
-      const groupMemberInfo = await this.bot.action('get_group_member_info', {
+      const groupMemberInfo = await onebot.action('get_group_member_info', {
         group_id: this.groupId!,
         user_id: this.id,
       });
       const groupMemberData = groupMemberInfo.data;
-      
+
       this.card = groupMemberData.card;
       this.groupLevel = groupMemberData.level;
       this.joinTime = new Date(groupMemberData.join_time * 1000);

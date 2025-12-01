@@ -1,8 +1,8 @@
-import { OneBotClient } from "../onebot.client";
-import { User } from "../user/user.entity";
+import { onebot } from '../../main';
+import { User } from '../user/user.entity';
+import { RecvMessage } from '../message/recv.entity';
 
 export class Group {
-  public bot: OneBotClient;
   public id: number;
 
   public name: string | null = null;
@@ -23,8 +23,7 @@ export class Group {
     return `https://p.qlogo.cn/gh/${this.id}/${this.id}/0`;
   }
 
-  constructor(bot: OneBotClient, id: number) {
-    this.bot = bot;
+  constructor(id: number) {
     this.id = id;
   }
 
@@ -32,7 +31,7 @@ export class Group {
    * Initializes the group's properties by fetching its detailed information.
    */
   public async init() {
-    const info = await this.bot.action('get_group_detail_info', {
+    const info = await onebot.action('get_group_detail_info', {
       group_id: this.id,
     });
     const data = info.data;
@@ -58,12 +57,12 @@ export class Group {
       return this.members;
     }
 
-    const memberListInfo = await this.bot.action('get_group_member_list', {
+    const memberListInfo = await onebot.action('get_group_member_list', {
       group_id: this.id,
     });
 
     const members = memberListInfo.data.map((memberData: any) => {
-      const user = new User(this.bot, memberData.user_id, this.id);
+      const user = new User(memberData.user_id, this.id);
       // Pre-populate with data we already have from the list
       user.nickname = memberData.nickname;
       user.card = memberData.card;
@@ -93,6 +92,15 @@ export class Group {
       return null;
     }
     const members = await this.getMembers();
-    return members.find(m => m.id === this.ownerId) || null;
+    return members.find((m) => m.id === this.ownerId) || null;
+  }
+
+  public async getHistory(): Promise<RecvMessage[]> {
+    const history = await onebot.action('get_group_message_history', {
+      group_id: this.id,
+      message_seq: 0,
+      count: 100,
+    });
+    return history.data.messages.map((e: any) => RecvMessage.fromMap(e));
   }
 }

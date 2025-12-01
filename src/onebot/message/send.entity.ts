@@ -1,109 +1,122 @@
-import assert from "assert";
-import { OneBotClient } from "../onebot.client";
-import { RecvMessage } from "./recv.entity";
+import assert from 'assert';
+import { onebot } from '../../main';
+import { RecvMessage } from './recv.entity';
 
-const messageHistory: Record<number, Array<{ message_id: string }>> = {};
+const messageHistory: Record<number, Array<{ messageId: string }>> = {};
+
+interface SendMessageArgs {
+  message: SendBaseMessage[] | SendBaseMessage;
+  userId?: number | string;
+  groupId?: number | string;
+}
+interface SendMessageSendArgs {
+  recvMessage?: RecvMessage;
+  userId?: number | string;
+  groupId?: number | string;
+}
 
 export class SendMessage {
-  public bot: OneBotClient;
   public messages: SendBaseMessage[];
   public userId: number | string | null;
   public groupId: number | string | null;
 
-  constructor(bot: OneBotClient, messages: SendBaseMessage[] | SendBaseMessage, userId: number | string | null = null, groupId: number | string | null = null) {
-    this.bot = bot;
-    this.messages = Array.isArray(messages) ? messages : [messages];
-    this.userId = userId;
-    this.groupId = groupId;
+  constructor(args: SendMessageArgs) {
+    this.messages = Array.isArray(args.message) ? args.message : [args.message];
+    this.userId = args.userId || null;
+    this.groupId = args.groupId || null;
   }
 
-  public async send(
-    recv_message: RecvMessage | null = null,
-    user_id: string | null = null,
-    group_id: string | null = null
-  ): Promise<RecvMessage> {
+  public async send(args: SendMessageSendArgs = {}): Promise<RecvMessage> {
     assert(
-      this.userId || this.groupId || recv_message || user_id || group_id,
-      "user_id, group_id, or recv_message is required"
+      this.userId ||
+        this.groupId ||
+        args.recvMessage ||
+        args.userId ||
+        args.groupId,
+      'userId, groupId, or recvMessage is required'
     );
 
     const is_private =
-      this.userId || user_id || (recv_message && recv_message.is_private);
+      this.userId ||
+      args.userId ||
+      (args.recvMessage && args.recvMessage.isPrivate);
     const is_group =
-      this.groupId || group_id || (recv_message && recv_message.is_group);
+      this.groupId ||
+      args.groupId ||
+      (args.recvMessage && args.recvMessage.isGroup);
 
     let data: Record<string, any> = {};
 
     if (this.messages[0] instanceof SendForwardMessage) {
       const id = is_private
-        ? this.userId || user_id || recv_message?.user_id
-        : this.groupId || group_id || recv_message?.group_id;
-      data = await this.bot.action("send_forward_msg", {
-        [is_private ? "user_id" : "group_id"]: id,
+        ? this.userId || args.userId || args.recvMessage?.userId
+        : this.groupId || args.groupId || args.recvMessage?.groupId;
+      data = await onebot.action('send_forward_msg', {
+        [is_private ? 'user_id' : 'group_id']: id,
         ...this.messages[0].data,
       });
     } else if (is_private) {
-      data = await this.bot.action("send_private_msg", {
-        user_id: this.userId || user_id || recv_message?.user_id,
+      data = await onebot.action('send_private_msg', {
+        user_id: this.userId || args.userId || args.recvMessage?.userId,
         message: this.messages.map((m) => m.toMap()),
       });
     } else if (is_group) {
-      data = await this.bot.action("send_group_msg", {
-        group_id: this.groupId || group_id || recv_message?.group_id,
+      data = await onebot.action('send_group_msg', {
+        group_id: this.groupId || args.groupId || args.recvMessage?.groupId,
         message: this.messages.map((m) => m.toMap()),
       });
     } else {
-      throw new Error("Could not determine message type (private or group).");
+      throw new Error('Could not determine message type (private or group).');
     }
 
     // The message_history logic from the Python code could be implemented here if needed.
     // For example:
-    // if (recv_message) {
-    //     message_history.setdefault(recv_message.message_id, []).append(
+    // if (recvMessage) {
+    //     message_history.setdefault(recvMessage.messageId, []).append(
     //         data.data.message_id
     //     );
     // }
-    if (recv_message) {
-      (messageHistory[recv_message.message_id] ||= []).push(
-        { message_id: data!.data.message_id }
-      );
+    if (args.recvMessage) {
+      (messageHistory[args.recvMessage.messageId] ||= []).push({
+        messageId: data!.data.messageId,
+      });
     }
 
-    return new RecvMessage(this.bot, Number(data!.data.message_id));
+    return new RecvMessage(Number(data!.data.messageId));
   }
 
-  public async reply(recv_message: RecvMessage): Promise<RecvMessage> {
+  public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
     if (this.messages[0] instanceof SendForwardMessage) {
-      return await this.send(recv_message);
+      return await this.send({ recvMessage });
     }
     const newMessages = [
-      new SendReplyMessage(Number(recv_message.message_id)),
+      new SendReplyMessage(Number(recvMessage.messageId)),
       ...this.messages,
     ];
-    if (recv_message.is_group) {
-      const data = await this.bot.action("send_group_msg", {
-        group_id: recv_message.group_id,
+    if (recvMessage.isGroup) {
+      const data = await onebot.action('send_group_msg', {
+        group_id: recvMessage.groupId,
         message: newMessages.map((m) => m.toMap()),
       });
-      if (recv_message.message_id) {
-        (messageHistory[Number(recv_message.message_id)] ||= []).push({
-          message_id: data.data.message_id,
+      if (recvMessage.messageId) {
+        (messageHistory[Number(recvMessage.messageId)] ||= []).push({
+          messageId: data.data.message_id,
         });
       }
-      return new RecvMessage(this.bot, Number(data.data.message_id));
-    } else if (recv_message.is_private) {
-      const data = await this.bot.action("send_private_msg", {
-        user_id: recv_message.user_id,
+      return new RecvMessage(Number(data.data.message_id));
+    } else if (recvMessage.isPrivate) {
+      const data = await onebot.action('send_private_msg', {
+        user_id: recvMessage.userId,
         message: newMessages.map((m) => m.toMap()),
       });
-      if (recv_message.message_id) {
-        (messageHistory[Number(recv_message.message_id)] ||= []).push({
-          message_id: data.data.message_id,
+      if (recvMessage.messageId) {
+        (messageHistory[Number(recvMessage.messageId)] ||= []).push({
+          messageId: data.data.message_iddata.data.message_id,
         });
       }
-      return new RecvMessage(this.bot, Number(data.data.message_id));
+      return new RecvMessage(Number(data.data.message_id));
     } else {
-      throw new Error("Could not determine message type (private or group).");
+      throw new Error('Could not determine message type (private or group).');
     }
   }
 }
@@ -254,13 +267,13 @@ export class SendFileMessage extends SendBaseMessage {
   }
 }
 
-interface ForwardMessageNode {
+export interface ForwardMessageNode {
   type: 'node';
   data: {
-    user_id: string | number;
+    userId: string | number;
     nickname: string;
     content: SendBaseMessage[];
-  }
+  };
 }
 
 export class SendForwardMessage extends SendBaseMessage {
@@ -270,12 +283,15 @@ export class SendForwardMessage extends SendBaseMessage {
    */
   constructor(messages: ForwardMessageNode[]) {
     // 将 content 中的 SendBaseMessage 对象转换为普通对象
-    const formattedMessages = messages.map(node => ({
+    const formattedMessages = messages.map((node) => ({
       ...node,
       data: {
         ...node.data,
-        content: node.data.content.map(msg => ({ type: msg.type, data: msg.data }))
-      }
+        content: node.data.content.map((msg) => ({
+          type: msg.type,
+          data: msg.data,
+        })),
+      },
     }));
     super('forward', { messages: formattedMessages });
   }
