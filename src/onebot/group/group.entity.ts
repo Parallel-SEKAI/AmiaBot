@@ -3,16 +3,70 @@ import { User } from '../user/user.entity';
 import { RecvMessage } from '../message/recv.entity';
 
 export class Group {
+  /**
+   * 群聊ID
+   */
   public id: number;
 
+  /**
+   * 群聊名称
+   */
   public name: string | null = null;
+
+  /**
+   * 群主ID
+   */
   public ownerId: number | null = null;
+
+  /**
+   * 群成员数量
+   */
   public memberCount: number | null = null;
+
+  /**
+   * 群最大成员数量
+   */
   public maxMemberCount: number | null = null;
+
+  /**
+   * 群描述
+   */
   public description: string | null = null;
+
+  /**
+   * 群创建时间
+   */
   public createTime: Date | null = null;
+
+  /**
+   * 群等级
+   */
   public level: number | null = null;
+
+  /**
+   * 群活跃成员数量
+   */
   public activeMemberCount: number | null = null;
+
+  /**
+   * 置顶的群规，比如入群须知
+   */
+  public rules: string | null = null;
+
+  /**
+   * “暗号”——加群问题！
+   */
+  public joinQuestion: string | null = null;
+
+  /**
+   * 是不是被群主开启了全员禁言
+   */
+  public isMutedAll: boolean = false;
+
+  /**
+   * 我自己是不是被禁言了
+   */
+  public isMutedMe: boolean = false;
 
   private members: User[] = [];
 
@@ -44,6 +98,10 @@ export class Group {
     this.createTime = new Date(data.groupCreateTime * 1000);
     this.level = data.groupGrade;
     this.activeMemberCount = data.activeMemberNum;
+    this.rules = data.fingerMemo;
+    this.joinQuestion = data.groupQuestion;
+    this.isMutedAll = data.shutUpAllTimestamp > 0; // 时间戳大于0，说明正处于全员禁言中
+    this.isMutedMe = data.shutUpMeTimestamp > 0; // 时间戳大于0，说明自己被禁言了
   }
 
   /**
@@ -96,7 +154,7 @@ export class Group {
   }
 
   public async getHistory(): Promise<RecvMessage[]> {
-    const history = await onebot.action('get_group_message_history', {
+    const history = await onebot.action('get_group_msg_history', {
       group_id: this.id,
       message_seq: 0,
       count: 100,

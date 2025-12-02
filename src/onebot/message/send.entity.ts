@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { onebot } from '../../main';
 import { RecvMessage } from './recv.entity';
+import logger from '../../config/logger';
 
 const messageHistory: Record<number, Array<{ messageId: string }>> = {};
 
@@ -69,20 +70,20 @@ export class SendMessage {
       throw new Error('Could not determine message type (private or group).');
     }
 
-    // The message_history logic from the Python code could be implemented here if needed.
-    // For example:
-    // if (recvMessage) {
-    //     message_history.setdefault(recvMessage.messageId, []).append(
-    //         data.data.message_id
-    //     );
-    // }
     if (args.recvMessage) {
       (messageHistory[args.recvMessage.messageId] ||= []).push({
         messageId: data!.data.messageId,
       });
     }
 
-    return new RecvMessage(Number(data!.data.messageId));
+    const message = new RecvMessage(Number(data.data.message_id));
+    await message.init();
+    logger.info(
+      '[onebot.send][Group: %d] %s',
+      message.groupId,
+      message.rawMessage
+    );
+    return message;
   }
 
   public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
@@ -93,31 +94,37 @@ export class SendMessage {
       new SendReplyMessage(Number(recvMessage.messageId)),
       ...this.messages,
     ];
+
+    let data: Record<string, any> = {};
+
     if (recvMessage.isGroup) {
-      const data = await onebot.action('send_group_msg', {
+      data = await onebot.action('send_group_msg', {
         group_id: recvMessage.groupId,
         message: newMessages.map((m) => m.toMap()),
       });
-      if (recvMessage.messageId) {
-        (messageHistory[Number(recvMessage.messageId)] ||= []).push({
-          messageId: data.data.message_id,
-        });
-      }
-      return new RecvMessage(Number(data.data.message_id));
     } else if (recvMessage.isPrivate) {
-      const data = await onebot.action('send_private_msg', {
+      data = await onebot.action('send_private_msg', {
         user_id: recvMessage.userId,
         message: newMessages.map((m) => m.toMap()),
       });
-      if (recvMessage.messageId) {
-        (messageHistory[Number(recvMessage.messageId)] ||= []).push({
-          messageId: data.data.message_iddata.data.message_id,
-        });
-      }
-      return new RecvMessage(Number(data.data.message_id));
     } else {
       throw new Error('Could not determine message type (private or group).');
     }
+
+    if (recvMessage) {
+      (messageHistory[recvMessage.messageId] ||= []).push({
+        messageId: data!.data.messageId,
+      });
+    }
+
+    const message = new RecvMessage(Number(data.data.message_id));
+    await message.init();
+    logger.info(
+      '[onebot.send][Group: %d] %s',
+      message.groupId,
+      message.rawMessage
+    );
+    return message;
   }
 }
 

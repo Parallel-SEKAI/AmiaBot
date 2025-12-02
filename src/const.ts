@@ -1,5 +1,12 @@
-export const FEATURES = ['poke', 'comic', 'pjsk-sticker', 'chat'];
-export const PREFIXES = ['/'];
+export const FEATURES = [
+  'poke',
+  'comic',
+  'pjsk-sticker',
+  'chat',
+  'query.group',
+  'query.user',
+];
+export const PREFIXES = ['/', '.'];
 
 /**
  * 颜色定义（基于CSS变量）

@@ -4,7 +4,7 @@
  */
 
 // 辅助类型
-export type Color = [number, number, number, number]; // RGBA颜色值，格式：[红, 绿, 蓝, 透明度]
+export type Color = [number, number, number, number]; // RGBA颜色值，格式：[红, 绿, 蓝, 透明度]，透明度范围0-255
 export type Size = 'cover' | 'contain' | 'default'; // 图片缩放方式
 
 export interface Padding {

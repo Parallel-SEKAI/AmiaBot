@@ -10,15 +10,12 @@ import { renderTemplate } from '../../utils';
 import {
   FunctionCallingConfigMode,
   FunctionDeclaration,
+  Tool,
   Type,
 } from '@google/genai';
 import { getCharacterAlias, searchMusic, sendMusic } from './functions';
 import { Group } from '../../onebot/group/group.entity';
 import { User } from '../../onebot/user/user.entity';
-
-/*
-https://sekai-world.github.io/sekai-master-db-cn-diff/characterProfiles.json
-*/
 
 const prompt = readFileSync('assets/chat/prompt.txt', 'utf8');
 
@@ -154,11 +151,19 @@ async function chat(data: Record<string, any>) {
     const chat = gemini.chats.create({
       model: config.gemini.model,
       config: {
-        tools: [{ functionDeclarations: functions }],
+        tools: [
+          {
+            functionDeclarations: functions,
+          },
+        ],
         toolConfig: {
           functionCallingConfig: {
             mode: FunctionCallingConfigMode.ANY,
           },
+        },
+        thinkingConfig: {
+          thinkingBudget: 24576,
+          includeThoughts: true,
         },
         systemInstruction: system,
       },
@@ -194,15 +199,25 @@ async function chat(data: Record<string, any>) {
           }
         }
       }
-      logger.info(
-        '[Gemini] Token: %d Input: %d Output: %d Cache: %d Used: %d',
-        response.usageMetadata?.totalTokenCount,
-        response.usageMetadata?.promptTokenCount,
-        response.usageMetadata?.candidatesTokenCount,
-        response.usageMetadata?.cachedContentTokenCount,
-        (response.usageMetadata?.totalTokenCount || 0) -
-          (response.usageMetadata?.cachedContentTokenCount || 0)
-      );
+      const usage = response.usageMetadata;
+      let usageInfo = '';
+      if (usage) {
+        usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Thoughts: ${usage.thoughtsTokenCount || 0}, ToolUse: ${usage.toolUsePromptTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
+        logger.info('[Gemini] %s', usageInfo);
+      }
+      let thoughts = '';
+      if (response.candidates && response.candidates[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (!part.text) {
+            continue;
+          } else if (part.thought) {
+            thoughts += part.text;
+          }
+        }
+      }
+      if (thoughts) {
+        logger.info(`[Gemini] Thoughts: ${thoughts}`);
+      }
       if (response.functionCalls && response.functionCalls.length > 0) {
         const functionCall = response.functionCalls[0];
         logger.info(`[Gemini] Function to call: ${functionCall.name}`);

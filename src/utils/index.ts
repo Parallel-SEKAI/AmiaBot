@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { extname } from 'path';
+
 export function parseCommandLineArgs(
   cmd: string
 ): [string[], Record<string, string>] {
@@ -30,7 +31,10 @@ export function parseCommandLineArgs(
  * @param filePath Absolute or relative path to the image file.
  * @returns Promise resolving to the base64 data URL.
  */
-export async function imageToBase64DataURL(filePath: string): Promise<string> {
+export async function imageToBase64DataURL(
+  filePath: string,
+  noHeader = false
+): Promise<string> {
   const buffer = await fs.readFile(filePath);
   const ext = extname(filePath).toLowerCase();
   const mimeMap: Record<string, string> = {
@@ -43,7 +47,27 @@ export async function imageToBase64DataURL(filePath: string): Promise<string> {
   };
   const mime = mimeMap[ext] || 'application/octet-stream';
   const base64 = buffer.toString('base64');
-  return `data:${mime};base64,${base64}`;
+  return noHeader ? base64 : `data:${mime};base64,${base64}`;
+}
+
+/**
+ * Convert a remote image URL to a base64 data URL.
+ * @param url Remote image URL.
+ * @returns Promise resolving to the base64 data URL.
+ */
+export async function networkImageToBase64DataURL(
+  url: string,
+  noHeader = false
+): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch image: ${res.status} ${res.statusText}`);
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  const contentType =
+    res.headers.get('content-type') || 'application/octet-stream';
+  const base64 = buffer.toString('base64');
+  return noHeader ? base64 : `data:${contentType};base64,${base64}`;
 }
 
 /**
@@ -112,4 +136,18 @@ export function renderTemplate(
     // 这样便于调试，可以看到哪个占位符没有被替换
     return match;
   });
+}
+
+export function extractAfterCaseInsensitive(
+  source: string,
+  searchString: string
+): string {
+  const lowerSource = source.toLowerCase();
+  const lowerSearchString = searchString.toLowerCase();
+  const startIndex = lowerSource.indexOf(lowerSearchString);
+  if (startIndex === -1) {
+    return source;
+  }
+  const endIndex = startIndex + searchString.length;
+  return source.substring(endIndex);
 }
