@@ -10,7 +10,7 @@ export async function init() {
     if (await checkFeatureEnabled(data.group_id, 'example')) {
       const message = RecvMessage.fromMap(data);
       logger.info(
-        '[example][Group: %d][User: %d] %s',
+        '[feature.example][Group: %d][User: %d] %s',
         message.groupId,
         message.userId,
         message.rawMessage

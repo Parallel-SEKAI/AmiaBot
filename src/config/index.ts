@@ -20,6 +20,7 @@ const envVarsSchema = Joi.object({
   GEMINI_API_KEY: Joi.string().allow('').description('Gemini API key'),
   GEMINI_BASEURL: Joi.string().allow('').description('Gemini API base URL'),
   GEMINI_MODEL: Joi.string().allow('').description('Gemini model name'),
+  GITHUB_TOKEN: Joi.string().allow('').description('GitHub token'),
 }).unknown();
 
 const { value: envVars, error } = envVarsSchema
@@ -54,6 +55,9 @@ export interface IConfig {
     baseUrl: string;
     model: string;
   };
+  github: {
+    token: string;
+  };
 }
 
 export const config: IConfig = {
@@ -79,5 +83,8 @@ export const config: IConfig = {
     apiKey: envVars.GEMINI_API_KEY || '',
     baseUrl: envVars.GEMINI_BASEURL || '',
     model: envVars.GEMINI_MODEL || '',
+  },
+  github: {
+    token: envVars.GITHUB_TOKEN || '',
   },
 };

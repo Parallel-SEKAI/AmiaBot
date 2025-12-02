@@ -27,15 +27,15 @@ export async function init() {
   onebot.on('message.group', async (data) => {
     if (await checkFeatureEnabled(data.group_id, 'bilibili')) {
       const message = RecvMessage.fromMap(data);
-      logger.info(
-        '[feature.bilibili][Group: %d][User: %d] %s',
-        message.groupId,
-        message.userId,
-        message.rawMessage
-      );
 
       const avMatch = message.content.match(AV_PATTERN);
       if (avMatch) {
+        logger.info(
+          '[feature.bilibili][Group: %d][User: %d] %s',
+          message.groupId,
+          message.userId,
+          message.rawMessage
+        );
         const params = avMatch[1];
         const info = await getVideoInfo({ av: Number(params) });
         await new SendMessage({ message: new SendImageMessage(info) }).reply(
@@ -46,6 +46,12 @@ export async function init() {
 
       const bvMatch = message.content.match(BV_PATTERN);
       if (bvMatch) {
+        logger.info(
+          '[feature.bilibili][Group: %d][User: %d] %s',
+          message.groupId,
+          message.userId,
+          message.rawMessage
+        );
         const params = bvMatch[1];
         const info = await getVideoInfo({ bv: params });
         await new SendMessage({ message: new SendImageMessage(info) }).reply(
