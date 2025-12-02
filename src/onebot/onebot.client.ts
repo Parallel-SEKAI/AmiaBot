@@ -54,6 +54,7 @@ export class OneBotClient extends EventEmitter {
         Authorization: `Bearer ${this.token}`,
       },
     });
+    this.on('all', this.echoMessage);
     this.ws.onopen = () => {
       logger.info('[onebot] WebSocket connected');
     };
@@ -77,5 +78,20 @@ export class OneBotClient extends EventEmitter {
         this.emit(`message.command.${command}`, eventData);
       }
     };
+  }
+
+  public async echoMessage(eventData: Record<string, any>) {
+    switch (eventData.post_type) {
+      case 'message':
+        switch (eventData.message_type) {
+          case 'group':
+            logger.info(
+              '[onebot.recv][Group: %d][User: %d] %s',
+              eventData.group_id,
+              eventData.user_id,
+              eventData.raw_message
+            );
+        }
+    }
   }
 }

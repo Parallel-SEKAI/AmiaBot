@@ -97,7 +97,7 @@ async function chat(data: Record<string, any>) {
   if (await checkFeatureEnabled(data.group_id, 'chat')) {
     const message = RecvMessage.fromMap(data);
     logger.info(
-      '[chat][Group: %d][User: %d] %s',
+      '[feature.chat][Group: %d][User: %d] %s',
       message.groupId,
       message.userId,
       message.rawMessage

@@ -8,7 +8,11 @@ export async function init() {
   onebot.on('notice.poke', async (data) => {
     if (data.target_id == onebot.qq) {
       if (await checkFeatureEnabled(data.group_id, 'poke')) {
-        logger.info('[poke][Group: %d][User: %d]', data.group_id, data.user_id);
+        logger.info(
+          '[feature.poke][Group: %d][User: %d]',
+          data.group_id,
+          data.user_id
+        );
         new SendMessage({ message: new SendTextMessage('POKE') }).send({
           groupId: data.group_id,
         });

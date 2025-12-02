@@ -17,10 +17,9 @@ export async function init() {
   logger.info('[feature] Init comic feature');
   onebot.on('message.command.comic', async (data) => {
     if (await checkFeatureEnabled(data.group_id, 'comic')) {
-      logger.info('[comic] command received');
       const message = RecvMessage.fromMap(data);
       logger.info(
-        '[example][Group: %d][User: %d] %s',
+        '[feature.comic][Group: %d][User: %d] %s',
         message.groupId,
         message.userId,
         message.rawMessage

@@ -22,7 +22,7 @@ export async function init() {
     if (await checkFeatureEnabled(data.group_id, 'gemini')) {
       const message = RecvMessage.fromMap(data);
       logger.info(
-        '[gemini][Group: %d][User: %d] %s',
+        '[feature.gemini][Group: %d][User: %d] %s',
         message.groupId,
         message.userId,
         message.rawMessage

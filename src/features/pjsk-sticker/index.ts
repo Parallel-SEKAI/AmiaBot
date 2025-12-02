@@ -59,7 +59,7 @@ export async function init() {
     if (await checkFeatureEnabled(data.group_id, 'pjsk-sticker')) {
       const message = RecvMessage.fromMap(data);
       logger.info(
-        '[pjsk-sticker][Group: %d][User: %d] %s',
+        '[feature.pjsk-sticker][Group: %d][User: %d] %s',
         message.groupId,
         message.userId,
         message.rawMessage

@@ -66,45 +66,85 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
     throw new Error('Enana API 配置不完整,请检查 baseUrl 和 token');
   }
 
-  try {
-    const response = await fetch(baseUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        widget,
-        scale,
-      }),
-    });
+  // 重试配置
+  const maxRetries = 3;
+  const retryDelay = 1000; // 初始重试间隔（毫秒）
 
-    if (!response.ok) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          widget,
+          scale,
+        }),
+      });
+
+      // 如果响应成功，直接返回结果
+      if (response.ok) {
+        // 获取响应的二进制数据
+        const arrayBuffer = await response.arrayBuffer();
+        // 将 ArrayBuffer 转换为 Buffer
+        const buffer = Buffer.from(arrayBuffer);
+        // 获取内容类型
+        const contentType = response.headers.get('content-type') || 'image/png';
+        // 构建 base64 data URL
+        const base64 = `data:${contentType};base64,${buffer.toString('base64')}`;
+        return base64;
+      }
+
+      // 处理响应错误
+      const status = response.status;
       const errorDetails = await response
         .text()
         .catch(() => 'No error details available');
+
+      // 如果是服务器错误（5xx）且不是最后一次尝试，则重试
+      if (status >= 500 && status < 600 && attempt < maxRetries) {
+        console.log(
+          `Enana API 服务器错误 (${status}), 正在尝试第 ${attempt + 1}/${maxRetries} 次重试...`
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelay * attempt)
+        ); // 指数退避
+        continue;
+      }
+
+      // 其他错误直接抛出
       throw new Error(
         `Failed to generate image: ${response.statusText}. ${errorDetails}`
       );
+    } catch (error) {
+      // 检查是否是网络错误或超时错误
+      const isNetworkError =
+        error instanceof Error &&
+        (error.name === 'TypeError' ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('timeout'));
+
+      // 如果是网络错误且不是最后一次尝试，则重试
+      if (isNetworkError && attempt < maxRetries) {
+        console.log(
+          `Enana API 网络错误, 正在尝试第 ${attempt + 1}/${maxRetries} 次重试...`
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelay * attempt)
+        ); // 指数退避
+        continue;
+      }
+
+      // 最后一次尝试或非重试错误，抛出异常
+      if (error instanceof Error) {
+        throw new Error(`Enana API 调用失败: ${error.message}`);
+      }
+      throw new Error(`Enana API 调用失败: ${String(error)}`);
     }
-
-    // 获取响应的二进制数据
-    const arrayBuffer = await response.arrayBuffer();
-
-    // 将 ArrayBuffer 转换为 Buffer
-    const buffer = Buffer.from(arrayBuffer);
-
-    // 获取内容类型
-    const contentType = response.headers.get('content-type') || 'image/png';
-
-    // 构建 base64 data URL
-    const base64 = `data:${contentType};base64,${buffer.toString('base64')}`;
-
-    return base64;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Enana API 调用失败: ${error.message}`);
-    }
-    throw new Error(`Enana API 调用失败: ${String(error)}`);
   }
+
+  // 理论上不会到达这里，因为循环中要么返回结果要么抛出异常
+  throw new Error(`Enana API 调用失败: 已达到最大重试次数 (${maxRetries})`);
 }
