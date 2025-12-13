@@ -1,410 +1,113 @@
 import logger from '../../config/logger';
 import { onebot } from '../../main';
 import { RecvMessage } from '../../onebot/message/recv.entity';
-import {
-  SendMessage,
-  SendTextMessage,
-  SendImageMessage,
-} from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
-import { octokit } from '../../service/github';
-import { generatePage } from '../../service/enana';
-import {
-  WidgetComponent,
-  ColumnComponent,
-  RowComponent,
-  TextComponent,
-  ImageComponent,
-  ContainerComponent,
-} from '../../types/enana';
-import { config } from '../../config';
+import { getRepoInfo } from './repo';
+import { getUserInfo } from './user';
+import { getIssueInfo } from './issue';
+import { getPRInfo } from './pr';
 
-const repoPattern = /^([^\/]+)\/([^\/]+)/g;
+const repoRegex = /github.com\/([^/]+)\/([^/]+)/g;
+const userRegex = /github.com\/([^/]+)/g;
+const issueRegex = /github.com\/([^/]+)\/([^/]+)\/issues\/([0-9]+)/g;
+const prRegex = /github.com\/([^/]+)\/([^/]+)\/pull\/([0-9]+)/g;
 
 export async function init() {
   logger.info('[feature] Init github feature');
   onebot.on('message.group', async (data) => {
     if (await checkFeatureEnabled(data.group_id, 'github')) {
       const message = RecvMessage.fromMap(data);
-      const repoMatch = message.content.match(repoPattern);
-      if (repoMatch) {
-        logger.info(
-          '[feature.github][Group: %d][User: %d] %s',
-          message.groupId,
-          message.userId,
-          message.rawMessage
-        );
-        const [owner, repo] = repoMatch[0].split('/');
-        await getRepoInfo(message, owner, repo);
+
+      // issue 信息
+      const issueMatch = message.content.matchAll(issueRegex);
+      for (const match of issueMatch) {
+        const owner = match[1];
+        const repo = match[2];
+        const issueNumber = parseInt(match[3]);
+        const success = await getIssueInfo(message, owner, repo, issueNumber);
+        if (success) {
+          logger.info(
+            '[feature.github.issue][Group: %d][User: %d] %s',
+            message.groupId,
+            message.userId,
+            message.rawMessage
+          );
+          return;
+        }
+      }
+
+      // pr 信息
+      const prMatch = message.content.matchAll(prRegex);
+      for (const match of prMatch) {
+        const owner = match[1];
+        const repo = match[2];
+        const prNumber = parseInt(match[3]);
+        const success = await getPRInfo(message, owner, repo, prNumber);
+        if (success) {
+          logger.info(
+            '[feature.github.pr][Group: %d][User: %d] %s',
+            message.groupId,
+            message.userId,
+            message.rawMessage
+          );
+          return;
+        }
+      }
+
+      // repo 信息
+      const repoMatch = message.content.matchAll(repoRegex);
+      for (const match of repoMatch) {
+        const owner = match[1];
+        const repo = match[2];
+        const success = await getRepoInfo(message, owner, repo);
+        if (success) {
+          logger.info(
+            '[feature.github.repo][Group: %d][User: %d] %s',
+            message.groupId,
+            message.userId,
+            message.rawMessage
+          );
+          return;
+        }
+      }
+
+      // user 信息
+      const userMatch = message.content.matchAll(userRegex);
+      for (const match of userMatch) {
+        const user = match[1];
+        const success = await getUserInfo(message, user);
+        if (success) {
+          logger.info(
+            '[feature.github.user][Group: %d][User: %d] %s',
+            message.groupId,
+            message.userId,
+            message.rawMessage
+          );
+          return;
+        }
+      }
+
+      if (message.content.includes('/')) {
+        const splits = message.content.split('/');
+        for (let i = 0; i < splits.length - 1; i++) {
+          if (splits[i].length > 0) {
+            const success = await getRepoInfo(
+              message,
+              splits[i],
+              splits[i + 1]
+            );
+            if (success) {
+              logger.info(
+                '[feature.github.repo][Group: %d][User: %d] %s',
+                message.groupId,
+                message.userId,
+                message.rawMessage
+              );
+              return;
+            }
+          }
+        }
       }
     }
   });
-}
-
-async function getRepoInfo(message: RecvMessage, owner: string, repo: string) {
-  const response = await octokit.rest.repos.get({
-    owner,
-    repo,
-  });
-
-  const repoData = response.data;
-
-  // 构建仓库信息UI组件
-  const repoInfoWidget: WidgetComponent = {
-    type: 'Column',
-    children: [],
-    padding: {
-      top: 16,
-      right: 16,
-      bottom: 16,
-      left: 16,
-    },
-  } as ColumnComponent;
-
-  // 仓库基本信息：名称和描述
-  const headerSection: ColumnComponent = {
-    type: 'Column',
-    children: [
-      {
-        type: 'Text',
-        text: repoData.full_name,
-        font_size: 18,
-        font: config.enana.font,
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: repoData.description || '无描述',
-        font_size: 14,
-        margin: {
-          top: 8,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
-        font: config.enana.font,
-        max_width: 400,
-      } as TextComponent,
-    ],
-  };
-  repoInfoWidget.children.push(headerSection);
-
-  // 分隔线
-  repoInfoWidget.children.push({
-    type: 'Container',
-    height: 2,
-    margin: {
-      top: 12,
-      bottom: 12,
-    },
-    color: [0, 0, 0, 100],
-  } as ContainerComponent);
-
-  // 所有者信息
-  const ownerSection: RowComponent = {
-    type: 'Row',
-    children: [
-      {
-        type: 'Image',
-        url: repoData.owner.avatar_url,
-        width: 40,
-        height: 40,
-        size: 'cover',
-        border_radius: 20,
-      } as ImageComponent,
-      {
-        type: 'Column',
-        padding: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 12,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: repoData.owner.login,
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.owner.type === 'Organization' ? '组织' : '用户',
-            font_size: 12,
-            margin: {
-              top: 4,
-              right: 0,
-              bottom: 0,
-              left: 0,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as ColumnComponent,
-    ],
-  };
-  repoInfoWidget.children.push(ownerSection);
-
-  // 统计数据
-  const statSection: RowComponent = {
-    type: 'Row',
-    margin: {
-      top: 12,
-      right: 0,
-      bottom: 12,
-      left: 0,
-    },
-    children: [
-      {
-        type: 'Column',
-        children: [
-          {
-            type: 'Text',
-            text: '星标',
-            font_size: 12,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.stargazers_count.toString(),
-            font_size: 16,
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as ColumnComponent,
-      {
-        type: 'Column',
-        margin: {
-          left: 20,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '分支',
-            font_size: 12,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.forks_count.toString(),
-            font_size: 16,
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as ColumnComponent,
-      {
-        type: 'Column',
-        margin: {
-          left: 20,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '问题',
-            font_size: 12,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.open_issues_count.toString(),
-            font_size: 16,
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as ColumnComponent,
-      {
-        type: 'Column',
-        margin: {
-          left: 20,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '观察',
-            font_size: 12,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.watchers_count.toString(),
-            font_size: 16,
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as ColumnComponent,
-    ],
-  };
-  repoInfoWidget.children.push(statSection);
-
-  // 分隔线
-  repoInfoWidget.children.push({
-    type: 'Container',
-    height: 2,
-    margin: {
-      top: 12,
-      bottom: 12,
-    },
-    color: [0, 0, 0, 100],
-  } as ContainerComponent);
-
-  // 其他信息：语言、许可证、默认分支
-  const infoSection: ColumnComponent = {
-    type: 'Column',
-    children: [
-      {
-        type: 'Row',
-        children: [
-          {
-            type: 'Text',
-            text: '主要语言:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.language || '无',
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-      {
-        type: 'Row',
-        margin: {
-          top: 8,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '许可证:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.license?.name || '无',
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-      {
-        type: 'Row',
-        margin: {
-          top: 8,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '默认分支:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.default_branch,
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-      {
-        type: 'Row',
-        margin: {
-          top: 8,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '可见性:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: repoData.visibility,
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-    ],
-  };
-  repoInfoWidget.children.push(infoSection);
-
-  // 时间信息
-  const timeSection: ColumnComponent = {
-    type: 'Column',
-    margin: {
-      top: 12,
-      right: 0,
-      bottom: 0,
-      left: 0,
-    },
-    children: [
-      {
-        type: 'Row',
-        children: [
-          {
-            type: 'Text',
-            text: '创建时间:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: new Date(repoData.created_at).toLocaleString('zh-CN'),
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-      {
-        type: 'Row',
-        margin: {
-          top: 8,
-        },
-        children: [
-          {
-            type: 'Text',
-            text: '最后更新:',
-            font_size: 14,
-            font: config.enana.font,
-          } as TextComponent,
-          {
-            type: 'Text',
-            text: new Date(repoData.updated_at).toLocaleString('zh-CN'),
-            font_size: 14,
-            margin: {
-              left: 8,
-            },
-            font: config.enana.font,
-          } as TextComponent,
-        ],
-      } as RowComponent,
-    ],
-  };
-  repoInfoWidget.children.push(timeSection);
-
-  // 调用 generatePage 函数生成图片
-  const imageUrl = await generatePage(repoInfoWidget);
-
-  // 发送图片消息
-  await new SendMessage({ message: new SendImageMessage(imageUrl) }).reply(
-    message
-  );
 }
