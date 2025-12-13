@@ -16,7 +16,12 @@ import {
 import { config } from '../../config';
 import logger from '../../config/logger';
 
-export async function getIssueInfo(message: RecvMessage, owner: string, repo: string, issueNumber: number): Promise<boolean> {
+export async function getIssueInfo(
+  message: RecvMessage,
+  owner: string,
+  repo: string,
+  issueNumber: number
+): Promise<boolean> {
   let response;
   try {
     response = await octokit.rest.issues.get({
@@ -25,10 +30,22 @@ export async function getIssueInfo(message: RecvMessage, owner: string, repo: st
       issue_number: issueNumber,
     });
   } catch (error: any) {
-    logger.error('[feature.github.issue][Issue: %s/%s#%d] %s', owner, repo, issueNumber, error.message);
+    logger.error(
+      '[feature.github.issue][Issue: %s/%s#%d] %s',
+      owner,
+      repo,
+      issueNumber,
+      error.message
+    );
     return false;
   }
-  logger.info('[feature.github.issue][Issue: %s/%s#%d] %s', owner, repo, issueNumber, response.data.title);
+  logger.info(
+    '[feature.github.issue][Issue: %s/%s#%d] %s',
+    owner,
+    repo,
+    issueNumber,
+    response.data.title
+  );
 
   const issueData = response.data;
 
@@ -206,7 +223,8 @@ export async function getIssueInfo(message: RecvMessage, owner: string, repo: st
               top: 4,
             },
             font: config.enana.font,
-            color: issueData.state === 'open' ? [0, 128, 0, 255] : [128, 0, 0, 255],
+            color:
+              issueData.state === 'open' ? [0, 128, 0, 255] : [128, 0, 0, 255],
           } as TextComponent,
         ],
       } as ColumnComponent,

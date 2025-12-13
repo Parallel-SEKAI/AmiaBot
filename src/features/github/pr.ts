@@ -16,7 +16,12 @@ import {
 import { config } from '../../config';
 import logger from '../../config/logger';
 
-export async function getPRInfo(message: RecvMessage, owner: string, repo: string, prNumber: number): Promise<boolean> {
+export async function getPRInfo(
+  message: RecvMessage,
+  owner: string,
+  repo: string,
+  prNumber: number
+): Promise<boolean> {
   let response;
   try {
     response = await octokit.rest.pulls.get({
@@ -25,10 +30,22 @@ export async function getPRInfo(message: RecvMessage, owner: string, repo: strin
       pull_number: prNumber,
     });
   } catch (error: any) {
-    logger.error('[feature.github.pr][PR: %s/%s#%d] %s', owner, repo, prNumber, error.message);
+    logger.error(
+      '[feature.github.pr][PR: %s/%s#%d] %s',
+      owner,
+      repo,
+      prNumber,
+      error.message
+    );
     return false;
   }
-  logger.info('[feature.github.pr][PR: %s/%s#%d] %s', owner, repo, prNumber, response.data.title);
+  logger.info(
+    '[feature.github.pr][PR: %s/%s#%d] %s',
+    owner,
+    repo,
+    prNumber,
+    response.data.title
+  );
 
   const prData = response.data;
 
@@ -71,13 +88,22 @@ export async function getPRInfo(message: RecvMessage, owner: string, repo: strin
       } as RowComponent,
       {
         type: 'Text',
-        text: prData.state === 'open' ? '开放' : prData.merged ? '已合并' : '已关闭',
+        text:
+          prData.state === 'open'
+            ? '开放'
+            : prData.merged
+              ? '已合并'
+              : '已关闭',
         font_size: 14,
         margin: {
           top: 8,
         },
         font: config.enana.font,
-        color: prData.merged ? [0, 128, 0, 255] : prData.state === 'open' ? [0, 0, 255, 255] : [128, 0, 0, 255],
+        color: prData.merged
+          ? [0, 128, 0, 255]
+          : prData.state === 'open'
+            ? [0, 0, 255, 255]
+            : [128, 0, 0, 255],
       } as TextComponent,
     ],
   } as ColumnComponent;

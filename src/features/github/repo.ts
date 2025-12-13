@@ -16,7 +16,11 @@ import {
 import { config } from '../../config';
 import logger from '../../config/logger';
 
-export async function getRepoInfo(message: RecvMessage, owner: string, repo: string): Promise<boolean> {
+export async function getRepoInfo(
+  message: RecvMessage,
+  owner: string,
+  repo: string
+): Promise<boolean> {
   let response;
   try {
     response = await octokit.rest.repos.get({
@@ -24,10 +28,20 @@ export async function getRepoInfo(message: RecvMessage, owner: string, repo: str
       repo,
     });
   } catch (error: any) {
-    logger.error('[feature.github.repo][Repo: %s/%s] %s', owner, repo, error.message);
+    logger.error(
+      '[feature.github.repo][Repo: %s/%s] %s',
+      owner,
+      repo,
+      error.message
+    );
     return false;
   }
-  logger.info('[feature.github.repo][Repo: %s/%s] %s', owner, repo, response.data.description);
+  logger.info(
+    '[feature.github.repo][Repo: %s/%s] %s',
+    owner,
+    repo,
+    response.data.description
+  );
 
   const repoData = response.data;
 

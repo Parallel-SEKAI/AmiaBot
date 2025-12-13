@@ -10,7 +10,6 @@ import { renderTemplate } from '../../utils';
 import {
   FunctionCallingConfigMode,
   FunctionDeclaration,
-  Tool,
   Type,
 } from '@google/genai';
 import { getCharacterAlias, searchMusic, sendMusic } from './functions';

@@ -35,8 +35,11 @@ export class OneBotClient extends EventEmitter {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data as Record<string, any>;
+      const data = (await response.json()) as Record<string, any>;
+      if (data.retcode !== 0) {
+        logger.error('[onebot.action.%s] %s', action, JSON.stringify(data));
+      }
+      return data;
     } catch (error) {
       console.error('Failed to perform action:', error);
       throw error;

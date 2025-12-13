@@ -6,9 +6,10 @@
     "bvid",
     "enana",
     "genai",
+    "mizuki",
     "onebot",
     "Pjsk"
   ],
   "editor.tabSize": 2,
-  "editor.insertSpaces": true,
+  "editor.insertSpaces": true
 }

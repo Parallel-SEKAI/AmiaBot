@@ -30,7 +30,7 @@ export async function getCharacterAlias(alias: string): Promise<Array<string>> {
 }
 
 export async function getCharactersSelfIntroduction(
-  scenarioId: String
+  scenarioId: string
 ): Promise<string> {
   const response = await fetch(
     `https://storage.sekai.best/sekai-cn-assets/scenario/profile/${scenarioId}.asset`

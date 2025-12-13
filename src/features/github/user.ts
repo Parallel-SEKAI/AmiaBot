@@ -16,7 +16,10 @@ import {
 import { config } from '../../config';
 import logger from '../../config/logger';
 
-export async function getUserInfo(message: RecvMessage, username: string): Promise<boolean> {
+export async function getUserInfo(
+  message: RecvMessage,
+  username: string
+): Promise<boolean> {
   let response;
   try {
     response = await octokit.rest.users.getByUsername({
@@ -26,7 +29,11 @@ export async function getUserInfo(message: RecvMessage, username: string): Promi
     logger.error('[feature.github][User: %s] %s', username, error.message);
     return false;
   }
-  logger.info('[feature.github.user][User: %s] %s', username, response.data.name || response.data.login);
+  logger.info(
+    '[feature.github.user][User: %s] %s',
+    username,
+    response.data.name || response.data.login
+  );
 
   const userData = response.data;
 
@@ -104,11 +111,11 @@ export async function getUserInfo(message: RecvMessage, username: string): Promi
         } as TextComponent,
       ],
       margin: {
-      top: 8,
-      right: 0,
-      bottom: 0,
-      left: 0,
-    },
+        top: 8,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
     };
     userInfoWidget.children.push(bioSection);
   }
