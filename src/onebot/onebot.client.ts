@@ -10,6 +10,10 @@ export class OneBotClient extends EventEmitter {
   private wsUrl: string;
   private token: string;
   private ws: WebSocket | null = null;
+  private isReconnecting: boolean = false;
+  private reconnectAttempts: number = 0;
+  private maxReconnectDelay: number = 30000; // 最大重连延迟30秒
+
   constructor(httpUrl: string, wsUrl: string, token: string) {
     super();
     this.httpUrl = httpUrl;
@@ -54,22 +58,20 @@ export class OneBotClient extends EventEmitter {
       throw error;
     }
   }
-  public async run(): Promise<void> {
-    const loginInfo = (await this.action('get_login_info')).data as Record<
-      string,
-      any
-    >;
-    this.qq = loginInfo.user_id;
-    this.nickname = loginInfo.nickname;
+
+  private connectWebSocket(): void {
     this.ws = new WebSocket(this.wsUrl, {
       headers: {
         Authorization: `Bearer ${this.token}`,
       },
     });
-    this.on('all', this.echoMessage);
+
     this.ws.onopen = () => {
       logger.info('[onebot] WebSocket connected');
+      this.reconnectAttempts = 0; // 重置重连次数
+      this.isReconnecting = false;
     };
+
     this.ws.onmessage = (event) => {
       // console.debug('Received message:', event.data);
       const eventData = JSON.parse(event.data) as Record<string, any>;
@@ -90,6 +92,66 @@ export class OneBotClient extends EventEmitter {
         this.emit(`message.command.${command}`, eventData);
       }
     };
+
+    this.ws.onclose = (event) => {
+      logger.warn(
+        '[onebot] WebSocket disconnected, code:',
+        event.code,
+        'reason:',
+        event.reason
+      );
+      this.ws = null;
+      this.reconnect();
+    };
+
+    this.ws.onerror = (error) => {
+      logger.error('[onebot] WebSocket error:', error);
+      this.ws = null;
+    };
+  }
+
+  private reconnect(): void {
+    if (this.isReconnecting) {
+      return;
+    }
+
+    this.isReconnecting = true;
+    this.reconnectAttempts++;
+
+    // 计算重连延迟，1秒开始，每次翻倍，最大30秒
+    const delay = Math.min(
+      1000 * Math.pow(2, this.reconnectAttempts - 1),
+      this.maxReconnectDelay
+    );
+
+    logger.info(
+      `[onebot] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`
+    );
+
+    setTimeout(async () => {
+      try {
+        logger.info(
+          `[onebot] Reconnecting... (attempt ${this.reconnectAttempts})`
+        );
+        this.connectWebSocket();
+      } catch (error) {
+        logger.error(`[onebot] Reconnect failed:`, error);
+        this.isReconnecting = false;
+        this.reconnect(); // 继续尝试重连
+      }
+    }, delay);
+  }
+
+  public async run(): Promise<void> {
+    const loginInfo = (await this.action('get_login_info')).data as Record<
+      string,
+      any
+    >;
+    this.qq = loginInfo.user_id;
+    this.nickname = loginInfo.nickname;
+
+    this.on('all', this.echoMessage);
+    this.connectWebSocket();
   }
 
   public async echoMessage(eventData: Record<string, any>) {
