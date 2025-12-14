@@ -8,7 +8,7 @@ import { init as initBilibili } from './bilibili/index';
 import { init as initGithub } from './github/index';
 import { init as initGuessCard } from './guess-card/index';
 import { init as initGuessSong } from './guess-song/index';
-
+import { init as initGuessEvent } from './guess-event/index';
 
 export async function init() {
   await initChat();
@@ -21,4 +21,5 @@ export async function init() {
   await initGithub();
   await initGuessCard();
   await initGuessSong();
+  await initGuessEvent();
 }
