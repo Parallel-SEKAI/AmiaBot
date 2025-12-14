@@ -54,21 +54,26 @@ async function sendCard(groupId: number, userId: number) {
     any
   >;
   new SendMessage({
-    message: new SendTextMessage(`${card.prefix}\n${card.cardSkillName}`),
+    message: new SendTextMessage(
+      `${card.prefix}\n${card.cardSkillName}\n${card.gachaPhrase}`
+    ),
   }).send({
     groupId: groupId,
   });
-  const cardImageAfterTrainingUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_after_training.webp`;
-  const cardImageRes = await fetch(cardImageAfterTrainingUrl);
+  const cardImageAfterTrainingUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_after_training.png`;
+  const cardImageNormalUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_normal.png`;
+  const cardImageChoiceUrl = [cardImageAfterTrainingUrl, cardImageNormalUrl][
+    Math.floor(Math.random() * 2)
+  ];
+  const cardImageRes = await fetch(cardImageChoiceUrl);
   if (cardImageRes.status === 200) {
     new SendMessage({
-      message: new SendImageMessage(cardImageAfterTrainingUrl),
+      message: new SendImageMessage(cardImageChoiceUrl),
     }).send({
       groupId: groupId,
     });
     return;
   } else {
-    const cardImageNormalUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_normal.webp`;
     new SendMessage({ message: new SendImageMessage(cardImageNormalUrl) }).send(
       {
         groupId: groupId,

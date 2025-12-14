@@ -23,7 +23,7 @@ export async function getRandomComic(): Promise<string> {
   const files = result?.ListBucketResult?.Contents || [];
   const imageUrls = files
     .map((file: any) => file.Key[0])
-    .filter((key: string) => key.endsWith('.webp'))
+    .filter((key: string) => key.endsWith('.png'))
     .map((key: string) => `https://storage.sekai.best/sekai-cn-assets/${key}`);
 
   if (imageUrls.length === 0) {

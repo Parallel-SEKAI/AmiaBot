@@ -154,13 +154,14 @@ export class SendTextMessage extends SendBaseMessage {
 export class SendImageMessage extends SendBaseMessage {
   /**
    * 发送图片消息
-   * @param file 图片文件路径，可以是本地路径 (e.g., /path/to/image.jpg), file URL (e.g., file:///path/to/image.jpg), 或网络 URL (e.g., http://...)
+   * @param file 图片文件路径，可以是本地路径 (e.g., /path/to/image.jpg), file URL (e.g., file:///path/to/image.jpg), 网络 URL (e.g., http://...), 或 Buffer 对象
    */
-  constructor(file: string) {
+  constructor(file: string | Buffer) {
     let filePath = file;
-    // 在TypeScript/JavaScript环境中，通常不需要像Python那样手动处理路径为file://协议，
-    // OneBot实现通常能接受绝对路径或URL。这里我们直接传递。
-    // 如果需要确保是URL格式，可以添加一个转换逻辑。
+    if (Buffer.isBuffer(file)) {
+      // 如果是 Buffer 对象，转换为 base64 编码的字符串，使用 base64:// 协议
+      filePath = `base64://${file.toString('base64')}`;
+    }
     super('image', { file: filePath });
   }
 }

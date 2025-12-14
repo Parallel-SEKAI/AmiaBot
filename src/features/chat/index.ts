@@ -83,7 +83,6 @@ const functions: FunctionDeclaration[] = [
 
 export async function init() {
   logger.info('[feature] Init chat feature');
-  onebot.on('message.command.amia', chat);
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);
     if (message.content.toLowerCase().startsWith('amia')) {

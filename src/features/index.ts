@@ -6,6 +6,7 @@ import { init as initQuery } from './query/index';
 import { init as initGemini } from './gemini/index';
 import { init as initBilibili } from './bilibili/index';
 import { init as initGithub } from './github/index';
+import { init as initGuessCard } from './guess-card/index';
 
 export async function init() {
   await initChat();
@@ -16,4 +17,5 @@ export async function init() {
   await initGemini();
   await initBilibili();
   await initGithub();
+  await initGuessCard();
 }

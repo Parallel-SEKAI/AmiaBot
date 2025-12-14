@@ -37,7 +37,16 @@ export class OneBotClient extends EventEmitter {
       }
       const data = (await response.json()) as Record<string, any>;
       if (data.retcode !== 0) {
-        logger.error('[onebot.action.%s] %s', action, JSON.stringify(data));
+        logger.error(
+          '[onebot.action.%s] Send: %s',
+          action,
+          JSON.stringify(params)
+        );
+        logger.error(
+          '[onebot.action.%s] Recv: %s',
+          action,
+          JSON.stringify(data)
+        );
       }
       return data;
     } catch (error) {
