@@ -439,9 +439,17 @@ async function guessSong(data: Record<string, any>) {
         assetbundleName: musicInfo.assetbundleName,
       };
 
-      // 定时timeout后检查记录，如果还在就发送答案并删除记录
+      // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
+      const currentAnswer = {
+        musicId: musicInfo.musicId,
+        title: musicInfo.title,
+      };
       setTimeout(async () => {
-        if (answers[groupId]) {
+        if (
+          answers[groupId] &&
+          answers[groupId].musicId === currentAnswer.musicId &&
+          answers[groupId].title === currentAnswer.title
+        ) {
           await sendAnswer(message, musicInfo, true);
           delete answers[groupId];
         }

@@ -103,9 +103,15 @@ async function guessCard(data: Record<string, any>) {
       recvMessage: message,
     });
 
-    // 定时timeout后检查记录，如果还在就发送答案并删除记录
+    // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
+    const currentAnswer = {
+      cardId: cardInfo.cardId,
+      characterId: cardInfo.characterId
+    };
     setTimeout(async () => {
-      if (answers[groupId]) {
+      if (answers[groupId] && 
+          answers[groupId].cardId === currentAnswer.cardId && 
+          answers[groupId].characterId === currentAnswer.characterId) {
         await sendAnswer(message, cardInfo, true);
         delete answers[groupId];
       }
