@@ -13,6 +13,7 @@ import * as guessCardFeature from './guess-card/index';
 import * as guessSongFeature from './guess-song/index';
 import * as guessEventFeature from './guess-event/index';
 import * as neteaseFeature from './netease/index';
+import * as messageStatisticsFeature from './message-statistics/index';
 
 const featureManager = FeatureManager.getInstance();
 
@@ -88,6 +89,12 @@ export async function init() {
     name: 'netease',
     description: '网易云音乐功能',
     init: neteaseFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'message-statistics',
+    description: '消息统计功能',
+    init: messageStatisticsFeature.init,
   });
 
   // 初始化所有功能模块

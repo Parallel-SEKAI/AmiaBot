@@ -330,14 +330,12 @@ async function guessEvent(data: Record<string, any>) {
       // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
       const currentAnswer = {
         eventId: eventInfo.eventId,
-        name: eventInfo.name,
+        name: eventInfo.name
       };
       setTimeout(async () => {
-        if (
-          answers[groupId] &&
-          answers[groupId].eventId === currentAnswer.eventId &&
-          answers[groupId].name === currentAnswer.name
-        ) {
+        if (answers[groupId] && 
+            answers[groupId].eventId === currentAnswer.eventId && 
+            answers[groupId].name === currentAnswer.name) {
           await sendAnswer(message, eventInfo, true);
           delete answers[groupId];
         }
