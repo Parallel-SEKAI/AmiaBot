@@ -3,83 +3,22 @@ import { onebot } from '../../main';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { gemini } from '../../service/gemini';
 import { config } from '../../config';
 import { renderTemplate } from '../../utils';
-import {
-  FunctionCallingConfigMode,
-  FunctionDeclaration,
-  Type,
-} from '@google/genai';
-import { getCharacterAlias, searchMusic, sendMusic } from './functions';
 import { Group } from '../../onebot/group/group.entity';
 import { User } from '../../onebot/user/user.entity';
+import { z } from 'zod';
+import { addChatHistory, getLatestChatHistory, getUserInfo, updateUserInfo } from './db';
 
-const prompt = readFileSync('assets/chat/prompt.txt', 'utf8');
+const prompt = readFileSync('assets/chat/prompt.md', 'utf8');
 
-const functions: FunctionDeclaration[] = [
-  {
-    name: 'send_text',
-    description: '发送文本消息',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        text: {
-          type: Type.STRING,
-          description: '要发送的文本',
-        },
-      },
-      required: ['text'],
-    },
-  },
-  {
-    name: 'get_character_alias',
-    description: '输入角色的原名(别名),返回该角色的所有别名',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        alias: {
-          type: Type.STRING,
-          description: '角色的别名',
-        },
-      },
-      required: ['alias'],
-    },
-  },
-  {
-    name: 'search_music',
-    description: '搜索音乐',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        query: {
-          type: Type.STRING,
-          description: '搜索查询',
-        },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'send_music',
-    description: '发送音乐',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        songId: {
-          type: Type.NUMBER,
-          description: '音乐ID',
-        },
-      },
-      required: ['songId'],
-    },
-  },
-  {
-    name: 'finish',
-    description: '请记住,当你认为轮到用户时,调用此函数',
-  },
-];
+const ChatResponseSchema = z.object({
+  dialogue: z.string().describe('机器人的回复内容'),
+  favor: z.number().min(-5).max(5).describe('对用户的好感度变化，范围-5到+5'),
+  memory: z.string().describe('对用户的记忆'),
+});
 
 export async function init() {
   logger.info('[feature] Init chat feature');
@@ -100,161 +39,172 @@ async function chat(data: Record<string, any>) {
       message.userId,
       message.rawMessage
     );
-    const group = new Group(message.groupId!);
-    const user = new User(message.userId, message.groupId!);
-    const [, , group_history] = await Promise.all([
-      group.init(),
-      user.init(),
-      group.getHistory(),
-    ]);
-    let system = renderTemplate(prompt, {
-      group: group.name,
-      group_history: group_history.map((e) => e.toString()).join('\n'),
-      group_info: `
-        群名称: ${group.name}
-        群主ID: ${group.ownerId}
-        成员数量: ${group.memberCount}
-        最大成员数量: ${group.maxMemberCount}
-        群描述: ${group.description}
-        创建时间: ${group.createTime}
-        群等级: ${group.level}
-        活跃成员数量: ${group.activeMemberCount}
-      `,
-      time: new Date().toLocaleString(),
-      user: `
-      昵称: ${user.nickname}
-      备注: ${user.remark}
-      性别: ${user.sex}
-      年龄: ${user.age}
-      QQ等级: ${user.qqLevel}
-      生日: ${user.birthday ? user.birthday.toLocaleDateString() : '未知'}
-      个性签名: ${user.longNick}
-      国家: ${user.country}
-      省份: ${user.province}
-      城市: ${user.city}
-      邮箱: ${user.email}
-      注册年份: ${user.regYear}
-      是否VIP: ${user.isVip}
-      是否年费VIP: ${user.isYearsVip}
-      VIP等级: ${user.vipLevel}
-      群名片: ${user.card}
-      群等级: ${user.groupLevel}
-      加入时间: ${user.joinTime ? user.joinTime.toLocaleString() : '未知'}
-      最后发言时间: ${user.lastSentTime ? user.lastSentTime.toLocaleString() : '未知'}
-      是否机器人: ${user.isRobot}
-      群角色: ${user.role}
-      群头衔: ${user.title}
-      `,
-    });
-    const chat = gemini.chats.create({
-      model: config.gemini.model,
-      config: {
-        tools: [
-          {
-            functionDeclarations: functions,
-          },
-        ],
-        toolConfig: {
-          functionCallingConfig: {
-            mode: FunctionCallingConfigMode.ANY,
-          },
-        },
-        thinkingConfig: {
-          thinkingBudget: 24576,
-          includeThoughts: true,
-        },
-        systemInstruction: system,
-      },
-    });
-    let response = await chat.sendMessage({
-      message: message.toString(),
-    });
-    let functionName = null;
-    let functionResult = null;
-    let lastSendMessage = '';
-    for (let i = 0; i < 5; i++) {
-      if (functionResult) {
-        const maxRetry = 3;
-        for (let retry = 0; retry < maxRetry; retry++) {
-          try {
-            response = await chat.sendMessage({
-              message: [
-                {
-                  functionResponse: {
-                    name: functionName || '',
-                    response: { result: functionResult },
-                  },
-                },
-              ],
-            });
-            functionName = null;
-            functionResult = null;
-            break;
-          } catch (err) {
-            logger.error('[chat] sendMessage failed, retrying: %s', err);
-            await new Promise((resolve) => setTimeout(resolve, retry * 2000));
-            if (retry === maxRetry - 1) throw err;
-          }
-        }
-      }
+    
+    try {
+      // 1. 读取用户信息
+      const userInfo = await getUserInfo(message.userId!);
+      logger.info(
+        '[feature.chat][User: %d] 好感度: %d, 记忆: %s',
+        message.userId,
+        userInfo?.favor || 0,
+        userInfo?.memory || '无'
+      );
+      
+      const group = new Group(message.groupId!);
+      const user = new User(message.userId, message.groupId!);
+      
+      // 2. 并行获取Onebot历史记录和数据库历史记录
+      const [, , onebotHistory, dbHistory] = await Promise.all([
+        group.init(),
+        user.init(),
+        group.getHistory({ count: 20 }), // Onebot获取的历史记录
+        getLatestChatHistory(message.groupId!, 50) // 数据库获取的历史记录
+      ]);
+      
+      // 3. 格式化Onebot历史记录
+      const formattedOnebotHistory = onebotHistory.map(msg => msg.toString()).join('\n');
+      
+      // 4. 格式化数据库历史记录
+      const formattedDbHistory = dbHistory.map(history => {
+        return `(${history.user_nick}/${history.user_id})[${history.time.toLocaleString()}]${history.message}`;
+      }).join('\n');
+
+      let system = renderTemplate(prompt, {
+        group: group.name,
+        group_history: formattedOnebotHistory, // Onebot获取的历史记录
+        history: formattedDbHistory, // 数据库获取的历史记录
+        group_info: `
+群名称: ${group.name}
+群主ID: ${group.ownerId}
+成员数量: ${group.memberCount}
+最大成员数量: ${group.maxMemberCount}
+群描述: ${group.description}
+创建时间: ${group.createTime}
+群等级: ${group.level}
+活跃成员数量: ${group.activeMemberCount}
+      `.trim(),
+        time: new Date().toLocaleString(),
+        user: `
+昵称: ${user.nickname}
+备注: ${user.remark}
+性别: ${user.sex}
+年龄: ${user.age}
+QQ等级: ${user.qqLevel}
+生日: ${user.birthday ? user.birthday.toLocaleDateString() : '未知'}
+个性签名: ${user.longNick}
+国家: ${user.country}
+省份: ${user.province}
+城市: ${user.city}
+邮箱: ${user.email}
+注册年份: ${user.regYear}
+是否VIP: ${user.isVip}
+是否年费VIP: ${user.isYearsVip}
+VIP等级: ${user.vipLevel}
+群名片: ${user.card}
+群等级: ${user.groupLevel}
+加入时间: ${user.joinTime ? user.joinTime.toLocaleString() : '未知'}
+最后发言时间: ${user.lastSentTime ? user.lastSentTime.toLocaleString() : '未知'}
+是否机器人: ${user.isRobot}
+群角色: ${user.role}
+群头衔: ${user.title}
+好感度: ${userInfo?.favor || 0}
+记忆: ${userInfo?.memory || '无'}
+      `.trim(),
+        message: message.toString(),
+        favor: userInfo?.favor || 0,
+        memory: userInfo?.memory || '',
+      });
+
+      // writeFileSync('prompt.input.md', system, 'utf8');
+
+      // 模拟响应，实际使用时取消注释下面的代码
+      const response = await gemini.models.generateContent({
+        model: config.gemini.model,
+        contents: system
+      });
+
       const usage = response.usageMetadata;
-      let usageInfo = '';
       if (usage) {
-        usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Thoughts: ${usage.thoughtsTokenCount || 0}, ToolUse: ${usage.toolUsePromptTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
+        const usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
         logger.info('[Gemini] %s', usageInfo);
       }
-      let thoughts = '';
+
+      let responseText = '';
       if (response.candidates && response.candidates[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
-          if (!part.text) {
-            continue;
-          } else if (part.thought) {
-            thoughts += part.text;
+          if (part.text) {
+            responseText += part.text;
           }
         }
       }
-      if (thoughts) {
-        logger.info(`[Gemini] Thoughts: ${thoughts}`);
-      }
-      if (response.functionCalls && response.functionCalls.length > 0) {
-        const functionCall = response.functionCalls[0];
-        logger.info(`[Gemini] Function to call: ${functionCall.name}`);
-        logger.info(`[Gemini] Arguments: ${JSON.stringify(functionCall.args)}`);
-        functionName = functionCall.name;
-        switch (functionName) {
-          case 'send_text':
-            const text = functionCall.args?.text as string;
-            if (text !== lastSendMessage) {
-              lastSendMessage = text;
-              new SendMessage({ message: new SendTextMessage(text) }).send({
-                recvMessage: message,
-              });
-            } else {
-              return;
-            }
-            functionResult = 'ok';
-            break;
-          case 'get_character_alias':
-            const alias = functionCall.args?.alias as string;
-            const aliases = await getCharacterAlias(alias);
-            functionResult = aliases;
-            break;
-          case 'search_music':
-            const query = functionCall.args?.query as string;
-            functionResult = await searchMusic(query);
-            break;
-          case 'send_music':
-            const songId = functionCall.args?.songId as number;
-            functionResult = await sendMusic(message, songId);
-            break;
-          case 'finish':
-            return;
-          default:
-            return;
+
+      // 模拟响应
+//       const responseText=`\`\`\`json
+// {
+//     "dialogue": "你好，我是Amia，一个基于Gemini的群聊助手。",
+//     "favor": 1,
+//     "memory": "用户向我打招呼，我应该友好回应。"
+// }
+// \`\`\``
+
+      if (responseText) {
+        try {
+          // 解析JSON响应
+          const cleanedResponse = responseText.trim().replace(/^```json\s*\n|\n```$/g, '');
+          const parsedResponse = JSON.parse(cleanedResponse);
+
+          // 使用Zod schema验证响应
+          const validatedResponse = ChatResponseSchema.parse(parsedResponse);
+
+          // 5. 存储用户的聊天记录
+          await addChatHistory(
+            message.groupId!,
+            message.userId!,
+            message.nickname!,
+            message.rawMessage
+          );
+
+          // 6. 发送验证后的响应内容
+          new SendMessage({
+            message: new SendTextMessage(validatedResponse.dialogue),
+          }).send({
+            recvMessage: message,
+          });
+
+          // 7. 存储机器人的回复
+          await addChatHistory(
+            message.groupId!,
+            0, // 机器人ID，使用0表示
+            'Amia', // 机器人昵称
+            validatedResponse.dialogue
+          );
+
+          // 8. 更新用户的好感度和记忆
+          await updateUserInfo(
+            message.userId!,
+            validatedResponse.favor,
+            validatedResponse.memory
+          );
+
+          logger.info(
+            `[feature.chat] 好感度变化: ${validatedResponse.favor}, 记忆: ${validatedResponse.memory}`
+          );
+        } catch (error) {
+          logger.error('[feature.chat] 解析JSON响应失败:', error);
+          // 如果解析失败，回退到直接发送原始文本
+          new SendMessage({ message: new SendTextMessage(responseText) }).send({
+            recvMessage: message,
+          });
         }
-      } else {
-        break;
       }
+    } catch (error) {
+      logger.error('[feature.chat] 处理聊天消息失败:', error);
+      // 发送错误提示
+      new SendMessage({
+        message: new SendTextMessage('抱歉，我现在有点忙，稍后再和你聊吧。'),
+      }).send({
+        recvMessage: message,
+      });
     }
   }
 }

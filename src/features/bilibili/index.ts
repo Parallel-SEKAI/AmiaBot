@@ -79,6 +79,7 @@ async function getVideoInfo(params: AvBvParams): Promise<string> {
   } as ColumnComponent;
 
   // 视频封面和标题
+  logger.debug('info: %s', info);
   const headerSection: RowComponent = {
     type: 'Row',
     children: [

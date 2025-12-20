@@ -54,7 +54,7 @@ export class OneBotClient extends EventEmitter {
       }
       return data;
     } catch (error) {
-      console.error('Failed to perform action:', error);
+      logger.error('[onebot.action.%s] Failed: %s', action, error);
       throw error;
     }
   }
@@ -128,7 +128,7 @@ export class OneBotClient extends EventEmitter {
       `[onebot] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`
     );
 
-    setTimeout(async () => {
+    setTimeout(() => {
       try {
         logger.info(
           `[onebot] Reconnecting... (attempt ${this.reconnectAttempts})`
@@ -137,7 +137,8 @@ export class OneBotClient extends EventEmitter {
       } catch (error) {
         logger.error(`[onebot] Reconnect failed:`, error);
         this.isReconnecting = false;
-        this.reconnect(); // 继续尝试重连
+        // 使用setTimeout确保非递归调用，避免栈溢出
+        setTimeout(() => this.reconnect(), 0);
       }
     }, delay);
   }

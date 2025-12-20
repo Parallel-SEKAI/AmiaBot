@@ -13,6 +13,7 @@ import {
   parseCommandLineArgs,
   hexToRgba,
 } from '../../utils/index';
+import logger from '../../config/logger';
 import { generatePage } from '../../service/enana';
 import {
   WidgetComponent,
@@ -22,7 +23,6 @@ import {
 } from '../../types/enana';
 import { COLORS } from '../../const';
 import { config } from '../../config';
-import logger from '../../config/logger';
 
 const CHARACTERS = [
   'miku',
@@ -91,7 +91,7 @@ export async function init() {
           message: new SendImageMessage(apiUrl),
         }).reply(message);
       } catch (error) {
-        console.error('PJSK贴纸生成失败:', error);
+        logger.error('PJSK贴纸生成失败:', error);
         new SendMessage({
           message: new SendTextMessage(
             '贴纸生成失败，请检查参数是否正确或稍后重试'

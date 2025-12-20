@@ -475,6 +475,6 @@ export class RecvMessage {
   }
 
   public toString(): string {
-    return `(${this.nickname}/${this.userId})[${this.time.toLocaleString()}]${this.rawMessage}`;
+    return `(${this.nickname}/${this.userId})[${this.time.toLocaleString()}]${JSON.stringify(this.rawMessage)}`;
   }
 }

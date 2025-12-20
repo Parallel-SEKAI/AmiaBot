@@ -153,12 +153,17 @@ export class Group {
     return members.find((m) => m.id === this.ownerId) || null;
   }
 
-  public async getHistory(): Promise<RecvMessage[]> {
+  public async getHistory(args?: getHistoryArgs): Promise<RecvMessage[]> {
     const history = await onebot.action('get_group_msg_history', {
       group_id: this.id,
-      message_seq: 0,
-      count: 100,
+      message_seq: args?.message_seq || 0,
+      count: args?.count || 100,
     });
     return history.data.messages.map((e: any) => RecvMessage.fromMap(e));
   }
+}
+
+interface getHistoryArgs {
+  message_seq?: number;
+  count?: number;
 }

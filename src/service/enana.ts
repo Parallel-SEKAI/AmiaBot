@@ -1,4 +1,5 @@
 import { config } from '../config';
+import logger from '../config/logger';
 import { COLORS } from '../const';
 import {
   WidgetComponent,
@@ -105,9 +106,6 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
 
       // 如果是服务器错误（5xx）且不是最后一次尝试，则重试
       if (status >= 500 && status < 600 && attempt < maxRetries) {
-        console.log(
-          `Enana API 服务器错误 (${status}), 正在尝试第 ${attempt + 1}/${maxRetries} 次重试...`
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, retryDelay * attempt)
         ); // 指数退避
@@ -128,9 +126,6 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
 
       // 如果是网络错误且不是最后一次尝试，则重试
       if (isNetworkError && attempt < maxRetries) {
-        console.log(
-          `Enana API 网络错误, 正在尝试第 ${attempt + 1}/${maxRetries} 次重试...`
-        );
         await new Promise((resolve) =>
           setTimeout(resolve, retryDelay * attempt)
         ); // 指数退避
@@ -139,6 +134,14 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
 
       // 最后一次尝试或非重试错误，抛出异常
       if (error instanceof Error) {
+        logger.error(
+          `Enana API 调用失败: %s\n调用内容: %o`,
+          error.message,
+          JSON.stringify({
+            widget,
+            scale,
+          })
+        );
         throw new Error(`Enana API 调用失败: ${error.message}`);
       }
       throw new Error(`Enana API 调用失败: ${String(error)}`);

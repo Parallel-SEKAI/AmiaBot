@@ -70,10 +70,21 @@ export class SendMessage {
       throw new Error('Could not determine message type (private or group).');
     }
 
-    if (args.recvMessage) {
+    if (args.recvMessage && data.data && data.data.messageId) {
       (messageHistory[args.recvMessage.messageId] ||= []).push({
-        messageId: data!.data.messageId,
+        messageId: data.data.messageId,
       });
+    }
+
+    if (!data.data || !data.data.message_id) {
+      // 如果没有返回有效的message_id，生成一个临时ID
+      const tempId = Math.floor(Math.random() * 1000000);
+      logger.warn(
+        '[onebot.send] No message_id returned, using temporary ID: %d',
+        tempId
+      );
+      const message = new RecvMessage(tempId);
+      return message;
     }
 
     const message = new RecvMessage(Number(data.data.message_id));

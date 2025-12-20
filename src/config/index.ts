@@ -1,35 +1,32 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
-import * as Joi from 'joi';
+import { z } from 'zod';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const envVarsSchema = Joi.object({
-  ONEBOT_HTTP_URL: Joi.string().allow('').description('OneBot HTTP API URL'),
-  ONEBOT_WS_URL: Joi.string().allow('').description('OneBot WebSocket URL'),
-  ONEBOT_TOKEN: Joi.string().allow('').description('OneBot access token'),
-  APP_DB_HOST: Joi.string().allow('').description('Database host'),
-  APP_DB_PORT: Joi.number().allow('').description('Database port'),
-  APP_DB_NAME: Joi.string().allow('').description('Database name'),
-  APP_DB_USER: Joi.string().allow('').description('Database user'),
-  APP_DB_PASSWORD: Joi.string().allow('').description('Database password'),
-  ENANA_BASEURL: Joi.string().allow('').description('Enana API base URL'),
-  ENANA_TOKEN: Joi.string().allow('').description('Enana API token'),
-  ENANA_SCALE: Joi.number().allow('').description('Enana image scale'),
-  ENANA_FONT: Joi.string().allow('').description('Enana font file path'),
-  GEMINI_API_KEY: Joi.string().allow('').description('Gemini API key'),
-  GEMINI_BASEURL: Joi.string().allow('').description('Gemini API base URL'),
-  GEMINI_MODEL: Joi.string().allow('').description('Gemini model name'),
-  GITHUB_TOKEN: Joi.string().allow('').description('GitHub token'),
-}).unknown();
+const envVarsSchema = z
+  .object({
+    ONEBOT_HTTP_URL: z.string().optional().default(''),
+    ONEBOT_WS_URL: z.string().optional().default(''),
+    ONEBOT_TOKEN: z.string().optional().default(''),
+    APP_DB_HOST: z.string().optional().default(''),
+    APP_DB_PORT: z.coerce.number().optional().default(0), // 自动将字符串转换为数字
+    APP_DB_NAME: z.string().optional().default(''),
+    APP_DB_USER: z.string().optional().default(''),
+    APP_DB_PASSWORD: z.string().optional().default(''),
+    ENANA_BASEURL: z.string().optional().default(''),
+    ENANA_TOKEN: z.string().optional().default(''),
+    ENANA_SCALE: z.coerce.number().optional().default(0), // 自动将字符串转换为数字
+    ENANA_FONT: z.string().optional().default(''),
+    GEMINI_API_KEY: z.string().optional().default(''),
+    GEMINI_BASEURL: z.string().optional().default(''),
+    GEMINI_MODEL: z.string().optional().default(''),
+    GITHUB_TOKEN: z.string().optional().default(''),
+    NETEASE_COOKIES: z.string().optional().default(''),
+  })
+  .loose();
 
-const { value: envVars, error } = envVarsSchema
-  .prefs({ errors: { label: 'key' } })
-  .validate(process.env);
-
-if (error) {
-  throw new Error(`Config validation error: ${error.message}`);
-}
+const envVars = envVarsSchema.parse(process.env);
 
 export interface IConfig {
   onebot: {
@@ -57,6 +54,9 @@ export interface IConfig {
   };
   github: {
     token: string;
+  };
+  netease: {
+    cookies: string;
   };
 }
 
@@ -86,5 +86,8 @@ export const config: IConfig = {
   },
   github: {
     token: envVars.GITHUB_TOKEN || '',
+  },
+  netease: {
+    cookies: envVars.NETEASE_COOKIES || '',
   },
 };

@@ -1,25 +1,95 @@
-import { init as initChat } from './chat/index';
-import { init as initComic } from './comic/index';
-import { init as initPjskSticker } from './pjsk-sticker/index';
-import { init as initPoke } from './poke/index';
-import { init as initQuery } from './query/index';
-import { init as initGemini } from './gemini/index';
-import { init as initBilibili } from './bilibili/index';
-import { init as initGithub } from './github/index';
-import { init as initGuessCard } from './guess-card/index';
-import { init as initGuessSong } from './guess-song/index';
-import { init as initGuessEvent } from './guess-event/index';
+import { FeatureManager } from './feature-manager';
+
+// 导入各个功能模块
+import * as chatFeature from './chat/index';
+import * as comicFeature from './comic/index';
+import * as pjskStickerFeature from './pjsk-sticker/index';
+import * as pokeFeature from './poke/index';
+import * as queryFeature from './query/index';
+import * as geminiFeature from './gemini/index';
+import * as bilibiliFeature from './bilibili/index';
+import * as githubFeature from './github/index';
+import * as guessCardFeature from './guess-card/index';
+import * as guessSongFeature from './guess-song/index';
+import * as guessEventFeature from './guess-event/index';
+import * as neteaseFeature from './netease/index';
+
+const featureManager = FeatureManager.getInstance();
 
 export async function init() {
-  await initChat();
-  await initComic();
-  await initPjskSticker();
-  await initPoke();
-  await initQuery();
-  await initGemini();
-  await initBilibili();
-  await initGithub();
-  await initGuessCard();
-  await initGuessSong();
-  await initGuessEvent();
+  // 注册所有功能模块
+  featureManager.registerFeature({
+    name: 'chat',
+    description: '聊天功能',
+    init: chatFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'comic',
+    description: '漫画查询功能',
+    init: comicFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'pjsk-sticker',
+    description: 'PJSK贴纸功能',
+    init: pjskStickerFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'poke',
+    description: '戳一戳功能',
+    init: pokeFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'query',
+    description: '查询功能',
+    init: queryFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'gemini',
+    description: 'Gemini AI功能',
+    init: geminiFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'bilibili',
+    description: 'B站功能',
+    init: bilibiliFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'github',
+    description: 'GitHub功能',
+    init: githubFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'guess-card',
+    description: '猜卡片功能',
+    init: guessCardFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'guess-song',
+    description: '猜歌曲功能',
+    init: guessSongFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'guess-event',
+    description: '猜事件功能',
+    init: guessEventFeature.init,
+  });
+
+  featureManager.registerFeature({
+    name: 'netease',
+    description: '网易云音乐功能',
+    init: neteaseFeature.init,
+  });
+
+  // 初始化所有功能模块
+  await featureManager.initializeAllFeatures();
 }

@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import { config } from '../config/index';
 
 const pool = new Pool({
@@ -13,7 +14,8 @@ const pool = new Pool({
 export default pool;
 
 export async function initDb() {
-  const initSql = await fs.readFile('./db/init.sql', 'utf8');
+  const initSqlPath = path.resolve(__dirname, '../../db/init.sql');
+  const initSql = await fs.readFile(initSqlPath, 'utf8');
   await pool.query(initSql);
 }
 
