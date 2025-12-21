@@ -4,6 +4,7 @@ export interface FeatureModule {
   name: string;
   description: string;
   init: () => Promise<void>;
+  needEnable: boolean;
 }
 
 export class FeatureManager {
@@ -66,5 +67,9 @@ export class FeatureManager {
 
   public getFeatureCount(): number {
     return this.features.size;
+  }
+
+  public getFeatureNames(): string[] {
+    return Array.from(this.features.keys());
   }
 }

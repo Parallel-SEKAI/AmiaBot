@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { RecvMessage } from './message/recv.entity';
-import { PREFIXES } from '../const';
 import logger from '../config/logger';
+import { config } from '../config';
 
 export class OneBotClient extends EventEmitter {
   public qq: number = 0;
@@ -53,11 +53,7 @@ export class OneBotClient extends EventEmitter {
           JSON.stringify(data)
         );
       }
-      logger.debug(
-        '[onebot.action.%s] Recv: %s',
-        action,
-        JSON.stringify(data)
-      );
+      logger.debug('[onebot.action.%s] Recv: %s', action, JSON.stringify(data));
       return data;
     } catch (error) {
       logger.error('[onebot.action.%s] Failed: %s', action, error);
@@ -82,6 +78,12 @@ export class OneBotClient extends EventEmitter {
       // console.debug('Received message:', event.data);
       logger.debug('[onebot] Received message: %s', event.data);
       const eventData = JSON.parse(event.data) as Record<string, any>;
+      if (
+        eventData.post_type === 'message' &&
+        eventData.message_type === 'private'
+      ) {
+        return;
+      }
       this.emit('all', eventData);
       this.emit(eventData.post_type, eventData);
       this.emit(`${eventData.post_type}.${eventData.sub_type}`, eventData);
@@ -89,7 +91,7 @@ export class OneBotClient extends EventEmitter {
         this.emit(`message.${eventData.message_type}`, eventData);
         const message = RecvMessage.fromMap(eventData);
         let text = message.content;
-        for (const prefix of PREFIXES) {
+        for (const prefix of config.prefixes) {
           if (text.startsWith(prefix)) {
             text = text.slice(prefix.length);
             break;
@@ -97,8 +99,7 @@ export class OneBotClient extends EventEmitter {
         }
         const command = text.split(' ')[0].toLowerCase();
         this.emit(`message.command.${command}`, eventData);
-      }
-      else if (eventData.post_type == 'notice') {
+      } else if (eventData.post_type == 'notice') {
         this.emit(`notice.${eventData.notice_type}`, eventData);
       }
     };

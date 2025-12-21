@@ -21,7 +21,7 @@ import {
 export async function init() {
   logger.info('[feature] Init query.user feature');
   onebot.on('message.command.query', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'query.user')) {
+    if (await checkFeatureEnabled(data.group_id, 'query')) {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[query.user][Group: %d][User: %d] %s',

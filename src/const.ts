@@ -6,7 +6,6 @@ export const FEATURES = [
   'query.group',
   'query.user',
 ];
-export const PREFIXES = ['/', '.'];
 
 /**
  * 颜色定义（基于CSS变量）

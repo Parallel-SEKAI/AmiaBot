@@ -15,92 +15,114 @@ import * as guessEventFeature from './guess-event/index';
 import * as neteaseFeature from './netease/index';
 import * as messageStatisticsFeature from './message-statistics/index';
 import * as autoRecallFeature from './auto-recall/index';
+import * as controllerFeature from './controller/index';
 
-const featureManager = FeatureManager.getInstance();
+export const featureManager = FeatureManager.getInstance();
 
 // 注册所有功能模块
 featureManager.registerFeature({
   name: 'chat',
   description: '聊天功能',
   init: chatFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'comic',
   description: '漫画查询功能',
   init: comicFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'pjsk-sticker',
   description: 'PJSK贴纸功能',
   init: pjskStickerFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'poke',
   description: '戳一戳功能',
   init: pokeFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'query',
   description: '查询功能',
   init: queryFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'gemini',
   description: 'Gemini AI功能',
   init: geminiFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'bilibili',
   description: 'B站功能',
   init: bilibiliFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'github',
   description: 'GitHub功能',
   init: githubFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'guess-card',
   description: '猜卡片功能',
   init: guessCardFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'guess-song',
   description: '猜歌曲功能',
   init: guessSongFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'guess-event',
   description: '猜事件功能',
   init: guessEventFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'netease',
   description: '网易云音乐功能',
   init: neteaseFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'message-statistics',
   description: '消息统计功能',
   init: messageStatisticsFeature.init,
+  needEnable: true,
 });
 
 featureManager.registerFeature({
   name: 'auto-recall',
   description: '自动撤回功能',
   init: autoRecallFeature.init,
+  needEnable: false,
+});
+
+featureManager.registerFeature({
+  name: 'controller',
+  description: '功能控制器',
+  init: controllerFeature.init,
+  needEnable: false,
 });
 
 export async function init() {
