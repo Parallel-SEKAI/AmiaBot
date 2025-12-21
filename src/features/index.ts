@@ -16,6 +16,7 @@ import * as neteaseFeature from './netease/index';
 import * as messageStatisticsFeature from './message-statistics/index';
 import * as autoRecallFeature from './auto-recall/index';
 import * as controllerFeature from './controller/index';
+import * as helpFeature from './help/index';
 
 export const featureManager = FeatureManager.getInstance();
 
@@ -122,6 +123,13 @@ featureManager.registerFeature({
   name: 'controller',
   description: '功能控制器',
   init: controllerFeature.init,
+  needEnable: false,
+});
+
+featureManager.registerFeature({
+  name: 'help',
+  description: '帮助功能',
+  init: helpFeature.init,
   needEnable: false,
 });
 

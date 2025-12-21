@@ -7,6 +7,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const envVarsSchema = z
   .object({
     PREFIXES: z.string().optional().default(''),
+    HELP_TEXT: z.string().optional().default(''),
     ONEBOT_HTTP_URL: z.string().optional().default(''),
     ONEBOT_WS_URL: z.string().optional().default(''),
     ONEBOT_TOKEN: z.string().optional().default(''),
@@ -31,6 +32,7 @@ const envVars = envVarsSchema.parse(process.env);
 
 export interface IConfig {
   prefixes: string[];
+  helpText: string;
   onebot: {
     httpUrl: string;
     wsUrl: string;
@@ -64,6 +66,7 @@ export interface IConfig {
 
 export const config: IConfig = {
   prefixes: JSON.parse(envVars.PREFIXES || '["/"]'),
+  helpText: envVars.HELP_TEXT || '',
   onebot: {
     httpUrl: envVars.ONEBOT_HTTP_URL || '',
     wsUrl: envVars.ONEBOT_WS_URL || '',
