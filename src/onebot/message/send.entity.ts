@@ -182,7 +182,7 @@ export class SendBaseMessage {
 
 export class SendTextMessage extends SendBaseMessage {
   constructor(text: string) {
-    super('text', { text });
+    super('text', { text: text.trim() });
   }
 }
 

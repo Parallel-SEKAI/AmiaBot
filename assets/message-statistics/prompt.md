@@ -7,6 +7,7 @@ Analyze provided {group} and {messages} to extract "Hot Topics," "Member Titles,
 1. **Minimum Count**: Each top-level array (`hot_topics`, `group_members_titles`, `group_bible`) MUST contain ≥3 items. If data is sparse, infer based on interaction frequency.
 2. **Numeric IDs**: Fields `participants` (array elements), `qq_number`, and `interpreter` MUST be pure integers (no quotes, no spaces).
 3. **Output Format**: Output ONLY the raw JSON object. NO Markdown code blocks, NO preamble, and NO post-explanation.
+4. **Language**: String values in JSON must be in **Simplified Chinese**; other languages are prohibited.
 
 ## Extraction Standards
 1. **hot_topics** (Topic = ≥3 messages or ≥2 participants)

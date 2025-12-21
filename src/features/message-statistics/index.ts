@@ -4,21 +4,15 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendMessage,
   SendTextMessage,
-  SendImageMessage,
+  SendForwardMessage,
+  ForwardMessageNode,
 } from '../../onebot/message/send.entity';
 import { gemini } from '../../service/gemini';
-import { generatePage } from '../../service/enana';
-import { COLORS } from '../../const';
-import {
-  WidgetComponent,
-  ContainerComponent,
-  ColumnComponent,
-  TextComponent,
-} from '../../types/enana';
-import { hexToRgba, renderTemplate } from '../../utils/index';
+import { renderTemplate } from '../../utils/index';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Group } from '../../onebot/group/group.entity';
+import { config } from '../../config';
 
 // 参数配置常量
 // 冷却时间（毫秒）
@@ -76,7 +70,7 @@ function getPromptTemplate(): string {
   return readFileSync(promptPath, 'utf-8');
 }
 
-// 构建Enana组件树，生成统计报告
+// 构建合并聊天记录，生成统计报告
 async function buildStatisticsReport(
   groupName: string,
   startTime: string,
@@ -86,382 +80,123 @@ async function buildStatisticsReport(
   textCount: number,
   analysisTime: number,
   tokenUsage: string,
-  analysisResult: AnalysisResult
-): Promise<string> {
-  // 构建UI组件树
-  const widget: WidgetComponent = {
-    type: 'Column',
-    children: [
-      // 标题
-      {
-        type: 'Text',
-        text: 'QQ群消息统计分析报告',
-        font_size: 24,
-        color: hexToRgba(COLORS.primary),
-        margin: {
-          top: 0,
-          right: 0,
-          bottom: 20,
-          left: 0,
-        },
-      } as TextComponent,
-      // 基本信息摘要
-      {
-        type: 'Container',
-        color: hexToRgba(COLORS.primaryContainer),
-        padding: {
-          top: 15,
-          right: 15,
-          bottom: 15,
-          left: 15,
-        },
-        margin: {
-          top: 0,
-          right: 0,
-          bottom: 25,
-          left: 0,
-        },
-        border_radius: 12,
-        child: {
-          type: 'Column',
-          children: [
-            buildSummaryItem('群名称', groupName),
-            buildSummaryItem('统计时段', `${startTime} - ${endTime}`),
-            buildSummaryItem('消息总数', messageCount.toString()),
-            buildSummaryItem('参与成员', memberCount.toString()),
-            buildSummaryItem('总文字数', textCount.toString()),
-            buildSummaryItem('分析耗时', `${analysisTime.toFixed(2)}秒`),
-            buildSummaryItem('消耗Token', tokenUsage),
-          ],
-        } as ColumnComponent,
-      } as ContainerComponent,
-      // 热门话题
-      buildSection('热门话题', buildTopicsSection(analysisResult.hot_topics)),
-      // 群友称号
-      buildSection(
-        '群友称号',
-        buildTitlesSection(analysisResult.group_members_titles)
-      ),
-      // 群圣经
-      buildSection('群圣经', buildBibleSection(analysisResult.group_bible)),
-    ],
-  } as ColumnComponent;
+  analysisResult: AnalysisResult,
+  group: Group // 添加group参数，用于获取成员信息
+): Promise<SendForwardMessage> {
+  // 获取群成员信息，用于转换QQ号为真实昵称
+  const members = await group.getMembers();
+  const memberMap = new Map<number, string>();
+  members.forEach((member) => {
+    memberMap.set(member.id, member.fullName);
+  });
 
-  // 生成图片
-  return await generatePage(widget);
-}
+  // 构建合并消息节点
+  const messageNodes: ForwardMessageNode[] = [];
 
-// 构建摘要项
-function buildSummaryItem(label: string, value: string): WidgetComponent {
-  return {
-    type: 'Container',
-    padding: {
-      top: 8,
-      right: 0,
-      bottom: 8,
-      left: 0,
+  // 1. 标题节点
+  messageNodes.push({
+    type: 'node',
+    data: {
+      userId: onebot.qq,
+      nickname: onebot.nickname,
+      content: [new SendTextMessage('📊 QQ群消息统计分析报告 📊')],
     },
-    child: {
-      type: 'Container',
-      child: {
-        type: 'Column',
-        children: [
-          {
-            type: 'Row',
-            children: [
-              {
-                type: 'Text',
-                text: `${label}:`,
-                font_size: 14,
-                color: hexToRgba(COLORS.onPrimaryContainer),
-                width: 100,
-                margin: {
-                  top: 0,
-                  right: 10,
-                  bottom: 0,
-                  left: 0,
-                },
-              } as TextComponent,
-              {
-                type: 'Text',
-                text: value,
-                font_size: 14,
-                color: hexToRgba(COLORS.onPrimaryContainer),
-                width: 'auto',
-              } as TextComponent,
-            ],
-          },
-        ],
-      } as ColumnComponent,
-    } as ContainerComponent,
-  } as ContainerComponent;
-}
+  });
 
-// 构建章节
-function buildSection(
-  title: string,
-  content: WidgetComponent
-): WidgetComponent {
-  return {
-    type: 'Container',
-    margin: {
-      top: 0,
-      right: 0,
-      bottom: 30,
-      left: 0,
+  // 2. 基本信息摘要节点
+  const summaryText = `🔍 基本信息
+\n群名称: ${groupName}
+统计时段: ${startTime} - ${endTime}
+消息总数: ${messageCount}条
+参与成员: ${memberCount}人
+总文字数: ${textCount}字
+分析耗时: ${analysisTime.toFixed(2)}秒
+消耗Token: ${tokenUsage}`;
+  messageNodes.push({
+    type: 'node',
+    data: {
+      userId: onebot.qq,
+      nickname: onebot.nickname,
+      content: [new SendTextMessage(summaryText)],
     },
-    child: {
-      type: 'Column',
-      children: [
-        {
-          type: 'Text',
-          text: title,
-          font_size: 18,
-          color: hexToRgba(COLORS.secondary),
-          margin: {
-            top: 0,
-            right: 0,
-            bottom: 15,
-            left: 0,
-          },
-        } as TextComponent,
-        content,
+  });
+
+  // 3. 热门话题节点
+  if (analysisResult.hot_topics.length > 0) {
+    let topicsText = '🔥 热门话题\n\n';
+    analysisResult.hot_topics.forEach((topic) => {
+      topicsText += `#${topic.topic_id} ${topic.topic_name}\n`;
+      topicsText += `参与人数: ${topic.participants.length}人\n`;
+      topicsText += `话题内容: ${topic.content}\n\n`;
+    });
+    messageNodes.push({
+      type: 'node',
+      data: {
+        userId: onebot.qq,
+        nickname: onebot.nickname,
+        content: [new SendTextMessage(topicsText)],
+      },
+    });
+  }
+
+  // 4. 群友称号节点
+  if (analysisResult.group_members_titles.length > 0) {
+    let titlesText = '🏆 群友称号\n\n';
+    analysisResult.group_members_titles.forEach((title) => {
+      const memberName =
+        memberMap.get(title.qq_number) || `QQ${title.qq_number}`;
+      titlesText += `${memberName} - ${title.title}\n`;
+      titlesText += `${title.feature}\n\n`;
+    });
+    messageNodes.push({
+      type: 'node',
+      data: {
+        userId: onebot.qq,
+        nickname: onebot.nickname,
+        content: [new SendTextMessage(titlesText)],
+      },
+    });
+  }
+
+  // 5. 群圣经节点
+  if (analysisResult.group_bible.length > 0) {
+    let bibleText = '📖 群圣经\n\n';
+    analysisResult.group_bible.forEach((bible) => {
+      const interpreterName =
+        memberMap.get(bible.interpreter) || `QQ${bible.interpreter}`;
+      bibleText += `💬 ${bible.sentence}\n`;
+      bibleText += `👤 ${interpreterName}: ${bible.explanation}\n\n`;
+    });
+    messageNodes.push({
+      type: 'node',
+      data: {
+        userId: onebot.qq,
+        nickname: onebot.nickname,
+        content: [new SendTextMessage(bibleText)],
+      },
+    });
+  }
+
+  messageNodes.push({
+    type: 'node',
+    data: {
+      userId: onebot.qq,
+      nickname: onebot.nickname,
+      content: [
+        new SendTextMessage(`
+由AmiaBot总结
+https://amiabot.parallel-sekai.org/
+          `),
       ],
-    } as ColumnComponent,
-  } as ContainerComponent;
-}
+    },
+  });
 
-// 构建热门话题章节
-function buildTopicsSection(topics: Topic[]): WidgetComponent {
-  return {
-    type: 'Container',
-    child: {
-      type: 'Column',
-      children: topics.map(
-        (topic) =>
-          ({
-            type: 'Container',
-            color: hexToRgba(COLORS.surface),
-            padding: 15,
-            margin: {
-              top: 0,
-              right: 0,
-              bottom: 15,
-              left: 0,
-            },
-            border_radius: 8,
-            child: {
-              type: 'Column',
-              children: [
-                {
-                  type: 'Row',
-                  children: [
-                    {
-                      type: 'Container',
-                      width: 24,
-                      height: 24,
-                      color: hexToRgba(COLORS.primary),
-                      border_radius: 12,
-                      child: {
-                        type: 'Text',
-                        text: `#${topic.topic_id}`,
-                        font_size: 12,
-                        color: hexToRgba(COLORS.onPrimary),
-                      } as TextComponent,
-                    } as ContainerComponent,
-                    {
-                      type: 'Container',
-                      width: 10,
-                    } as ContainerComponent,
-                    {
-                      type: 'Text',
-                      text: topic.topic_name,
-                      font_size: 16,
-                      color: hexToRgba(COLORS.onSurface),
-                    } as TextComponent,
-                  ],
-                },
-                {
-                  type: 'Container',
-                  height: 10,
-                } as ContainerComponent,
-                {
-                  type: 'Text',
-                  text: `参与人数: ${topic.participants.length}`,
-                  font_size: 14,
-                  color: hexToRgba(COLORS.onSurfaceVariant),
-                  margin: {
-                    top: 0,
-                    right: 0,
-                    bottom: 8,
-                    left: 0,
-                  },
-                } as TextComponent,
-                {
-                  type: 'Text',
-                  text: topic.content,
-                  font_size: 14,
-                  color: hexToRgba(COLORS.onSurfaceVariant),
-                } as TextComponent,
-              ],
-            } as ColumnComponent,
-          }) as ContainerComponent
-      ),
-    } as ColumnComponent,
-  } as ContainerComponent;
-}
-
-// 构建群友称号章节
-function buildTitlesSection(titles: MemberTitle[]): WidgetComponent {
-  return {
-    type: 'Container',
-    child: {
-      type: 'Column',
-      children: titles.map(
-        (title) =>
-          ({
-            type: 'Container',
-            color: hexToRgba(COLORS.surface),
-            padding: 15,
-            margin: {
-              top: 0,
-              right: 0,
-              bottom: 15,
-              left: 0,
-            },
-            border_radius: 8,
-            child: {
-              type: 'Column',
-              children: [
-                {
-                  type: 'Row',
-                  children: [
-                    {
-                      type: 'Text',
-                      text: `QQ${title.qq_number}`,
-                      font_size: 14,
-                      color: hexToRgba(COLORS.onSurface),
-                    } as TextComponent,
-                    {
-                      type: 'Container',
-                      width: 10,
-                    } as ContainerComponent,
-                    {
-                      type: 'Container',
-                      padding: {
-                        top: 4,
-                        right: 12,
-                        bottom: 4,
-                        left: 12,
-                      },
-                      color: hexToRgba(COLORS.secondaryContainer),
-                      border_radius: 16,
-                      child: {
-                        type: 'Text',
-                        text: title.title,
-                        font_size: 12,
-                        color: hexToRgba(COLORS.onSecondaryContainer),
-                      } as TextComponent,
-                    } as ContainerComponent,
-                  ],
-                },
-                {
-                  type: 'Container',
-                  height: 8,
-                } as ContainerComponent,
-                {
-                  type: 'Text',
-                  text: title.feature,
-                  font_size: 14,
-                  color: hexToRgba(COLORS.onSurfaceVariant),
-                } as TextComponent,
-              ],
-            } as ColumnComponent,
-          }) as ContainerComponent
-      ),
-    } as ColumnComponent,
-  } as ContainerComponent;
-}
-
-// 构建群圣经章节
-function buildBibleSection(bibles: Bible[]): WidgetComponent {
-  return {
-    type: 'Container',
-    child: {
-      type: 'Column',
-      children: bibles.map(
-        (bible) =>
-          ({
-            type: 'Container',
-            color: hexToRgba(COLORS.surface),
-            padding: 15,
-            margin: {
-              top: 0,
-              right: 0,
-              bottom: 15,
-              left: 0,
-            },
-            border_radius: 8,
-            child: {
-              type: 'Column',
-              children: [
-                {
-                  type: 'Container',
-                  padding: 10,
-                  color: hexToRgba(COLORS.primaryContainer),
-                  border_radius: 6,
-                  child: {
-                    type: 'Text',
-                    text: bible.sentence,
-                    font_size: 14,
-                    color: hexToRgba(COLORS.onSurface),
-                  } as TextComponent,
-                } as ContainerComponent,
-                {
-                  type: 'Container',
-                  height: 10,
-                } as ContainerComponent,
-                {
-                  type: 'Column',
-                  children: [
-                    {
-                      type: 'Text',
-                      text: `QQ${bible.interpreter}`,
-                      font_size: 14,
-                      color: hexToRgba(COLORS.onSurfaceVariant),
-                    } as TextComponent,
-                    {
-                      type: 'Text',
-                      text: bible.explanation,
-                      font_size: 14,
-                      color: hexToRgba(COLORS.onSurfaceVariant),
-                    } as TextComponent,
-                  ],
-                },
-              ],
-            } as ColumnComponent,
-          }) as ContainerComponent
-      ),
-    } as ColumnComponent,
-  } as ContainerComponent;
+  // 创建并返回合并消息
+  return new SendForwardMessage(messageNodes);
 }
 
 export async function init() {
   logger.info('[feature] Init message-statistics feature');
-  // onebot.on('message.command.消息统计', async (data) => {
-  //   if (await checkFeatureEnabled(data.group_id, 'message-statistics')) {
-  //     const message = RecvMessage.fromMap(data);
-  //     logger.info(
-  //       '[feature.message-statistics][Group: %d][User: %d] %s',
-  //       message.groupId,
-  //       message.userId,
-  //       message.rawMessage
-  //     );
-
-  //     // 处理消息统计逻辑
-  //     await handleMessageStatistics(message);
-  //   }
-  // });
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);
     if (message.content.toLowerCase().startsWith('消息统计')) {
@@ -544,11 +279,9 @@ async function handleMessageStatistics(message: RecvMessage) {
 
     for (const msg of sortedMessages) {
       const msgStr = msg.toString() + '\n';
-      // 检查添加当前消息后是否超过最大长度
       if (formattedMessages.length + msgStr.length > MAX_MESSAGE_TEXT_LENGTH) {
         break;
       }
-      // 新消息添加到前面，确保优先保留新消息
       formattedMessages = formattedMessages + msgStr;
     }
 
@@ -592,7 +325,7 @@ async function handleMessageStatistics(message: RecvMessage) {
     // 调用Gemini分析消息
     const prompt = getPromptTemplate();
 
-    // 构建群信息，格式与chat功能一致
+    // 构建群信息
     const groupInfo = `
 群名称: ${group.name}
 群主ID: ${group.ownerId}
@@ -604,26 +337,15 @@ async function handleMessageStatistics(message: RecvMessage) {
 活跃成员数量: ${group.activeMemberCount}
     `.trim();
 
-    // 使用renderTemplate函数替代直接的字符串替换
     const filledPrompt = renderTemplate(prompt, {
       group: groupInfo,
       messages: formattedMessages,
     });
 
-    // 将输入prompt输出到文件，用于调试
-    // const promptFilePath = join(__dirname, '../../../prompt.input.md');
-    // const fs = require('fs');
-    // fs.writeFileSync(promptFilePath, filledPrompt, 'utf-8');
-    // logger.info(
-    //   `[feature.message-statistics] Prompt saved to ${promptFilePath}`
-    // );
-
-    // 生成统计报告图片
     // 调用Gemini API
     const aiStartTime = Date.now();
-    // 使用gemini正确的API调用方式
     const response = await gemini.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: config.gemini.model,
       contents: filledPrompt,
     });
     const aiEndTime = Date.now();
@@ -632,7 +354,6 @@ async function handleMessageStatistics(message: RecvMessage) {
     // 解析Gemini返回的结果
     let analysisResult: AnalysisResult;
     try {
-      // 提取JSON部分
       let responseText = '';
       if (response.candidates && response.candidates[0]?.content?.parts) {
         for (const part of response.candidates[0].content.parts) {
@@ -656,8 +377,8 @@ async function handleMessageStatistics(message: RecvMessage) {
       throw new Error('Failed to parse analysis result');
     }
 
-    const tokenUsage = `${filledPrompt.length}/${response.usageMetadata?.totalTokenCount || 0}`;
-    const imageDataUrl = await buildStatisticsReport(
+    const tokenUsage = `${response.usageMetadata?.promptTokenCount || filledPrompt.length}/${response.usageMetadata?.candidatesTokenCount || NaN}`;
+    const forwardMessage = await buildStatisticsReport(
       group.name || '未知群',
       startTime,
       endTime,
@@ -666,13 +387,14 @@ async function handleMessageStatistics(message: RecvMessage) {
       textCount,
       analysisTime,
       tokenUsage,
-      analysisResult
+      analysisResult,
+      group
     );
 
-    // 发送统计报告图片
+    // 发送统计报告合并聊天记录
     await message.reply(
       new SendMessage({
-        message: new SendImageMessage(imageDataUrl),
+        message: forwardMessage,
         groupId: message.groupId || undefined,
       })
     );
