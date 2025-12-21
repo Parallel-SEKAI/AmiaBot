@@ -10,7 +10,12 @@ import { renderTemplate } from '../../utils';
 import { Group } from '../../onebot/group/group.entity';
 import { User } from '../../onebot/user/user.entity';
 import { z } from 'zod';
-import { addChatHistory, getLatestChatHistory, getUserInfo, updateUserInfo } from './db';
+import {
+  addChatHistory,
+  getLatestChatHistory,
+  getUserInfo,
+  updateUserInfo,
+} from './db';
 
 const prompt = readFileSync('assets/chat/prompt.md', 'utf8');
 
@@ -39,7 +44,7 @@ async function chat(data: Record<string, any>) {
       message.userId,
       message.rawMessage
     );
-    
+
     try {
       // 1. 读取用户信息
       const userInfo = await getUserInfo(message.userId!);
@@ -49,25 +54,29 @@ async function chat(data: Record<string, any>) {
         userInfo?.favor || 0,
         userInfo?.memory || '无'
       );
-      
+
       const group = new Group(message.groupId!);
       const user = new User(message.userId, message.groupId!);
-      
+
       // 2. 并行获取Onebot历史记录和数据库历史记录
       const [, , onebotHistory, dbHistory] = await Promise.all([
         group.init(),
         user.init(),
         group.getHistory({ count: 20 }), // Onebot获取的历史记录
-        getLatestChatHistory(message.groupId!, 50) // 数据库获取的历史记录
+        getLatestChatHistory(message.groupId!, 50), // 数据库获取的历史记录
       ]);
-      
+
       // 3. 格式化Onebot历史记录
-      const formattedOnebotHistory = onebotHistory.map(msg => msg.toString()).join('\n');
-      
+      const formattedOnebotHistory = onebotHistory
+        .map((msg) => msg.toString())
+        .join('\n');
+
       // 4. 格式化数据库历史记录
-      const formattedDbHistory = dbHistory.map(history => {
-        return `(${history.user_nick}/${history.user_id})[${history.time.toLocaleString()}]${history.message}`;
-      }).join('\n');
+      const formattedDbHistory = dbHistory
+        .map((history) => {
+          return `(${history.user_nick}/${history.user_id})[${history.time.toLocaleString()}]${history.message}`;
+        })
+        .join('\n');
 
       let system = renderTemplate(prompt, {
         group: group.name,
@@ -120,7 +129,7 @@ VIP等级: ${user.vipLevel}
       // 模拟响应，实际使用时取消注释下面的代码
       const response = await gemini.models.generateContent({
         model: config.gemini.model,
-        contents: system
+        contents: system,
       });
 
       const usage = response.usageMetadata;
@@ -139,18 +148,20 @@ VIP等级: ${user.vipLevel}
       }
 
       // 模拟响应
-//       const responseText=`\`\`\`json
-// {
-//     "dialogue": "你好，我是Amia，一个基于Gemini的群聊助手。",
-//     "favor": 1,
-//     "memory": "用户向我打招呼，我应该友好回应。"
-// }
-// \`\`\``
+      //       const responseText=`\`\`\`json
+      // {
+      //     "dialogue": "你好，我是Amia，一个基于Gemini的群聊助手。",
+      //     "favor": 1,
+      //     "memory": "用户向我打招呼，我应该友好回应。"
+      // }
+      // \`\`\``
 
       if (responseText) {
         try {
           // 解析JSON响应
-          const cleanedResponse = responseText.trim().replace(/^```json\s*\n|\n```$/g, '');
+          const cleanedResponse = responseText
+            .trim()
+            .replace(/^```json\s*\n|\n```$/g, '');
           const parsedResponse = JSON.parse(cleanedResponse);
 
           // 使用Zod schema验证响应
