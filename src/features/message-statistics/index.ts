@@ -6,7 +6,6 @@ import {
   SendTextMessage,
   SendImageMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import { gemini } from '../../service/gemini';
 import { generatePage } from '../../service/enana';
 import { COLORS } from '../../const';
@@ -20,7 +19,6 @@ import { hexToRgba, renderTemplate } from '../../utils/index';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Group } from '../../onebot/group/group.entity';
-import { config } from '../../config';
 
 // 参数配置常量
 // 冷却时间（毫秒）

@@ -3,7 +3,6 @@ import { onebot } from '../../main';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendMessage,
-  SendTextMessage,
   SendImageMessage,
 } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
@@ -20,7 +19,6 @@ import {
 } from '../../types/enana';
 import { AV_PATTERN, BV_PATTERN } from './const';
 import { config } from '../../config';
-import { hexToRgba } from '../../utils';
 
 export async function init() {
   logger.info('[feature] Init bilibili feature');

@@ -6,7 +6,6 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendImageMessage,
   SendMessage,
-  SendTextMessage,
 } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
 import { generatePage } from '../../service/enana';

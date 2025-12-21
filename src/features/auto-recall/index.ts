@@ -1,13 +1,9 @@
 import logger from '../../config/logger';
 import { onebot } from '../../main';
-import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
-  SendMessage,
-  SendTextMessage,
   recalledMessageIds,
   messageHistory,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 
 export async function init() {
   logger.info('[feature] Init auto-recall feature');
