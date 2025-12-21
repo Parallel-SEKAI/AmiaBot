@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  amia-bot:
+    build: .
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./.env:/app/.env
+    restart: unless-stopped
