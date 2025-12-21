@@ -1,0 +1,25 @@
+<svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
+    <text x="20" y="60" font-family="Arial, sans-serif" font-size="40" font-weight="bold" transform="rotate(5, 20, 60)">
+        <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="0">A</tspan>
+        <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-10">m</tspan>
+        <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-13">i</tspan>
+        <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-12">a</tspan>
+    </text>
+
+    <text x="118" y="65" font-family="Arial, sans-serif" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" font-size="40"
+        font-weight="bold" transform="rotate(-5, 118, 65)">
+        Bot
+    </text>
+
+    <text x="20" y="60" font-family="Arial, sans-serif" font-size="40" font-weight="bold" transform="rotate(5, 20, 60)">
+        <tspan fill="#BB6688">A</tspan>
+        <tspan fill="#8888CC" dx="-10">m</tspan>
+        <tspan fill="#CCAA88" dx="-13">i</tspan>
+        <tspan fill="#DDAACC" dx="-12">a</tspan>
+    </text>
+
+    <text x="118" y="65" font-family="Arial, sans-serif" fill="#884499" font-size="40"
+        font-weight="bold" transform="rotate(-5, 118, 65)">
+        Bot
+    </text>
+</svg>

@@ -3,3 +3,5 @@ node_modules/
 .env
 .trae
 temp/
+docs/.vitepress/dist
+docs/.vitepress/cache
