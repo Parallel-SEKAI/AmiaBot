@@ -257,7 +257,7 @@ async function getRandomCard(): Promise<CardInfo> {
     any
   >;
   const cardImageAfterTrainingUrl = `https://storage.sekai.best/sekai-jp-assets/character/member/${card.assetbundleName}/card_after_training.png`;
-  const cardImageNormalUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_normal.png`;
+  const cardImageNormalUrl = `https://storage.sekai.best/sekai-jp-assets/character/member/${card.assetbundleName}/card_normal.png`;
   const cardImageChoiceUrl = [cardImageAfterTrainingUrl, cardImageNormalUrl][
     Math.floor(Math.random() * 2)
   ];

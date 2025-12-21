@@ -551,7 +551,7 @@ async function handleMessageStatistics(message: RecvMessage) {
         break;
       }
       // 新消息添加到前面，确保优先保留新消息
-      formattedMessages = formattedMessages+msgStr;
+      formattedMessages = formattedMessages + msgStr;
     }
 
     formattedMessages = formattedMessages.replace(imagePattern, '[CQ:image]');
@@ -613,22 +613,20 @@ async function handleMessageStatistics(message: RecvMessage) {
     });
 
     // 将输入prompt输出到文件，用于调试
-    const promptFilePath = join(__dirname, '../../../prompt.input.md');
-    const fs = require('fs');
-    fs.writeFileSync(promptFilePath, filledPrompt, 'utf-8');
-    logger.info(
-      `[feature.message-statistics] Prompt saved to ${promptFilePath}`
-    );
+    // const promptFilePath = join(__dirname, '../../../prompt.input.md');
+    // const fs = require('fs');
+    // fs.writeFileSync(promptFilePath, filledPrompt, 'utf-8');
+    // logger.info(
+    //   `[feature.message-statistics] Prompt saved to ${promptFilePath}`
+    // );
 
     // 生成统计报告图片
-    // 注释掉Gemini API调用，用于调试
-    /*
     // 调用Gemini API
     const aiStartTime = Date.now();
     // 使用gemini正确的API调用方式
     const response = await gemini.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: filledPrompt
+      contents: filledPrompt,
     });
     const aiEndTime = Date.now();
     const analysisTime = (aiEndTime - aiStartTime) / 1000;
@@ -661,66 +659,6 @@ async function handleMessageStatistics(message: RecvMessage) {
     }
 
     const tokenUsage = `${filledPrompt.length}/${response.usageMetadata?.totalTokenCount || 0}`;
-    */
-    // 调试模式下使用模拟数据
-    const analysisResult: AnalysisResult = {
-      hot_topics: [
-        {
-          topic_id: 1,
-          topic_name: '调试话题1',
-          participants: [123456, 789012],
-          content: '这是一个调试用的热门话题，用于测试报告生成功能。',
-        },
-        {
-          topic_id: 2,
-          topic_name: '调试话题2',
-          participants: [345678, 901234],
-          content: '这是第二个调试用的热门话题，用于测试报告生成功能。',
-        },
-        {
-          topic_id: 3,
-          topic_name: '调试话题3',
-          participants: [567890, 123456],
-          content: '这是第三个调试用的热门话题，用于测试报告生成功能。',
-        },
-      ],
-      group_members_titles: [
-        {
-          qq_number: 123456,
-          title: '调试称号1',
-          feature: '这是一个调试用的群友称号，用于测试报告生成功能。',
-        },
-        {
-          qq_number: 789012,
-          title: '调试称号2',
-          feature: '这是第二个调试用的群友称号，用于测试报告生成功能。',
-        },
-        {
-          qq_number: 345678,
-          title: '调试称号3',
-          feature: '这是第三个调试用的群友称号，用于测试报告生成功能。',
-        },
-      ],
-      group_bible: [
-        {
-          sentence: '这是一句调试用的群圣经，用于测试报告生成功能。',
-          interpreter: 123456,
-          explanation: '这是调试用的群圣经解释，用于测试报告生成功能。',
-        },
-        {
-          sentence: '这是第二句调试用的群圣经，用于测试报告生成功能。',
-          interpreter: 789012,
-          explanation: '这是第二句调试用的群圣经解释，用于测试报告生成功能。',
-        },
-        {
-          sentence: '这是第三句调试用的群圣经，用于测试报告生成功能。',
-          interpreter: 345678,
-          explanation: '这是第三句调试用的群圣经解释，用于测试报告生成功能。',
-        },
-      ],
-    };
-    const analysisTime = 0;
-    const tokenUsage = `${filledPrompt.length}/0`;
     const imageDataUrl = await buildStatisticsReport(
       group.name || '未知群',
       startTime,

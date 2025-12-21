@@ -24,6 +24,7 @@ export class OneBotClient extends EventEmitter {
     action: string,
     params: Record<string, any> = {}
   ): Promise<Record<string, any>> {
+    logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
     const url = `${this.httpUrl}/${action}`;
     const options = {
       method: 'POST',
@@ -52,6 +53,11 @@ export class OneBotClient extends EventEmitter {
           JSON.stringify(data)
         );
       }
+      logger.debug(
+        '[onebot.action.%s] Recv: %s',
+        action,
+        JSON.stringify(data)
+      );
       return data;
     } catch (error) {
       logger.error('[onebot.action.%s] Failed: %s', action, error);
@@ -74,6 +80,7 @@ export class OneBotClient extends EventEmitter {
 
     this.ws.onmessage = (event) => {
       // console.debug('Received message:', event.data);
+      logger.debug('[onebot] Received message: %s', event.data);
       const eventData = JSON.parse(event.data) as Record<string, any>;
       this.emit('all', eventData);
       this.emit(eventData.post_type, eventData);
@@ -90,6 +97,9 @@ export class OneBotClient extends EventEmitter {
         }
         const command = text.split(' ')[0].toLowerCase();
         this.emit(`message.command.${command}`, eventData);
+      }
+      else if (eventData.post_type == 'notice') {
+        this.emit(`notice.${eventData.notice_type}`, eventData);
       }
     };
 

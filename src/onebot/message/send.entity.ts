@@ -4,6 +4,7 @@ import { RecvMessage } from './recv.entity';
 import logger from '../../config/logger';
 
 const messageHistory: Record<number, Array<{ messageId: string }>> = {};
+const recalledMessageIds: Set<number> = new Set();
 
 interface SendMessageArgs {
   message: SendBaseMessage[] | SendBaseMessage;
@@ -36,6 +37,19 @@ export class SendMessage {
         args.groupId,
       'userId, groupId, or recvMessage is required'
     );
+
+    // 检查原消息是否已被撤回
+    if (
+      args.recvMessage &&
+      recalledMessageIds.has(args.recvMessage.messageId)
+    ) {
+      logger.info(
+        '[onebot.send] Message not sent because original message %d was recalled',
+        args.recvMessage.messageId
+      );
+      // 返回一个临时消息对象，避免后续处理出错
+      return new RecvMessage(Math.floor(Math.random() * 1000000));
+    }
 
     const is_private =
       this.userId ||
@@ -70,9 +84,9 @@ export class SendMessage {
       throw new Error('Could not determine message type (private or group).');
     }
 
-    if (args.recvMessage && data.data && data.data.messageId) {
+    if (args.recvMessage && data.data && data.data.message_id) {
       (messageHistory[args.recvMessage.messageId] ||= []).push({
-        messageId: data.data.messageId,
+        messageId: data.data.message_id,
       });
     }
 
@@ -98,6 +112,16 @@ export class SendMessage {
   }
 
   public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
+    // 检查原消息是否已被撤回
+    if (recalledMessageIds.has(recvMessage.messageId)) {
+      logger.info(
+        '[onebot.reply] Message not replied because original message %d was recalled',
+        recvMessage.messageId
+      );
+      // 返回一个临时消息对象，避免后续处理出错
+      return new RecvMessage(Math.floor(Math.random() * 1000000));
+    }
+
     if (this.messages[0] instanceof SendForwardMessage) {
       return await this.send({ recvMessage });
     }
@@ -124,7 +148,7 @@ export class SendMessage {
 
     if (recvMessage) {
       (messageHistory[recvMessage.messageId] ||= []).push({
-        messageId: data!.data.messageId,
+        messageId: data!.data.message_id,
       });
     }
 
@@ -294,6 +318,8 @@ export interface ForwardMessageNode {
     content: SendBaseMessage[];
   };
 }
+
+export { recalledMessageIds, messageHistory };
 
 export class SendForwardMessage extends SendBaseMessage {
   /**
