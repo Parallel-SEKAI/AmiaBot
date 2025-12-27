@@ -15,7 +15,7 @@ import { join } from 'path';
 import fetch from 'node-fetch';
 import { promises as fs } from 'fs';
 import { mkdirSync, existsSync } from 'fs';
-import { gemini } from '../../service/gemini';
+import { openai } from '../../service/openai';
 import { config } from '../../config';
 import logger from '../../config/logger';
 
@@ -128,7 +128,7 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     // 将歌词填充到prompt模板中
     const filledPrompt = prompt.replace('{{lyric}}', lyric.original_lyric);
 
-    // 调用Gemini API生成emoji歌词，添加重试机制
+    // 调用OpenAI API生成emoji歌词，添加重试机制
     let emojiLyric = '';
     const maxRetries = 3;
     let retryCount = 0;
@@ -137,41 +137,35 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     while (retryCount < maxRetries && !success) {
       retryCount++;
       try {
-        logger.info(`[Gemini] 开始第${retryCount}次生成emoji歌词`);
+        logger.info(`[OpenAI] 开始第${retryCount}次生成emoji歌词`);
 
-        // 调用Gemini API生成emoji歌词，限制超时时间
-        const response = await gemini.models.generateContent({
-          model: config.gemini.model,
-          contents: [{ text: filledPrompt }],
+        // 调用OpenAI API生成emoji歌词，限制超时时间
+        const response = await openai.chat.completions.create({
+          model: config.openai.model,
+          messages: [{ role: 'user', content: filledPrompt }],
         });
 
-        // 处理Gemini API响应
-        if (response.candidates && response.candidates[0]?.content?.parts) {
-          for (const part of response.candidates[0].content.parts) {
-            if (part.text) {
-              emojiLyric += part.text;
-            }
-          }
-        }
+        // 处理OpenAI API响应
+        emojiLyric = response.choices[0]?.message?.content || '';
 
         // 记录Token使用情况
-        const usage = response.usageMetadata;
+        const usage = response.usage;
         if (usage) {
-          const usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
-          logger.info('[Gemini] %s', usageInfo);
+          const usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens || 0}, Completion: ${usage.completion_tokens || 0}, Total: ${usage.total_tokens || 0}`;
+          logger.info('[OpenAI] %s', usageInfo);
         }
 
         success = true;
-        logger.info(`[Gemini] 第${retryCount}次生成emoji歌词成功`);
+        logger.info(`[OpenAI] 第${retryCount}次生成emoji歌词成功`);
       } catch (error) {
-        logger.error(`[Gemini] 第${retryCount}次生成emoji歌词失败: ${error}`);
+        logger.error(`[OpenAI] 第${retryCount}次生成emoji歌词失败: ${error}`);
         if (retryCount < maxRetries) {
-          logger.info(`[Gemini] ${retryCount}秒后重试...`);
+          logger.info(`[OpenAI] ${retryCount}秒后重试...`);
           await new Promise((resolve) =>
             setTimeout(resolve, retryCount * 1000)
           ); // 指数退避重试
         } else {
-          logger.error('[Gemini] 多次重试后生成emoji歌词失败');
+          logger.error('[OpenAI] 多次重试后生成emoji歌词失败');
         }
       }
     }
@@ -179,7 +173,7 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     // 如果没有生成结果，返回原始歌词
     if (!emojiLyric.trim()) {
       emojiLyric = lyric.original_lyric;
-      logger.info('[Gemini] 生成失败，返回原始歌词');
+      logger.info('[OpenAI] 生成失败，返回原始歌词');
     }
 
     // 发送结果

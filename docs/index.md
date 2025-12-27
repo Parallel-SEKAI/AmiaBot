@@ -16,7 +16,7 @@ hero:
 
 features:
   - title: 智能聊天
-    details: 基于 Gemini AI 的智能聊天功能,支持上下文理解和情感交互
+    details: 基于 OpenAI 的智能聊天功能,支持上下文理解和情感交互
   - title: 丰富的娱乐功能
     details: 支持猜卡面,猜歌曲,猜活动等多种互动游戏,增加群聊乐趣
   - title: 实用工具
@@ -36,7 +36,7 @@ AmiaBot 是一款以 Project Sekai 的暁山瑞希为主题的智能QQ机器人,
 ## 主要功能
 
 ### 🤖 智能聊天
-- 基于 Gemini AI 的智能聊天
+- 基于 OpenAI 的智能聊天
 - 支持上下文理解和情感交互
 - 可以学习和记忆用户的偏好
 

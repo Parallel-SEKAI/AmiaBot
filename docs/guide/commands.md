@@ -1,4 +1,7 @@
-# 指令格式说明
+
+# GEMINI_API_KEY=sk-QvfcxBLWhAMteYBB83aOCEOTBDdeB95kjDCJD2H9EFuX2vdQ
+# GEMINI_BASEURL=https://yunwu.ai/
+# GEMINI_MODEL=gemini-2.0-flash-lite# 指令格式说明
 
 本页面详细介绍 AmiaBot 的所有指令格式,参数说明和使用示例,帮助您更好地使用 AmiaBot 的各种功能.
 
@@ -10,7 +13,7 @@ Amia <内容>
 ```
 
 ### 命令说明
-基于 Gemini AI 的智能聊天功能,支持上下文理解和情感交互.
+基于 OpenAI 的智能聊天功能,支持上下文理解和情感交互.
 
 ### 参数说明
 - `内容`:您想要与 AmiaBot 聊天的内容

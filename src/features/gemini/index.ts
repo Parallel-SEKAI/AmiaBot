@@ -10,7 +10,7 @@ import {
   SendTextMessage,
 } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
-import { gemini } from '../../service/gemini';
+import { openai } from '../../service/openai'; // 使用已导出的 openai 实例
 import {
   extractAfterCaseInsensitive,
   networkImageToBase64DataURL,
@@ -31,107 +31,104 @@ export async function init() {
         message.rawMessage,
         'gemini'
       ).trim();
-      let contents: Array<Record<string, any>> = [];
+
+      // 构建 OpenAI 消息格式
+      let content: Array<any> = [{ type: 'text', text: question }];
+      
       for (const msg of message.message) {
         if (msg instanceof RecvImageMessage && msg.url) {
-          contents.push({
-            inlineData: {
-              mimeType: 'image/jpeg',
-              data: await networkImageToBase64DataURL(msg.url, true),
+          content.push({
+            type: 'image_url',
+            image_url: {
+              url: await networkImageToBase64DataURL(msg.url, true),
             },
           });
         }
       }
-      contents.push({ text: question });
-      const response = await gemini.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents,
-        config: {
-          thinkingConfig: {
-            thinkingBudget: 24576,
-            includeThoughts: true,
-          },
-          tools: [
-            { urlContext: {} },
-            { codeExecution: {} },
-            {
-              googleSearch: {},
-            },
+
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gemini-2.0-flash', // 确保您的端点支持此模型名称
+          messages: [
+            { role: 'system', content: '请使用中文回答' },
+            { role: 'user', content: content },
           ],
-          systemInstruction: '请使用中文回答',
-        },
-      });
-      const usage = response.usageMetadata;
-      let usageInfo = '';
-      if (usage) {
-        usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Thoughts: ${usage.thoughtsTokenCount || 0}, ToolUse: ${usage.toolUsePromptTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
-        logger.info('[Gemini] %s', usageInfo);
-      }
-      let thoughts = '';
-      let answers = '';
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (!part.text) {
-            continue;
-          } else if (part.thought) {
-            thoughts += part.text;
-          } else {
-            answers += part.text;
+          // 注意：OpenAI SDK 不直接支持 thinkingConfig 等原生 Gemini 参数
+          // 如果是通过特定中转使用，可能需要通过 extra_body 传入
+          extra_body: {
+            thinking_config: {
+              include_thoughts: true,
+            }
           }
+        } as any);
+
+        const usage = response.usage;
+        let usageInfo = '';
+        if (usage) {
+          usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens}, Completion: ${usage.completion_tokens}, Total: ${usage.total_tokens}`;
+          logger.info('[Gemini] %s', usageInfo);
         }
+
+        const choice = response.choices[0].message;
+        let thoughts = (choice as any).reasoning_content || ''; 
+        let answers = choice.content || '';
+
+        if (thoughts) {
+          logger.info(`[Gemini] Thoughts: ${thoughts}`);
+        }
+        if (answers) {
+          logger.info(`[Gemini] Answers: ${answers}`);
+        }
+
+        await new SendMessage({
+          message: new SendForwardMessage([
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
+                content: [new SendTextMessage(usageInfo)],
+              },
+            },
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
+                content: [new SendTextMessage('Answers:')],
+              },
+            },
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
+                content: [new SendTextMessage(answers.trim() || '<no answers>')],
+              },
+            },
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
+                content: [new SendTextMessage('Thoughts:')],
+              },
+            },
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
+                content: [
+                  new SendTextMessage(thoughts.trim() || '<no thoughts>'),
+                ],
+              },
+            },
+          ]),
+        }).send({ recvMessage: message });
+      } catch (error) {
+        logger.error('[Gemini] Error: %o', error);
       }
-      if (thoughts) {
-        logger.info(`[Gemini] Thoughts: ${thoughts}`);
-      }
-      if (answers) {
-        logger.info(`[Gemini] Answers: ${answers}`);
-      }
-      await new SendMessage({
-        message: new SendForwardMessage([
-          {
-            type: 'node',
-            data: {
-              userId: onebot.qq,
-              nickname: onebot.nickname,
-              content: [new SendTextMessage(usageInfo)],
-            },
-          },
-          {
-            type: 'node',
-            data: {
-              userId: onebot.qq,
-              nickname: onebot.nickname,
-              content: [new SendTextMessage('Answers:')],
-            },
-          },
-          {
-            type: 'node',
-            data: {
-              userId: onebot.qq,
-              nickname: onebot.nickname,
-              content: [new SendTextMessage(answers.trim() || '<no answers>')],
-            },
-          },
-          {
-            type: 'node',
-            data: {
-              userId: onebot.qq,
-              nickname: onebot.nickname,
-              content: [new SendTextMessage('Thoughts:')],
-            },
-          },
-          {
-            type: 'node',
-            data: {
-              userId: onebot.qq,
-              nickname: onebot.nickname,
-              content: [
-                new SendTextMessage(thoughts.trim() || '<no thoughts>'),
-              ],
-            },
-          },
-        ]),
-      }).send({ recvMessage: message });
     }
   });
 }

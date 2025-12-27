@@ -20,9 +20,9 @@ const envVarsSchema = z
     ENANA_TOKEN: z.string().optional().default(''),
     ENANA_SCALE: z.coerce.number().optional().default(0), // 自动将字符串转换为数字
     ENANA_FONT: z.string().optional().default(''),
-    GEMINI_API_KEY: z.string().optional().default(''),
-    GEMINI_BASEURL: z.string().optional().default(''),
-    GEMINI_MODEL: z.string().optional().default(''),
+    OPENAI_API_KEY: z.string().optional().default(''),
+    OPENAI_BASEURL: z.string().optional().default(''),
+    OPENAI_MODEL: z.string().optional().default(''),
     GITHUB_TOKEN: z.string().optional().default(''),
     NETEASE_COOKIES: z.string().optional().default(''),
   })
@@ -51,7 +51,7 @@ export interface IConfig {
     scale: number;
     font: string;
   };
-  gemini: {
+  openai: {
     apiKey: string;
     baseUrl: string;
     model: string;
@@ -85,10 +85,10 @@ export const config: IConfig = {
     scale: envVars.ENANA_SCALE || 0,
     font: envVars.ENANA_FONT || '',
   },
-  gemini: {
-    apiKey: envVars.GEMINI_API_KEY || '',
-    baseUrl: envVars.GEMINI_BASEURL || '',
-    model: envVars.GEMINI_MODEL || '',
+  openai: {
+    apiKey: envVars.OPENAI_API_KEY || '',
+    baseUrl: envVars.OPENAI_BASEURL || '',
+    model: envVars.OPENAI_MODEL || '',
   },
   github: {
     token: envVars.GITHUB_TOKEN || '',

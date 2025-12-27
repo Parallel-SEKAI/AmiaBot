@@ -7,7 +7,7 @@ import {
   SendForwardMessage,
   ForwardMessageNode,
 } from '../../onebot/message/send.entity';
-import { gemini } from '../../service/gemini';
+import { openai } from '../../service/openai';
 import { renderTemplate } from '../../utils/index';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -322,7 +322,7 @@ async function handleMessageStatistics(message: RecvMessage) {
       })
     );
 
-    // 调用Gemini分析消息
+    // 调用OpenAI分析消息
     const prompt = getPromptTemplate();
 
     // 构建群信息
@@ -342,42 +342,39 @@ async function handleMessageStatistics(message: RecvMessage) {
       messages: formattedMessages,
     });
 
-    // 调用Gemini API
+    // 调用OpenAI API
     const aiStartTime = Date.now();
-    const response = await gemini.models.generateContent({
-      model: config.gemini.model,
-      contents: filledPrompt,
+    const response = await openai.chat.completions.create({
+      model: config.openai.model,
+      messages: [
+        { role: 'system', content: '请严格按照JSON格式返回，不要在JSON前后添加任何其他内容' },
+        { role: 'user', content: filledPrompt },
+      ],
+      response_format: { type: 'json_object' },
     });
     const aiEndTime = Date.now();
     const analysisTime = (aiEndTime - aiStartTime) / 1000;
 
-    // 解析Gemini返回的结果
+    // 解析OpenAI返回的结果
     let analysisResult: AnalysisResult;
     try {
-      let responseText = '';
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.text) {
-            responseText += part.text;
-          }
-        }
-      }
+      const responseText = response.choices[0]?.message?.content || '';
       const jsonStartIndex = responseText.indexOf('{');
       const jsonEndIndex = responseText.lastIndexOf('}') + 1;
       if (jsonStartIndex === -1 || jsonEndIndex === 0) {
-        throw new Error('Invalid JSON format in Gemini response');
+        throw new Error('Invalid JSON format in OpenAI response');
       }
       const jsonText = responseText.slice(jsonStartIndex, jsonEndIndex);
       analysisResult = JSON.parse(jsonText);
     } catch (error) {
       logger.error(
-        '[feature.message-statistics] Failed to parse Gemini response:',
+        '[feature.message-statistics] Failed to parse OpenAI response:',
         error
       );
       throw new Error('Failed to parse analysis result');
     }
 
-    const tokenUsage = `${response.usageMetadata?.promptTokenCount || filledPrompt.length}/${response.usageMetadata?.candidatesTokenCount || NaN}`;
+    const tokenUsage = `${response.usage?.prompt_tokens || 0}/${response.usage?.completion_tokens || 0}`;
     const forwardMessage = await buildStatisticsReport(
       group.name || '未知群',
       startTime,
