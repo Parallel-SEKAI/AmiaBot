@@ -347,7 +347,10 @@ async function handleMessageStatistics(message: RecvMessage) {
     const response = await openai.chat.completions.create({
       model: config.openai.model,
       messages: [
-        { role: 'system', content: '请严格按照JSON格式返回，不要在JSON前后添加任何其他内容' },
+        {
+          role: 'system',
+          content: '请严格按照JSON格式返回，不要在JSON前后添加任何其他内容',
+        },
         { role: 'user', content: filledPrompt },
       ],
       response_format: { type: 'json_object' },

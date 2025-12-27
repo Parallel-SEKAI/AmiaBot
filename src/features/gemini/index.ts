@@ -34,7 +34,7 @@ export async function init() {
 
       // 构建 OpenAI 消息格式
       let content: Array<any> = [{ type: 'text', text: question }];
-      
+
       for (const msg of message.message) {
         if (msg instanceof RecvImageMessage && msg.url) {
           content.push({
@@ -58,8 +58,8 @@ export async function init() {
           extra_body: {
             thinking_config: {
               include_thoughts: true,
-            }
-          }
+            },
+          },
         } as any);
 
         const usage = response.usage;
@@ -70,7 +70,7 @@ export async function init() {
         }
 
         const choice = response.choices[0].message;
-        let thoughts = (choice as any).reasoning_content || ''; 
+        let thoughts = (choice as any).reasoning_content || '';
         let answers = choice.content || '';
 
         if (thoughts) {
@@ -103,7 +103,9 @@ export async function init() {
               data: {
                 userId: onebot.qq,
                 nickname: onebot.nickname,
-                content: [new SendTextMessage(answers.trim() || '<no answers>')],
+                content: [
+                  new SendTextMessage(answers.trim() || '<no answers>'),
+                ],
               },
             },
             {
