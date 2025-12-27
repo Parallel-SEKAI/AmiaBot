@@ -1,12 +1,15 @@
 import logger from '../../config/logger';
 import { onebot } from '../../main';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import {
+  RecvMessage,
+  RecvImageMessage,
+} from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
 import { readFileSync, writeFileSync } from 'fs';
 import { openai } from '../../service/openai';
 import { config } from '../../config';
-import { renderTemplate } from '../../utils';
+import { renderTemplate, networkImageToBase64DataURL } from '../../utils';
 import { Group } from '../../onebot/group/group.entity';
 import { User } from '../../onebot/user/user.entity';
 import { z } from 'zod';
@@ -78,6 +81,34 @@ async function chat(data: Record<string, any>) {
         })
         .join('\n');
 
+      // 构建内容数组，包含文本和图片
+      let content: Array<any> = [{ type: 'text', text: message.toString() }];
+
+      // 处理消息中的图片
+      for (const msg of message.message) {
+        if (msg instanceof RecvImageMessage && msg.url) {
+          try {
+            const base64Image = await networkImageToBase64DataURL(
+              msg.url,
+              true
+            );
+            content.push({
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
+              },
+            });
+          } catch (error) {
+            logger.error('[feature.chat] 处理图片失败:', error);
+            // 如果图片处理失败，添加文本提示
+            content.push({
+              type: 'text',
+              text: '[无法处理图片]',
+            });
+          }
+        }
+      }
+
       let system = renderTemplate(prompt, {
         group: group.name,
         group_history: formattedOnebotHistory, // Onebot获取的历史记录
@@ -119,7 +150,7 @@ VIP等级: ${user.vipLevel}
 好感度: ${userInfo?.favor || 0}
 记忆: ${userInfo?.memory || ''}
       `.trim(),
-        message: message.toString(),
+        // message: JSON.stringify(content), // 修改：将完整内容（包括图片）作为消息
         favor: userInfo?.favor || 0,
         memory: userInfo?.memory || '',
       });
@@ -129,7 +160,10 @@ VIP等级: ${user.vipLevel}
       // 调用OpenAI API
       const response = await openai.chat.completions.create({
         model: config.openai.model,
-        messages: [{ role: 'user', content: system }],
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: content }, // 添加包含图片的消息内容
+        ],
         response_format: { type: 'json_object' },
       });
 

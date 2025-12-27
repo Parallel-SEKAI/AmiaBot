@@ -86,6 +86,14 @@ export async function init() {
               data: {
                 userId: onebot.qq,
                 nickname: onebot.nickname,
+                content: [new SendTextMessage(`Model: ${config.openai.model}`)],
+              },
+            },
+            {
+              type: 'node',
+              data: {
+                userId: onebot.qq,
+                nickname: onebot.nickname,
                 content: [new SendTextMessage(usageInfo)],
               },
             },
