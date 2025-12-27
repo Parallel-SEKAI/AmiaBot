@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import logger from '../../config/logger';
 import { onebot } from '../../main';
 import {
@@ -48,13 +49,11 @@ export async function init() {
 
       try {
         const response = await openai.chat.completions.create({
-          model: 'gemini-2.0-flash', // 确保您的端点支持此模型名称
+          model: config.openai.model,
           messages: [
             { role: 'system', content: '请使用中文回答' },
             { role: 'user', content: content },
           ],
-          // 注意：OpenAI SDK 不直接支持 thinkingConfig 等原生 Gemini 参数
-          // 如果是通过特定中转使用，可能需要通过 extra_body 传入
           extra_body: {
             thinking_config: {
               include_thoughts: true,
