@@ -4,7 +4,7 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
 import { readFileSync, writeFileSync } from 'fs';
-import { gemini } from '../../service/gemini';
+import { openai } from '../../service/openai';
 import { config } from '../../config';
 import { renderTemplate } from '../../utils';
 import { Group } from '../../onebot/group/group.entity';
@@ -117,7 +117,7 @@ VIP等级: ${user.vipLevel}
 群角色: ${user.role}
 群头衔: ${user.title}
 好感度: ${userInfo?.favor || 0}
-记忆: ${userInfo?.memory || '无'}
+记忆: ${userInfo?.memory || ''}
       `.trim(),
         message: message.toString(),
         favor: userInfo?.favor || 0,
@@ -126,35 +126,20 @@ VIP等级: ${user.vipLevel}
 
       // writeFileSync('prompt.input.md', system, 'utf8');
 
-      // 模拟响应，实际使用时取消注释下面的代码
-      const response = await gemini.models.generateContent({
-        model: config.gemini.model,
-        contents: system,
+      // 调用OpenAI API
+      const response = await openai.chat.completions.create({
+        model: config.openai.model,
+        messages: [{ role: 'user', content: system }],
+        response_format: { type: 'json_object' },
       });
 
-      const usage = response.usageMetadata;
+      const usage = response.usage;
       if (usage) {
-        const usageInfo = `Token Usage: Prompt: ${usage.promptTokenCount || 0}, Candidates: ${usage.candidatesTokenCount || 0}, Total: ${usage.totalTokenCount || 0}`;
-        logger.info('[Gemini] %s', usageInfo);
+        const usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens || 0}, Completion: ${usage.completion_tokens || 0}, Total: ${usage.total_tokens || 0}`;
+        logger.info('[OpenAI] %s', usageInfo);
       }
 
-      let responseText = '';
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.text) {
-            responseText += part.text;
-          }
-        }
-      }
-
-      // 模拟响应
-      //       const responseText=`\`\`\`json
-      // {
-      //     "dialogue": "你好，我是Amia，一个基于Gemini的群聊助手。",
-      //     "favor": 1,
-      //     "memory": "用户向我打招呼，我应该友好回应。"
-      // }
-      // \`\`\``
+      const responseText = response.choices[0]?.message?.content || '';
 
       if (responseText) {
         try {

@@ -1,4 +1,7 @@
-# 使用指南
+
+# GEMINI_API_KEY=sk-QvfcxBLWhAMteYBB83aOCEOTBDdeB95kjDCJD2H9EFuX2vdQ
+# GEMINI_BASEURL=https://yunwu.ai/
+# GEMINI_MODEL=gemini-2.0-flash-lite# 使用指南
 
 欢迎使用 AmiaBot!本指南将详细介绍 AmiaBot 的各种功能和使用方法,帮助您快速上手并充分利用 AmiaBot 的强大功能.
 
@@ -6,7 +9,7 @@
 
 ### 🤖 智能聊天
 
-AmiaBot 提供基于 Gemini AI 的智能聊天功能,您可以通过输入 `Amia` 加上您想要说的话来触发聊天.AmiaBot 能够理解上下文,进行情感交互,并能学习和记忆用户的偏好.
+AmiaBot 提供基于 OpenAI 的智能聊天功能,您可以通过输入 `Amia` 加上您想要说的话来触发聊天.AmiaBot 能够理解上下文,进行情感交互,并能学习和记忆用户的偏好.
 
 **使用示例**:
 ```

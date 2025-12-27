@@ -26,7 +26,7 @@
 - 能够访问互联网
 - 能够连接到 QQ 服务器
 - 能够访问以下 API:
-  - Gemini AI API
+  - OpenAI API
   - 网易云音乐 API
   - B站 API
   - GitHub API
@@ -63,8 +63,8 @@ npm install
    ONEBOT_WS_URL=ws://localhost:3653
    ONEBOT_QQ=123456789
    
-   # Gemini AI 配置
-   GEMINI_API_KEY=your-gemini-api-key
+   # OpenAI 配置
+   OPENAI_API_KEY=your-openai-api-key
    
    # 其他配置
    # ...
@@ -97,13 +97,13 @@ npm start
 
 ### 3.1 环境变量配置
 
-| 环境变量名 | 说明 | 默认值 | 示例值 |
-|------------|------|--------|--------|
-| ONEBOT_WS_URL | OneBot WebSocket 连接地址 | ws://localhost:3653 | ws://192.168.1.100:3653 |
-| ONEBOT_QQ | 机器人 QQ 号 | - | 123456789 |
-| GEMINI_API_KEY | Gemini AI API 密钥 | - | your-gemini-api-key |
-| DATABASE_URL | 数据库连接字符串 | mysql://root:password@localhost:3306/amiabot | mysql://user:pass@localhost:3306/amiabot |
-| LOG_LEVEL | 日志级别 | info | debug, info, warn, error |
+| 环境变量名     | 说明                      | 默认值                                       | 示例值                                   |
+| -------------- | ------------------------- | -------------------------------------------- | ---------------------------------------- |
+| ONEBOT_WS_URL  | OneBot WebSocket 连接地址 | ws://localhost:3653                          | ws://192.168.1.100:3653                  |
+| ONEBOT_QQ      | 机器人 QQ 号              | -                                            | 123456789                                |
+| OPENAI_API_KEY | OpenAI API 密钥           | -                                            | your-openai-api-key                      |
+| DATABASE_URL   | 数据库连接字符串          | mysql://root:password@localhost:3306/amiabot | mysql://user:pass@localhost:3306/amiabot |
+| LOG_LEVEL      | 日志级别                  | info                                         | debug, info, warn, error                 |
 
 ### 3.2 功能配置
 
@@ -125,7 +125,7 @@ AmiaBot 支持通过数据库配置各个功能的开启/关闭状态.您可以�
 
 #### 3.3.2 AI 模型配置
 
-您可以在 `src/config/index.ts` 中修改 Gemini AI 模型的配置,包括模型名称,温度,最大输出 tokens 等.
+您可以在 `src/config/index.ts` 中修改 OpenAI 模型的配置,包括模型名称,温度,最大输出 tokens 等.
 
 ## 4. 常见问题解决方案
 
@@ -144,9 +144,9 @@ AmiaBot 支持通过数据库配置各个功能的开启/关闭状态.您可以�
 **问题现象**:发送 `amia 你好` 后,AmiaBot 没有回应
 
 **解决方案**:
-1. 检查 `GEMINI_API_KEY` 环境变量是否正确
+1. 检查 `OPENAI_API_KEY` 环境变量是否正确
 2. 检查网络连接是否正常
-3. 检查 Gemini AI 服务是否可用
+3. 检查 OpenAI 服务是否可用
 4. 查看日志,检查是否有相关错误信息
 
 ### 4.3 数据库连接失败

@@ -1,4 +1,7 @@
-# 二次开发方式
+
+# GEMINI_API_KEY=sk-QvfcxBLWhAMteYBB83aOCEOTBDdeB95kjDCJD2H9EFuX2vdQ
+# GEMINI_BASEURL=https://yunwu.ai/
+# GEMINI_MODEL=gemini-2.0-flash-lite# 二次开发方式
 
 > [!IMPORTANT]
 > 此页面未经审核,为AI生成
@@ -165,7 +168,7 @@ onebot.on('message.command.<command-name>', async (data) => {
 
 AmiaBot 内置了多个 API 服务,例如:
 
-- Gemini AI 服务
+- OpenAI 服务
 - 网易云音乐服务
 - GitHub 服务
 
