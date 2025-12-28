@@ -25,6 +25,7 @@ const envVarsSchema = z
     OPENAI_MODEL: z.string().optional().default(''),
     GITHUB_TOKEN: z.string().optional().default(''),
     NETEASE_COOKIES: z.string().optional().default(''),
+    BILIBILI_COOKIES: z.string().optional().default(''),
   })
   .loose();
 
@@ -62,6 +63,9 @@ export interface IConfig {
   netease: {
     cookies: string;
   };
+  bilibili: {
+    cookies: string;
+  };
 }
 
 export const config: IConfig = {
@@ -95,5 +99,8 @@ export const config: IConfig = {
   },
   netease: {
     cookies: envVars.NETEASE_COOKIES || '',
+  },
+  bilibili: {
+    cookies: envVars.BILIBILI_COOKIES || '',
   },
 };
