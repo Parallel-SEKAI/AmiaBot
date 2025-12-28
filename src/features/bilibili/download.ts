@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import logger from '../../config/logger';
+import { config } from '../../config';
 
 const execPromise = promisify(exec);
 
@@ -27,7 +28,7 @@ async function getWbiKeys(): Promise<{ imgKey: string; subKey: string }> {
     'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
     Referer: 'https://www.bilibili.com/',
-    Cookie: process.env.BILIBILI_COOKIES || '',
+    Cookie: config.bilibili.cookies || '',
   };
   const response = await fetch('https://api.bilibili.com/x/web-interface/nav', {
     headers,
@@ -91,7 +92,7 @@ async function downloadFile(
       'Accept-Encoding': 'identity',
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
       Referer: referer,
-      Cookie: process.env.BILIBILI_COOKIES || '',
+      Cookie: config.bilibili.cookies || '',
     };
 
     const response = await fetch(url, { headers });
@@ -146,7 +147,7 @@ export async function downloadBilibiliVideo(
     // File doesn't exist, proceed with download
   }
 
-  const cookie = process.env.BILIBILI_COOKIES || '';
+  const cookie = config.bilibili.cookies || '';
   const headers = {
     'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
