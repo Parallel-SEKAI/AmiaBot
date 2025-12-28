@@ -17,8 +17,9 @@ import {
   ImageComponent,
   ContainerComponent,
 } from '../../types/enana';
-import { AV_PATTERN, BV_PATTERN } from './const';
+import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const';
 import { config } from '../../config';
+import fetch from 'node-fetch';
 
 export async function init() {
   logger.info('[feature] Init bilibili feature');
@@ -57,8 +58,84 @@ export async function init() {
         );
         return;
       }
+
+      // 新增：B23短链接检测逻辑
+      const shortUrlMatch = message.rawMessage.match(SHORT_URL_PATTERN);
+      if (shortUrlMatch) {
+        logger.info(
+          '[feature.bilibili][Group: %d][User: %d] Detected short URL: %s',
+          message.groupId,
+          message.userId,
+          message.rawMessage
+        );
+        const shortCode = shortUrlMatch[1];
+
+        // 解析短链接获取重定向后的URL
+        const resolvedUrl = await resolveB23ShortUrl(shortCode);
+        if (resolvedUrl) {
+          // 检查重定向后的URL是否包含BV或AV号
+          const avMatchFromUrl = resolvedUrl.match(AV_PATTERN);
+          if (avMatchFromUrl) {
+            const avId = Number(avMatchFromUrl[1]);
+            const info = await getVideoInfo({ av: avId });
+            await new SendMessage({
+              message: new SendImageMessage(info),
+            }).reply(message);
+            return;
+          }
+
+          const bvMatchFromUrl = resolvedUrl.match(BV_PATTERN);
+          if (bvMatchFromUrl) {
+            const bvId = bvMatchFromUrl[1];
+            const info = await getVideoInfo({ bv: bvId });
+            await new SendMessage({
+              message: new SendImageMessage(info),
+            }).reply(message);
+            return;
+          }
+
+          logger.info(
+            '[feature.bilibili][Group: %d][User: %d] No BV/AV found in resolved URL: %s',
+            message.groupId,
+            message.userId,
+            resolvedUrl
+          );
+        } else {
+          logger.warn(
+            '[feature.bilibili][Group: %d][User: %d] Failed to resolve short URL: %s',
+            message.groupId,
+            message.userId,
+            shortCode
+          );
+        }
+      }
     }
   });
+}
+
+async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
+  const shortUrl = `https://b23.tv/${shortCode}`;
+
+  try {
+    // 使用 fetch 发起请求，不跟随重定向
+    const response = await fetch(shortUrl, {
+      redirect: 'manual', // 不自动跟随重定向，以便获取重定向目标
+    });
+
+    // 检查是否为重定向状态码
+    if (response.status === 301 || response.status === 302) {
+      const redirectUrl = response.headers.get('location');
+      if (redirectUrl) {
+        return redirectUrl;
+      }
+    }
+
+    // 如果不是重定向，返回原始URL
+    return response.url;
+  } catch (error) {
+    logger.error('[feature.bilibili] Error resolving short URL: %s', error);
+    return null;
+  }
 }
 
 async function getVideoInfo(params: AvBvParams): Promise<string> {
