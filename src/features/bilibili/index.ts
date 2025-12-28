@@ -104,7 +104,14 @@ export async function init() {
           const info = await getBilibiliVideoInfo(params);
 
           const sendInfoPromise = (async () => {
-            const infoImage = await generateVideoInfoImage(info);
+            let infoImage = await generateVideoInfoImage(info);
+            // Convert data:image/png;base64,... to base64://...
+            if (infoImage.startsWith('data:')) {
+              const parts = infoImage.split(';base64,');
+              if (parts.length === 2) {
+                infoImage = `base64://${parts[1]}`;
+              }
+            }
             await new SendMessage({
               message: new SendImageMessage(infoImage),
             }).reply(message);
