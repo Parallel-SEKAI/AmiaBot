@@ -4,10 +4,12 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendMessage,
   SendImageMessage,
+  SendVideoMessage,
+  SendTextMessage,
 } from '../../onebot/message/send.entity';
 import { checkFeatureEnabled } from '../../service/db';
 import { generatePage } from '../../service/enana';
-import { AvBvParams } from './typing';
+import { AvBvParams, VideoInfo } from './typing';
 import { getBilibiliVideoInfo } from './video';
 import {
   WidgetComponent,
@@ -20,12 +22,17 @@ import {
 import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const';
 import { config } from '../../config';
 import fetch from 'node-fetch';
+import { downloadBilibiliVideo } from './download';
+import * as fs from 'fs/promises';
 
 export async function init() {
   logger.info('[feature] Init bilibili feature');
   onebot.on('message.group', async (data) => {
     if (await checkFeatureEnabled(data.group_id, 'bilibili')) {
       const message = RecvMessage.fromMap(data);
+
+      let bvId: string | null = null;
+      let avId: number | null = null;
 
       const avMatch = message.content.match(AV_PATTERN);
       if (avMatch) {
@@ -35,12 +42,7 @@ export async function init() {
           message.userId,
           message.rawMessage
         );
-        const params = avMatch[1];
-        const info = await getVideoInfo({ av: Number(params) });
-        await new SendMessage({ message: new SendImageMessage(info) }).reply(
-          message
-        );
-        return;
+        avId = Number(avMatch[1]);
       }
 
       const bvMatch = message.content.match(BV_PATTERN);
@@ -51,15 +53,9 @@ export async function init() {
           message.userId,
           message.rawMessage
         );
-        const params = bvMatch[1];
-        const info = await getVideoInfo({ bv: params });
-        await new SendMessage({ message: new SendImageMessage(info) }).reply(
-          message
-        );
-        return;
+        bvId = bvMatch[1];
       }
 
-      // 新增：B23短链接检测逻辑
       const shortUrlMatch = message.rawMessage.match(SHORT_URL_PATTERN);
       if (shortUrlMatch) {
         logger.info(
@@ -69,37 +65,26 @@ export async function init() {
           message.rawMessage
         );
         const shortCode = shortUrlMatch[1];
-
-        // 解析短链接获取重定向后的URL
         const resolvedUrl = await resolveB23ShortUrl(shortCode);
         if (resolvedUrl) {
-          // 检查重定向后的URL是否包含BV或AV号
           const avMatchFromUrl = resolvedUrl.match(AV_PATTERN);
           if (avMatchFromUrl) {
-            const avId = Number(avMatchFromUrl[1]);
-            const info = await getVideoInfo({ av: avId });
-            await new SendMessage({
-              message: new SendImageMessage(info),
-            }).reply(message);
-            return;
+            avId = Number(avMatchFromUrl[1]);
           }
 
           const bvMatchFromUrl = resolvedUrl.match(BV_PATTERN);
           if (bvMatchFromUrl) {
-            const bvId = bvMatchFromUrl[1];
-            const info = await getVideoInfo({ bv: bvId });
-            await new SendMessage({
-              message: new SendImageMessage(info),
-            }).reply(message);
-            return;
+            bvId = bvMatchFromUrl[1];
           }
 
-          logger.info(
-            '[feature.bilibili][Group: %d][User: %d] No BV/AV found in resolved URL: %s',
-            message.groupId,
-            message.userId,
-            resolvedUrl
-          );
+          if (!avId && !bvId) {
+            logger.info(
+              '[feature.bilibili][Group: %d][User: %d] No BV/AV found in resolved URL: %s',
+              message.groupId,
+              message.userId,
+              resolvedUrl
+            );
+          }
         } else {
           logger.warn(
             '[feature.bilibili][Group: %d][User: %d] Failed to resolve short URL: %s',
@@ -108,6 +93,66 @@ export async function init() {
             shortCode
           );
         }
+      }
+
+      if (avId || bvId) {
+        const params: AvBvParams = {};
+        if (avId) params.av = avId;
+        if (bvId) params.bv = bvId;
+
+        try {
+          const info = await getBilibiliVideoInfo(params);
+
+          const sendInfoPromise = (async () => {
+            const infoImage = await generateVideoInfoImage(info);
+            await new SendMessage({
+              message: new SendImageMessage(infoImage),
+            }).reply(message);
+          })();
+
+          const downloadVideoPromise = (async () => {
+            if (info.bv) {
+              await new SendMessage({
+                message: new SendTextMessage('正在下载视频, 请稍候...'),
+              }).reply(message);
+              const videoPath = await downloadBilibiliVideo(info.bv);
+              if (videoPath) {
+                await new SendMessage({
+                  message: new SendVideoMessage(videoPath),
+                }).reply(message);
+                // Clean up the downloaded file
+                try {
+                  await fs.unlink(videoPath);
+                  logger.info(
+                    '[feature.bilibili] Deleted cached video file: %s',
+                    videoPath
+                  );
+                } catch (e) {
+                  logger.error(
+                    `[feature.bilibili] Failed to delete cached video file: %s`,
+                    videoPath
+                  );
+                  logger.error('[feature.bilibili] %s', e);
+                }
+              } else {
+                await new SendMessage({
+                  message: new SendTextMessage('视频下载失败'),
+                }).reply(message);
+              }
+            }
+          })();
+
+          await Promise.all([sendInfoPromise, downloadVideoPromise]);
+        } catch (error) {
+          logger.error(
+            '[feature.bilibili] Error processing Bilibili link:',
+            error
+          );
+          await new SendMessage({
+            message: new SendTextMessage('处理B站链接时发生错误'),
+          }).reply(message);
+        }
+        return;
       }
     }
   });
@@ -138,9 +183,7 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
   }
 }
 
-async function getVideoInfo(params: AvBvParams): Promise<string> {
-  const info = await getBilibiliVideoInfo(params);
-
+async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
   // 构建视频信息UI组件
   const videoInfoWidget: WidgetComponent = {
     type: 'Column',
@@ -455,7 +498,9 @@ async function getVideoInfo(params: AvBvParams): Promise<string> {
       // 只显示前5个分P
       pagesSection.children.push({
         type: 'Text',
-        text: `P${page.page} ${page.title} (${Math.floor(page.duration / 60)}:${String(page.duration % 60).padStart(2, '0')})`,
+        text: `P${page.page} ${page.title} (${Math.floor(
+          page.duration / 60
+        )}:${String(page.duration % 60).padStart(2, '0')})`,
         font_size: 12,
         margin: {
           top: 4,
@@ -520,7 +565,9 @@ async function getVideoInfo(params: AvBvParams): Promise<string> {
         // 每个章节只显示前3集
         seasonSection.children.push({
           type: 'Text',
-          text: `  > ${episode.title} (${Math.floor(episode.arc.duration / 60)}:${String(episode.arc.duration % 60).padStart(2, '0')})`,
+          text: `  > ${episode.title} (${Math.floor(
+            episode.arc.duration / 60
+          )}:${String(episode.arc.duration % 60).padStart(2, '0')})`,
           font_size: 12,
           margin: {
             top: 4,
