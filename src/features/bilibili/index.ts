@@ -208,6 +208,18 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
 }
 
 async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
+  const fetchImageAsBase64 = async (url: string) => {
+    const response = await fetch(url);
+    const imageBuffer = await response.buffer();
+    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    return `data:${mimeType};base64,${imageBuffer.toString('base64')}`;
+  };
+
+  const [coverDataUrl, upperFaceDataUrl] = await Promise.all([
+    fetchImageAsBase64(info.cover),
+    fetchImageAsBase64(info.upper.face),
+  ]);
+
   // 构建视频信息UI组件
   const videoInfoWidget: WidgetComponent = {
     type: 'Column',
@@ -226,7 +238,7 @@ async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
     children: [
       {
         type: 'Image',
-        url: info.cover,
+        url: coverDataUrl,
         width: 120,
         height: 68,
         size: 'cover',
@@ -282,7 +294,7 @@ async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
     children: [
       {
         type: 'Image',
-        url: info.upper.face,
+        url: upperFaceDataUrl,
         width: 32,
         height: 32,
         size: 'cover',
