@@ -100,64 +100,81 @@ export async function init() {
         if (avId) params.av = avId;
         if (bvId) params.bv = bvId;
 
-        try {
-          const info = await getBilibiliVideoInfo(params);
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2 seconds
 
-          const sendInfoPromise = (async () => {
-            let infoImage = await generateVideoInfoImage(info);
-            // Convert data:image/png;base64,... to base64://...
-            if (infoImage.startsWith('data:')) {
-              const parts = infoImage.split(';base64,');
-              if (parts.length === 2) {
-                infoImage = `base64://${parts[1]}`;
-              }
-            }
-            await new SendMessage({
-              message: new SendImageMessage(infoImage),
-            }).reply(message);
-          })();
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const info = await getBilibiliVideoInfo(params);
 
-          const downloadVideoPromise = (async () => {
-            if (info.bv) {
-              await new SendMessage({
-                message: new SendTextMessage('正在下载视频, 请稍候...'),
-              }).reply(message);
-              const videoPath = await downloadBilibiliVideo(info.bv);
-              if (videoPath) {
-                await new SendMessage({
-                  message: new SendVideoMessage(videoPath),
-                }).reply(message);
-                // Clean up the downloaded file
-                try {
-                  await fs.unlink(videoPath);
-                  logger.info(
-                    '[feature.bilibili] Deleted cached video file: %s',
-                    videoPath
-                  );
-                } catch (e) {
-                  logger.error(
-                    `[feature.bilibili] Failed to delete cached video file: %s`,
-                    videoPath
-                  );
-                  logger.error('[feature.bilibili] %s', e);
+            const sendInfoPromise = (async () => {
+              let infoImage = await generateVideoInfoImage(info);
+              // Convert data:image/png;base64,... to base64://...
+              if (infoImage.startsWith('data:')) {
+                const parts = infoImage.split(';base64,');
+                if (parts.length === 2) {
+                  infoImage = `base64://${parts[1]}`;
                 }
-              } else {
-                await new SendMessage({
-                  message: new SendTextMessage('视频下载失败'),
-                }).reply(message);
               }
-            }
-          })();
+              await new SendMessage({
+                message: new SendImageMessage(infoImage),
+              }).reply(message);
+            })();
 
-          await Promise.all([sendInfoPromise, downloadVideoPromise]);
-        } catch (error) {
-          logger.error(
-            '[feature.bilibili] Error processing Bilibili link:',
-            error
-          );
-          await new SendMessage({
-            message: new SendTextMessage('处理B站链接时发生错误'),
-          }).reply(message);
+            const downloadVideoPromise = (async () => {
+              if (info.bv) {
+                await new SendMessage({
+                  message: new SendTextMessage('正在下载视频, 请稍候...'),
+                }).reply(message);
+                const videoPath = await downloadBilibiliVideo(info.bv);
+                if (videoPath) {
+                  await new SendMessage({
+                    message: new SendVideoMessage(videoPath),
+                  }).reply(message);
+                  // Clean up the downloaded file
+                  try {
+                    await fs.unlink(videoPath);
+                    logger.info(
+                      '[feature.bilibili] Deleted cached video file: %s',
+                      videoPath
+                    );
+                  } catch (e) {
+                    logger.error(
+                      `[feature.bilibili] Failed to delete cached video file: %s`,
+                      videoPath
+                    );
+                    logger.error('[feature.bilibili] %s', e);
+                  }
+                } else {
+                  await new SendMessage({
+                    message: new SendTextMessage('视频下载失败'),
+                  }).reply(message);
+                }
+              }
+            })();
+
+            await Promise.all([sendInfoPromise, downloadVideoPromise]);
+
+            // If successful, break the loop
+            break;
+          } catch (error) {
+            logger.error(
+              `[feature.bilibili] Attempt ${attempt} failed:`,
+              error
+            );
+            if (attempt === maxRetries) {
+              logger.error(
+                '[feature.bilibili] All retries failed. Error processing Bilibili link.'
+              );
+              await new SendMessage({
+                message: new SendTextMessage(
+                  '处理B站链接时发生错误, 已达到最大重试次数'
+                ),
+              }).reply(message);
+            } else {
+              await new Promise((res) => setTimeout(res, retryDelay));
+            }
+          }
         }
         return;
       }
