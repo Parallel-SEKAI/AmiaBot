@@ -123,11 +123,14 @@ export async function init() {
                 // Clean up the downloaded file
                 try {
                   await fs.unlink(videoPath);
-                  logger.info('[feature.bilibili] Deleted cached video file: %s', videoPath);
+                  logger.info(
+                    '[feature.bilibili] Deleted cached video file: %s',
+                    videoPath
+                  );
                 } catch (e) {
                   logger.error(
                     `[feature.bilibili] Failed to delete cached video file: %s`,
-                    videoPath,
+                    videoPath
                   );
                   logger.error('[feature.bilibili] %s', e);
                 }
@@ -141,7 +144,10 @@ export async function init() {
 
           await Promise.all([sendInfoPromise, downloadVideoPromise]);
         } catch (error) {
-          logger.error('[feature.bilibili] Error processing Bilibili link:', error);
+          logger.error(
+            '[feature.bilibili] Error processing Bilibili link:',
+            error
+          );
           await new SendMessage({
             message: new SendTextMessage('处理B站链接时发生错误'),
           }).reply(message);
@@ -177,9 +183,7 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
   }
 }
 
-async function generateVideoInfoImage(
-  info: VideoInfo
-): Promise<string> {
+async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
   // 构建视频信息UI组件
   const videoInfoWidget: WidgetComponent = {
     type: 'Column',
