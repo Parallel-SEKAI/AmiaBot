@@ -78,9 +78,9 @@ export async function init() {
           if (avMatchFromUrl) {
             const avId = Number(avMatchFromUrl[1]);
             const info = await getVideoInfo({ av: avId });
-            await new SendMessage({ message: new SendImageMessage(info) }).reply(
-              message
-            );
+            await new SendMessage({
+              message: new SendImageMessage(info),
+            }).reply(message);
             return;
           }
 
@@ -88,9 +88,9 @@ export async function init() {
           if (bvMatchFromUrl) {
             const bvId = bvMatchFromUrl[1];
             const info = await getVideoInfo({ bv: bvId });
-            await new SendMessage({ message: new SendImageMessage(info) }).reply(
-              message
-            );
+            await new SendMessage({
+              message: new SendImageMessage(info),
+            }).reply(message);
             return;
           }
 
@@ -119,7 +119,7 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
   try {
     // 使用 fetch 发起请求，不跟随重定向
     const response = await fetch(shortUrl, {
-      redirect: 'manual' // 不自动跟随重定向，以便获取重定向目标
+      redirect: 'manual', // 不自动跟随重定向，以便获取重定向目标
     });
 
     // 检查是否为重定向状态码
