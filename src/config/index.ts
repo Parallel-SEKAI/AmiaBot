@@ -8,6 +8,7 @@ const envVarsSchema = z
   .object({
     PREFIXES: z.string().optional().default(''),
     HELP_TEXT: z.string().optional().default(''),
+    FEATURES_DEFAULT_ENABLED: z.string().optional().default('true'),
     ONEBOT_HTTP_URL: z.string().optional().default(''),
     ONEBOT_WS_URL: z.string().optional().default(''),
     ONEBOT_TOKEN: z.string().optional().default(''),
@@ -34,6 +35,7 @@ const envVars = envVarsSchema.parse(process.env);
 export interface IConfig {
   prefixes: string[];
   helpText: string;
+  featuresDefaultEnabled: boolean;
   onebot: {
     httpUrl: string;
     wsUrl: string;
@@ -71,6 +73,8 @@ export interface IConfig {
 export const config: IConfig = {
   prefixes: JSON.parse(envVars.PREFIXES || '["/"]'),
   helpText: envVars.HELP_TEXT || '',
+  featuresDefaultEnabled:
+    envVars.FEATURES_DEFAULT_ENABLED.toLowerCase() === 'true',
   onebot: {
     httpUrl: envVars.ONEBOT_HTTP_URL || '',
     wsUrl: envVars.ONEBOT_WS_URL || '',
