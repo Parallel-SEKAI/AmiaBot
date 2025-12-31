@@ -123,32 +123,34 @@ export async function init() {
 
             const downloadVideoPromise = (async () => {
               if (info.bv) {
-                await new SendMessage({
-                  message: new SendTextMessage('正在下载视频, 请稍候...'),
-                }).reply(message);
+                // await new SendMessage({
+                //   message: new SendTextMessage('正在下载视频, 请稍候...'),
+                // }).reply(message);
                 const videoPath = await downloadBilibiliVideo(info.bv);
                 if (videoPath) {
-                  await new SendMessage({
-                    message: new SendVideoMessage(videoPath),
-                  }).reply(message);
-                  // Clean up the downloaded file
                   try {
-                    await fs.unlink(videoPath);
-                    logger.info(
-                      '[feature.bilibili] Deleted cached video file: %s',
-                      videoPath
-                    );
-                  } catch (e) {
-                    logger.error(
-                      `[feature.bilibili] Failed to delete cached video file: %s`,
-                      videoPath
-                    );
-                    logger.error('[feature.bilibili] %s', e);
+                    const videoData = await fs.readFile(videoPath);
+                    await new SendMessage({
+                      message: new SendVideoMessage(
+                        `base64://${videoData.toString('base64')}`
+                      ),
+                    }).reply(message);
+                  } finally {
+                    // Clean up the downloaded file
+                    try {
+                      await fs.unlink(videoPath);
+                      logger.info(
+                        '[feature.bilibili] Deleted cached video file: %s',
+                        videoPath
+                      );
+                    } catch (e) {
+                      logger.error(
+                        `[feature.bilibili] Failed to delete cached video file: %s`,
+                        videoPath
+                      );
+                      logger.error('[feature.bilibili] %s', e);
+                    }
                   }
-                } else {
-                  await new SendMessage({
-                    message: new SendTextMessage('视频下载失败'),
-                  }).reply(message);
                 }
               }
             })();
