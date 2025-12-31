@@ -82,7 +82,7 @@ export async function checkFeatureEnabled(groupId: number, feature: string) {
     WHERE group_id = $1 AND feature_name = $2
   `;
   const result = await pool.query(query, [groupId, feature]);
-  return result.rows[0]?.is_enabled || false;
+  return result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
 }
 
 export async function setFeatureEnabled(
