@@ -6,7 +6,9 @@ import { checkFeatureEnabled } from '../../service/db';
 
 const pattern = /^\.r(%d*)d(%d*)/;
 
-export function parseDiceCommand(message: string): { count: number; sides: number } | null {
+export function parseDiceCommand(
+  message: string
+): { count: number; sides: number } | null {
   const match = message.match(pattern);
   if (match) {
     const count = parseInt(match[1]) || 1;
@@ -34,7 +36,9 @@ export async function init() {
         for (let i = 0; i < count; i++) {
           results.push(Math.floor(Math.random() * sides) + 1);
         }
-        (new SendMessage({ message: new SendTextMessage(`You rolled: ${results.join(', ')}`) })).reply(message);
+        new SendMessage({
+          message: new SendTextMessage(`You rolled: ${results.join(', ')}`),
+        }).reply(message);
       }
     }
   });
