@@ -47,12 +47,17 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
     const statusList = await Promise.all(
       features.map(async (f) => ({
         name: f.name,
+        description: f.description,
         enabled: await checkFeatureEnabled(groupId, f.name),
       }))
     );
 
-    const enabled = statusList.filter((s) => s.enabled).map((s) => s.name);
-    const disabled = statusList.filter((s) => !s.enabled).map((s) => s.name);
+    const enabled = statusList
+      .filter((s) => s.enabled)
+      .map((s) => `${s.name} (${s.description})`);
+    const disabled = statusList
+      .filter((s) => !s.enabled)
+      .map((s) => `${s.name} (${s.description})`);
 
     const reply =
       `当前已加载功能模块：\n已开启：\n${enabled.length > 0 ? enabled.join('\n') : '无'}\n\n未开启：\n${disabled.length > 0 ? disabled.join('\n') : '无'}`.trim();
