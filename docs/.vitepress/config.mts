@@ -13,27 +13,39 @@ export default defineConfig({
       { text: '二次开发', link: '/development/' }
     ],
 
-    sidebar: [
-      {
-        text: '使用指南',
-        items: [
-          { text: '核心功能介绍', link: '/guide/' },
-          { text: '指令格式说明', link: '/guide/commands' }
-        ]
-      },
-      {
-        text: '部署方式',
-        items: [
-          { text: '部署指南', link: '/deploy/' }
-        ]
-      },
-      {
-        text: '二次开发',
-        items: [
-          { text: '开发指南', link: '/development/' }
-        ]
-      }
-    ],
+    sidebar: {
+      '/guide/': [
+        {
+          text: '使用指南',
+          items: [
+            {
+              text: '功能模块',
+              collapsed: false,
+              items: [
+                { text: '核心功能介绍', link: '/guide/' },
+                { text: '指令格式说明', link: '/guide/commands' }
+              ]
+            }
+          ]
+        },
+      ],
+      '/deploy/': [
+        {
+          text: '部署方式',
+          items: [
+            { text: '部署指南', link: '/deploy/' }
+          ]
+        }
+      ],
+      '/development/': [
+        {
+          text: '二次开发',
+          items: [
+            { text: '开发指南', link: '/development/' }
+          ]
+        }
+      ]
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
