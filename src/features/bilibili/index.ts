@@ -134,7 +134,9 @@ export async function init() {
                       message: new SendVideoMessage(
                         `base64://${videoData.toString('base64')}`
                       ),
-                    }).reply(message);
+                    }).send({
+                      recvMessage: message,
+                    });
                   } finally {
                     // Clean up the downloaded file
                     try {
