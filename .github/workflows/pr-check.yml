@@ -15,7 +15,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # 建議使用穩定版本 v4
+        uses: actions/checkout@v6 # 建議使用穩定版本 v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
