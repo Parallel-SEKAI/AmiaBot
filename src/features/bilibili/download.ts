@@ -96,7 +96,8 @@ async function downloadFile(
     };
 
     const response = await fetch(url, { headers });
-    if (!response.ok || !response.body) {
+    const body = response.body;
+    if (!response.ok || !body) {
       logger.error(
         '[feature.bilibili.download] Failed to download %s: %s',
         filename,
@@ -107,8 +108,8 @@ async function downloadFile(
 
     const fileStream = require('fs').createWriteStream(filename);
     await new Promise((resolve, reject) => {
-      response.body.pipe(fileStream);
-      response.body.on('error', reject);
+      body.pipe(fileStream);
+      body.on('error', reject);
       fileStream.on('finish', resolve);
     });
 

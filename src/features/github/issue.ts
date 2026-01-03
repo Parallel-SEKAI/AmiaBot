@@ -39,6 +39,9 @@ export async function getIssueInfo(
     );
     return false;
   }
+
+  const issueData = response.data;
+
   logger.info(
     '[feature.github.issue][Issue: %s/%s#%d] Title: %s',
     owner,
@@ -46,8 +49,6 @@ export async function getIssueInfo(
     issueNumber,
     issueData.title
   );
-
-  const issueData = response.data;
 
   // 构建Issue信息UI组件
   const issueInfoWidget: WidgetComponent = {
