@@ -97,7 +97,11 @@ async function downloadFile(
 
     const response = await fetch(url, { headers });
     if (!response.ok || !response.body) {
-      logger.error(`Failed to download ${filename}: ${response.statusText}`);
+      logger.error(
+        '[feature.bilibili.download] Failed to download %s: %s',
+        filename,
+        response.statusText
+      );
       return false;
     }
 
@@ -108,10 +112,17 @@ async function downloadFile(
       fileStream.on('finish', resolve);
     });
 
-    logger.info(`${filename} downloaded successfully.`);
+    logger.info(
+      '[feature.bilibili.download] %s downloaded successfully.',
+      filename
+    );
     return true;
   } catch (error) {
-    logger.error(`Failed to download ${filename}:`, error);
+    logger.error(
+      '[feature.bilibili.download] Failed to download %s:',
+      filename,
+      error
+    );
     return false;
   }
 }
@@ -128,7 +139,10 @@ async function downloadWithRetry(
   if (url2 && (await downloadFile(url2, filename, referer))) {
     return true;
   }
-  logger.error(`Failed to download ${filename} from all sources.`);
+  logger.error(
+    '[feature.bilibili.download] Failed to download %s from all sources.',
+    filename
+  );
   return false;
 }
 
@@ -141,7 +155,10 @@ export async function downloadBilibiliVideo(
   const finalVideoPath = path.join(cacheDir, `${bv}.mp4`);
   try {
     await fs.access(finalVideoPath);
-    logger.info(`Video ${bv} already exists in cache.`);
+    logger.info(
+      '[feature.bilibili.download] Video %s already exists in cache.',
+      bv
+    );
     return finalVideoPath;
   } catch (e) {
     // File doesn't exist, proceed with download
@@ -212,13 +229,22 @@ export async function downloadBilibiliVideo(
 
     // 5. Merge with ffmpeg
     const ffmpegCommand = `ffmpeg -y -i "${tempVideoPath}" -i "${tempAudioPath}" -c copy "${finalVideoPath}"`;
-    logger.info('Merging video and audio with ffmpeg...');
+    logger.info(
+      '[feature.bilibili.download] Merging video and audio with ffmpeg...'
+    );
     await execPromise(ffmpegCommand);
-    logger.info(`Video ${bv} merged successfully.`);
+    logger.info(
+      '[feature.bilibili.download] Video %s merged successfully.',
+      bv
+    );
 
     return finalVideoPath;
   } catch (error) {
-    logger.error(`Failed to download Bilibili video ${bv}:`, error);
+    logger.error(
+      '[feature.bilibili.download] Failed to download Bilibili video %s:',
+      bv,
+      error
+    );
     return null;
   } finally {
     // 6. Cleanup

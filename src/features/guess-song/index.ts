@@ -455,7 +455,7 @@ async function guessSong(data: Record<string, any>) {
         }
       }, timeout * 1000);
     } catch (error: any) {
-      logger.error('[feature.guess-song] 处理音乐失败: %s', error.message);
+      logger.error('[feature.guess-song] Failed to process music:', error);
       await new SendMessage({
         message: new SendTextMessage('处理音乐失败，请稍后再试'),
       }).send({

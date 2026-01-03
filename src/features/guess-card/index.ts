@@ -324,7 +324,7 @@ async function cropImage(imageUrl: string, cropSize: number): Promise<Buffer> {
 
     return croppedBuffer;
   } catch (error) {
-    logger.error('[feature.guess-card] Failed to crop image: %s', error);
+    logger.error('[feature.guess-card] Failed to crop image:', error);
     // 失败时返回原始图片
     const response = await fetch(imageUrl);
     const buffer = await response.arrayBuffer();

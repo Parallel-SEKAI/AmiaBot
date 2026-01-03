@@ -137,7 +137,10 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     while (retryCount < maxRetries && !success) {
       retryCount++;
       try {
-        logger.info(`[OpenAI] 开始第${retryCount}次生成emoji歌词`);
+        logger.info(
+          '[feature.netease.emojilyric] Starting attempt %d to generate emoji lyric',
+          retryCount
+        );
 
         // 调用OpenAI API生成emoji歌词，限制超时时间
         const response = await openai.chat.completions.create({
@@ -152,20 +155,32 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
         const usage = response.usage;
         if (usage) {
           const usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens || 0}, Completion: ${usage.completion_tokens || 0}, Total: ${usage.total_tokens || 0}`;
-          logger.info('[OpenAI] %s', usageInfo);
+          logger.info('[feature.netease.emojilyric] %s', usageInfo);
         }
 
         success = true;
-        logger.info(`[OpenAI] 第${retryCount}次生成emoji歌词成功`);
+        logger.info(
+          '[feature.netease.emojilyric] Successfully generated emoji lyric on attempt %d',
+          retryCount
+        );
       } catch (error) {
-        logger.error(`[OpenAI] 第${retryCount}次生成emoji歌词失败: ${error}`);
+        logger.error(
+          '[feature.netease.emojilyric] Attempt %d failed to generate emoji lyric:',
+          retryCount,
+          error
+        );
         if (retryCount < maxRetries) {
-          logger.info(`[OpenAI] ${retryCount}秒后重试...`);
+          logger.info(
+            '[feature.netease.emojilyric] Retrying in %d seconds...',
+            retryCount
+          );
           await new Promise((resolve) =>
             setTimeout(resolve, retryCount * 1000)
           ); // 指数退避重试
         } else {
-          logger.error('[OpenAI] 多次重试后生成emoji歌词失败');
+          logger.error(
+            '[feature.netease.emojilyric] All attempts failed to generate emoji lyric'
+          );
         }
       }
     }
@@ -173,7 +188,9 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     // 如果没有生成结果，返回原始歌词
     if (!emojiLyric.trim()) {
       emojiLyric = lyric.original_lyric;
-      logger.info('[OpenAI] 生成失败，返回原始歌词');
+      logger.info(
+        '[feature.netease.emojilyric] Generation failed, returning original lyric'
+      );
     }
 
     // 发送结果
@@ -196,7 +213,10 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
     // 删除开始处理的消息
     await startMessage.delete();
   } catch (error) {
-    logger.error('生成表情歌词失败:', error);
+    logger.error(
+      '[feature.netease.emojilyric] Failed to generate emoji lyric:',
+      error
+    );
     await message.reply(
       new SendMessage({
         message: new SendTextMessage(`处理表情歌词时发生错误: ${error}喵~`),
@@ -270,7 +290,7 @@ export async function search(message: RecvMessage): Promise<void> {
     const searchDataItem = { songs: validSongs, timestamp: Date.now() };
     searchHistory.set(messageIdToString(msg.messageId), searchDataItem);
   } catch (error) {
-    logger.error('搜索歌曲失败:', error);
+    logger.error('[feature.netease.search] Failed to search songs:', error);
     await message.reply(
       new SendMessage({
         message: new SendTextMessage(`搜索歌曲失败: ${error}喵~`),
@@ -319,7 +339,7 @@ export async function play(message: RecvMessage): Promise<void> {
       })
     );
   } catch (error) {
-    logger.error('播放歌曲失败:', error);
+    logger.error('[feature.netease.play] Failed to play song:', error);
     await message.reply(
       new SendMessage({
         message: new SendTextMessage(`播放歌曲时发生错误: ${error}喵~`),
@@ -368,7 +388,7 @@ export async function download(message: RecvMessage): Promise<void> {
       })
     );
   } catch (error) {
-    logger.error('下载歌曲失败:', error);
+    logger.error('[feature.netease.download] Failed to download song:', error);
     await message.reply(
       new SendMessage({
         message: new SendTextMessage(`下载歌曲时发生错误: ${error}喵~`),

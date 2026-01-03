@@ -23,24 +23,28 @@ export class FeatureManager {
   public registerFeature(feature: FeatureModule): void {
     this.features.set(feature.name, feature);
     logger.info(
-      `[feature.manager] Registered feature: ${feature.name} - ${feature.description}`
+      '[feature.manager] Registered feature: %s - %s',
+      feature.name,
+      feature.description
     );
   }
 
   public async initializeAllFeatures(): Promise<void> {
     logger.info(
-      `[feature.manager] Initializing ${this.features.size} features...`
+      '[feature.manager] Initializing %d features...',
+      this.features.size
     );
 
     const initializationPromises = Array.from(this.features.entries()).map(
       async ([name, feature]) => {
         try {
           await feature.init();
-          logger.info(`[feature.manager] Initialized feature: ${name}`);
+          logger.info('[feature.manager] Initialized feature: %s', name);
           return { name, success: true };
         } catch (error) {
           logger.error(
-            `[feature.manager] Failed to initialize feature ${name}:`,
+            '[feature.manager] Failed to initialize feature %s:',
+            name,
             error
           );
           return { name, success: false, error };
@@ -53,7 +57,9 @@ export class FeatureManager {
     const failed = results.filter((r) => !r.success).length;
 
     logger.info(
-      `[feature.manager] Feature initialization completed: ${successful} successful, ${failed} failed`
+      '[feature.manager] Feature initialization completed: %d successful, %d failed',
+      successful,
+      failed
     );
   }
 

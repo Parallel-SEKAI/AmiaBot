@@ -181,7 +181,7 @@ async function cutImage(imageUrl: string, cropSize: number): Promise<Buffer> {
 
     return croppedBuffer;
   } catch (error: unknown) {
-    logger.error('[feature.guess-event] Failed to crop image: %s', error);
+    logger.error('[feature.guess-event] Failed to crop image:', error);
     // 失败时返回原始图片
     const response = await fetch(imageUrl);
     const buffer = await response.arrayBuffer();
@@ -343,9 +343,7 @@ async function guessEvent(data: Record<string, any>) {
         }
       }, timeout * 1000);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error('[feature.guess-event] 处理活动失败: %s', errorMessage);
+      logger.error('[feature.guess-event] Failed to process event:', error);
       await new SendMessage({
         message: new SendTextMessage('处理活动失败，请稍后再试'),
       }).send({

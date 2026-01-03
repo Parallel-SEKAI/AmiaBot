@@ -2,6 +2,7 @@ import { Pool, PoolConfig } from 'pg';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { config } from '../config/index';
+import logger from '../config/logger';
 
 // 数据库连接配置
 const dbConfig: PoolConfig = {
@@ -28,18 +29,20 @@ let reconnectAttempts = 0;
 
 // 监听连接池错误事件
 pool.on('error', (err) => {
-  console.error('数据库连接错误:', err.message);
+  logger.error('[db] Database connection error:', err);
 
   // 如果重连尝试次数未达上限，则进行重连
   if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
     reconnectAttempts++;
-    console.log(
-      `尝试重新连接数据库... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+    logger.info(
+      '[db] Attempting to reconnect to database... (%d/%d)',
+      reconnectAttempts,
+      MAX_RECONNECT_ATTEMPTS
     );
 
     // 关闭当前连接池
     pool.end().catch((endErr) => {
-      console.error('关闭连接池失败:', endErr.message);
+      logger.error('[db] Failed to close connection pool:', endErr);
     });
 
     // 延迟后重新创建连接池
@@ -48,21 +51,22 @@ pool.on('error', (err) => {
 
       // 重新监听错误事件
       pool.on('error', (err) => {
-        console.error('数据库重连错误:', err.message);
+        logger.error('[db] Database reconnection error:', err);
       });
 
-      console.log('数据库连接池已重新创建');
+      logger.info('[db] Database connection pool re-created');
     }, RECONNECT_INTERVAL);
   } else {
-    console.error(
-      `数据库重连失败，已达最大尝试次数 (${MAX_RECONNECT_ATTEMPTS})`
+    logger.error(
+      '[db] Database reconnection failed, max attempts reached (%d)',
+      MAX_RECONNECT_ATTEMPTS
     );
   }
 });
 
 // 监听连接池获取连接事件
 pool.on('connect', () => {
-  console.log('数据库连接成功');
+  logger.info('[db] Database connected successfully');
   // 重置重连尝试次数
   reconnectAttempts = 0;
 });

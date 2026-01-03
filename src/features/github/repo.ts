@@ -28,16 +28,11 @@ export async function getRepoInfo(
       repo,
     });
   } catch (error: any) {
-    logger.error(
-      '[feature.github.repo][Repo: %s/%s] %s',
-      owner,
-      repo,
-      error.message
-    );
+    logger.error('[feature.github.repo][Repo: %s/%s]', owner, repo, error);
     return false;
   }
   logger.info(
-    '[feature.github.repo][Repo: %s/%s] %s',
+    '[feature.github.repo][Repo: %s/%s] Description: %s',
     owner,
     repo,
     response.data.description

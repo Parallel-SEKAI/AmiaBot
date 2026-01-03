@@ -24,7 +24,7 @@ export async function init() {
     if (await checkFeatureEnabled(data.group_id, 'query')) {
       const message = RecvMessage.fromMap(data);
       logger.info(
-        '[query.user][Group: %d][User: %d] %s',
+        '[feature.query.user][Group: %d][User: %d] %s',
         message.groupId,
         message.userId,
         message.rawMessage

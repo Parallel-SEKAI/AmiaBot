@@ -135,12 +135,12 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
       // 最后一次尝试或非重试错误，抛出异常
       if (error instanceof Error) {
         logger.error(
-          `Enana API 调用失败: %s\n调用内容: %o`,
+          '[service.enana] Enana API call failed: %s\nPayload: %j',
           error.message,
-          JSON.stringify({
+          {
             widget,
             scale,
-          })
+          }
         );
         throw new Error(`Enana API 调用失败: ${error.message}`);
       }
