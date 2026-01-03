@@ -100,14 +100,40 @@ export async function init() {
         if (avId) params.av = avId;
         if (bvId) params.bv = bvId;
 
-        const maxRetries = 3;
-        const retryDelay = 2000; // 2 seconds
+        const retry = async <T>(
+          fn: () => Promise<T>,
+          retries: number,
+          delay: number,
+          context: string
+        ): Promise<T> => {
+          let lastError;
+          for (let i = 0; i < retries; i++) {
+            try {
+              return await fn();
+            } catch (e) {
+              lastError = e;
+              logger.error(
+                `[feature.bilibili] ${context} attempt ${i + 1} failed:`,
+                e
+              );
+              if (i < retries - 1) {
+                await new Promise((res) => setTimeout(res, delay));
+              }
+            }
+          }
+          throw lastError;
+        };
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            const info = await getBilibiliVideoInfo(params);
+        try {
+          const info = await retry(
+            () => getBilibiliVideoInfo(params),
+            3,
+            2000,
+            'Get Video Info'
+          );
 
-            const sendInfoPromise = (async () => {
+          const sendInfoPromise = retry(
+            async () => {
               let infoImage = await generateVideoInfoImage(info);
               // Convert data:image/png;base64,... to base64://...
               if (infoImage.startsWith('data:')) {
@@ -119,13 +145,20 @@ export async function init() {
               await new SendMessage({
                 message: new SendImageMessage(infoImage),
               }).reply(message);
-            })();
+            },
+            3,
+            2000,
+            'Send Info Image'
+          ).catch((e) => {
+            logger.error(
+              '[feature.bilibili] Failed to send info image after retries:',
+              e
+            );
+          });
 
-            const downloadVideoPromise = (async () => {
+          const downloadVideoPromise = retry(
+            async () => {
               if (info.bv) {
-                // await new SendMessage({
-                //   message: new SendTextMessage('正在下载视频, 请稍候...'),
-                // }).reply(message);
                 const videoPath = await downloadBilibiliVideo(info.bv);
                 if (videoPath) {
                   try {
@@ -155,30 +188,23 @@ export async function init() {
                   }
                 }
               }
-            })();
-
-            await Promise.all([sendInfoPromise, downloadVideoPromise]);
-
-            // If successful, break the loop
-            break;
-          } catch (error) {
+            },
+            3,
+            2000,
+            'Download Video'
+          ).catch(async (e) => {
             logger.error(
-              `[feature.bilibili] Attempt ${attempt} failed:`,
-              error
+              '[feature.bilibili] Failed to download/send video after retries:',
+              e
             );
-            if (attempt === maxRetries) {
-              logger.error(
-                '[feature.bilibili] All retries failed. Error processing Bilibili link.'
-              );
-              await new SendMessage({
-                message: new SendTextMessage(
-                  '处理B站链接时发生错误, 已达到最大重试次数'
-                ),
-              }).reply(message);
-            } else {
-              await new Promise((res) => setTimeout(res, retryDelay));
-            }
-          }
+          });
+
+          await Promise.all([sendInfoPromise, downloadVideoPromise]);
+        } catch (error) {
+          logger.error(
+            '[feature.bilibili] Failed to get video info after retries:',
+            error
+          );
         }
         return;
       }
