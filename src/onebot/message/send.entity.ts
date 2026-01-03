@@ -2,9 +2,7 @@ import assert from 'assert';
 import { onebot } from '../../main';
 import { RecvMessage } from './recv.entity';
 import logger from '../../config/logger';
-
-const messageHistory: Record<number, Array<{ messageId: string }>> = {};
-const recalledMessageIds: Set<number> = new Set();
+import { stateService } from '../../service/state';
 
 interface SendMessageArgs {
   message: SendBaseMessage[] | SendBaseMessage;
@@ -41,7 +39,7 @@ export class SendMessage {
     // 检查原消息是否已被撤回
     if (
       args.recvMessage &&
-      recalledMessageIds.has(args.recvMessage.messageId)
+      stateService.isRecalled(args.recvMessage.messageId)
     ) {
       logger.info(
         '[onebot.send] Message not sent because original message %d was recalled',
@@ -85,9 +83,10 @@ export class SendMessage {
     }
 
     if (args.recvMessage && data.data && data.data.message_id) {
-      (messageHistory[args.recvMessage.messageId] ||= []).push({
-        messageId: data.data.message_id,
-      });
+      stateService.addMessageRelation(
+        args.recvMessage.messageId,
+        data.data.message_id
+      );
     }
 
     if (!data.data || !data.data.message_id) {
@@ -113,7 +112,7 @@ export class SendMessage {
 
   public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
     // 检查原消息是否已被撤回
-    if (recalledMessageIds.has(recvMessage.messageId)) {
+    if (stateService.isRecalled(recvMessage.messageId)) {
       logger.info(
         '[onebot.reply] Message not replied because original message %d was recalled',
         recvMessage.messageId
@@ -146,10 +145,11 @@ export class SendMessage {
       throw new Error('Could not determine message type (private or group).');
     }
 
-    if (recvMessage) {
-      (messageHistory[recvMessage.messageId] ||= []).push({
-        messageId: data!.data.message_id,
-      });
+    if (recvMessage && data.data && data.data.message_id) {
+      stateService.addMessageRelation(
+        recvMessage.messageId,
+        data.data.message_id
+      );
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
@@ -214,7 +214,7 @@ export class SendFaceMessage extends SendBaseMessage {
 export class SendRecordMessage extends SendBaseMessage {
   /**
    * 发送语音消息
-   * @param file 语音文件路径，可以是本地路径或网络URL
+   * @param file 语音文件路径，可以是本地路径 或 网络URL
    */
   constructor(file: string) {
     super('record', { file });
@@ -224,7 +224,7 @@ export class SendRecordMessage extends SendBaseMessage {
 export class SendVideoMessage extends SendBaseMessage {
   /**
    * 发送视频消息
-   * @param file 视频文件路径，可以是本地路径或网络URL
+   * @param file 视频文件路径，可以是本地路径 或 网络URL
    */
   constructor(file: string) {
     super('video', { file });
@@ -318,8 +318,6 @@ export interface ForwardMessageNode {
     content: SendBaseMessage[];
   };
 }
-
-export { recalledMessageIds, messageHistory };
 
 export class SendForwardMessage extends SendBaseMessage {
   /**

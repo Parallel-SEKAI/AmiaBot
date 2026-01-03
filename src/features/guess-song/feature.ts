@@ -7,12 +7,14 @@ import {
   SendRecordMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import { FeatureModule } from '../feature-manager';
+import { safeUnlink } from '../../utils';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const ffmpeg = require('fluent-ffmpeg');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { getGameState, setGameState, deleteGameState } from '../../service/db';
 
 const difficulty = {
   ez: 12, // 简单难度，12秒
@@ -26,14 +28,6 @@ const difficulty = {
 const timeout = 60.0; // 60秒超时
 const targetSimilarity = 0.75; // 相似度阈值
 
-interface Answer {
-  time: number;
-  musicId: number;
-  title: string;
-  answers: string[];
-  assetbundleName: string;
-}
-
 interface MusicInfo {
   imageUrl: string;
   musicId: number;
@@ -43,8 +37,6 @@ interface MusicInfo {
   vocal: Record<string, any>;
   music: Record<string, any>;
 }
-
-let answers: Record<number, Answer> = {};
 
 /**
  * 计算 Levenshtein 相似度（0~1），1 表示完全相同，0 表示无任何相同字符
@@ -110,13 +102,14 @@ async function downloadFile(url: string, filePath: string): Promise<void> {
           resolve();
         });
 
-        fileStream.on('error', (error: any) => {
-          fs.unlinkSync(filePath); // 删除不完整的文件
+        fileStream.on('error', async (error: any) => {
+          fileStream.close();
+          await safeUnlink(filePath); // 删除不完整的文件
           reject(new Error(`写入文件失败: ${error.message}`));
         });
       })
-      .on('error', (error: any) => {
-        fs.unlinkSync(filePath); // 删除不完整的文件
+      .on('error', async (error: any) => {
+        await safeUnlink(filePath); // 删除不完整的文件
         reject(new Error(`请求失败: ${error.message}`));
       });
   });
@@ -174,71 +167,64 @@ async function getMusicInfoById(musicId: number): Promise<MusicInfo> {
  * 从音频随机选取指定时长的片段进行裁剪后返回
  */
 async function cutMusic(musicUrl: string, duration: number): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // 1. 创建临时目录
-      const tempDir = os.tmpdir();
-      const musicFileName = path.basename(musicUrl);
-      const tempFilePath = path.join(tempDir, musicFileName);
-      const croppedFilePath = path.join(tempDir, `cropped_${musicFileName}`);
+  const tempDir = os.tmpdir();
+  const musicFileName = path.basename(musicUrl);
+  const tempFilePath = path.join(tempDir, musicFileName);
+  const croppedFilePath = path.join(tempDir, `cropped_${musicFileName}`);
 
-      // 2. 下载音乐文件
-      await downloadFile(musicUrl, tempFilePath);
+  try {
+    // 1. 下载音乐文件
+    await downloadFile(musicUrl, tempFilePath);
 
-      // 3. 使用ffprobe获取音频时长
+    // 2. 获取音频时长并裁剪
+    return await new Promise<Buffer>((resolve, reject) => {
       ffmpeg.ffprobe(tempFilePath, (err: any, metadata: any) => {
         if (err) {
-          fs.unlinkSync(tempFilePath);
-          reject(new Error(`获取音频时长失败: ${err.message}`));
-          return;
+          return reject(new Error(`获取音频时长失败: ${err.message}`));
         }
 
         const audioDuration = metadata.format.duration;
 
-        // 4. 检查音频长度是否足够
+        // 3. 检查音频长度是否足够
         if (audioDuration <= duration) {
-          // 如果音频长度小于等于目标时长，直接返回
-          const buffer = fs.readFileSync(tempFilePath);
-          fs.unlinkSync(tempFilePath);
-          resolve(buffer);
-          return;
+          try {
+            const buffer = fs.readFileSync(tempFilePath);
+            return resolve(buffer);
+          } catch (e) {
+            return reject(e);
+          }
         }
 
-        // 5. 随机生成裁剪起始点
+        // 4. 随机生成裁剪起始点
         const maxStartTime = audioDuration - duration;
         const startTime = Math.random() * maxStartTime;
 
-        // 6. 使用ffmpeg裁剪音频
+        // 5. 使用ffmpeg裁剪音频
         ffmpeg(tempFilePath)
           .setStartTime(startTime)
           .setDuration(duration)
           .output(croppedFilePath)
           .on('end', () => {
-            // 7. 读取裁剪后的文件
-            const buffer = fs.readFileSync(croppedFilePath);
-
-            // 8. 清理临时文件
-            fs.unlinkSync(tempFilePath);
-            fs.unlinkSync(croppedFilePath);
-
-            resolve(buffer);
+            try {
+              const buffer = fs.readFileSync(croppedFilePath);
+              resolve(buffer);
+            } catch (e) {
+              reject(e);
+            }
           })
           .on('error', (error: any) => {
-            // 清理临时文件
-            if (fs.existsSync(tempFilePath)) {
-              fs.unlinkSync(tempFilePath);
-            }
-            if (fs.existsSync(croppedFilePath)) {
-              fs.unlinkSync(croppedFilePath);
-            }
             reject(new Error(`裁剪音频失败: ${error.message}`));
           })
           .run();
       });
-    } catch (error: any) {
-      reject(new Error(`处理音频失败: ${error.message}`));
-    }
-  });
+    });
+  } catch (error: any) {
+    throw new Error(`处理音频失败: ${error.message}`);
+  } finally {
+    // 6. 清理临时文件
+    await safeUnlink(tempFilePath);
+    await safeUnlink(croppedFilePath);
+  }
 }
 
 /**
@@ -325,11 +311,16 @@ async function sendAnswer(
  */
 async function checkAnswer(message: RecvMessage): Promise<void> {
   const groupId = message.groupId;
-  if (groupId === null || !answers[groupId]) {
+  if (groupId === null) {
     return;
   }
 
-  const answer = answers[groupId];
+  const gameState = await getGameState(groupId, 'guess-song');
+  if (!gameState) {
+    return;
+  }
+
+  const answer = gameState.answer_data;
   const userInput = message.content.toLowerCase();
 
   // 计算相似度
@@ -347,7 +338,7 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
     await sendAnswer(message, musicInfo, false);
 
     // 删除记录
-    delete answers[groupId];
+    await deleteGameState(groupId, 'guess-song');
   }
 }
 
@@ -355,114 +346,110 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
  * 猜歌主函数
  */
 async function guessSong(data: Record<string, any>) {
-  if (await checkFeatureEnabled(data.group_id, 'guess-song')) {
-    const message = RecvMessage.fromMap(data);
+  const message = RecvMessage.fromMap(data);
+  logger.info(
+    '[feature.guess-song][Group: %d][User: %d] %s',
+    message.groupId,
+    message.userId,
+    message.rawMessage
+  );
+
+  // 检查当前群是否已有未结束的游戏
+  const groupId = message.groupId;
+  if (groupId === null) {
+    return;
+  }
+
+  const existingGame = await getGameState(groupId, 'guess-song');
+  if (existingGame) {
+    // 已有未结束的游戏，发送提示
+    await new SendMessage({
+      message: new SendTextMessage('当前有未结束的猜歌曲'),
+    }).send({
+      recvMessage: message,
+    });
+    return;
+  }
+
+  // 解析难度
+  let duration = difficulty.hd; // 默认困难难度
+  for (const key in difficulty) {
+    if (message.content.toLowerCase().includes(key)) {
+      duration = difficulty[key as keyof typeof difficulty];
+      break;
+    }
+  }
+
+  try {
+    // 获取随机音乐信息
+    const musicInfo = await getRandomMusic();
+
     logger.info(
-      '[feature.guess-song][Group: %d][User: %d] %s',
+      '[feature.guess-song][Group: %d][User: %d] Answer: %s',
       message.groupId,
       message.userId,
-      message.rawMessage
+      musicInfo.title
     );
 
-    // 检查当前群是否已有未结束的游戏
-    const groupId = message.groupId;
-    if (groupId === null) {
-      return;
-    }
+    // 构建音乐URL
+    const musicUrl = `https://storage.sekai.best/sekai-jp-assets/music/long/${musicInfo.assetbundleName}/${musicInfo.assetbundleName}.mp3`;
 
-    if (answers[groupId]) {
-      // 已有未结束的游戏，发送提示
-      await new SendMessage({
-        message: new SendTextMessage('当前有未结束的猜歌曲'),
-      }).send({
-        recvMessage: message,
-      });
-      return;
-    }
+    // 发送下载提示
+    const downloadMessage = await new SendMessage({
+      message: new SendTextMessage('正在下载并处理音乐，请稍候...'),
+    }).send({
+      recvMessage: message,
+    });
 
-    // 解析难度
-    let duration = difficulty.hd; // 默认困难难度
-    for (const key in difficulty) {
-      if (message.content.toLowerCase().includes(key)) {
-        duration = difficulty[key as keyof typeof difficulty];
-        break;
+    // 裁剪音乐片段
+    const musicBuffer = await cutMusic(musicUrl, duration);
+
+    // 删除下载提示
+    await downloadMessage.delete();
+
+    // 将Buffer转换为base64格式
+    const musicBase64 = `base64://${musicBuffer.toString('base64')}`;
+
+    // 发送音乐片段给用户
+    await new SendMessage({
+      message: [new SendTextMessage(`接下来你有${timeout}秒猜中这首歌曲`)],
+    }).send({
+      recvMessage: message,
+    });
+    await new SendMessage({
+      message: [new SendRecordMessage(musicBase64)],
+    }).send({
+      recvMessage: message,
+    });
+
+    // 记录答案
+    const answer = {
+      musicId: musicInfo.musicId,
+      title: musicInfo.title,
+      answers: musicInfo.answers,
+      assetbundleName: musicInfo.assetbundleName,
+    };
+    await setGameState(groupId, 'guess-song', answer);
+
+    // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
+    setTimeout(async () => {
+      const gameState = await getGameState(groupId, 'guess-song');
+      if (
+        gameState &&
+        gameState.answer_data.musicId === answer.musicId &&
+        gameState.answer_data.title === answer.title
+      ) {
+        await sendAnswer(message, musicInfo, true);
+        await deleteGameState(groupId, 'guess-song');
       }
-    }
-
-    try {
-      // 获取随机音乐信息
-      const musicInfo = await getRandomMusic();
-
-      logger.info(
-        '[feature.guess-song][Group: %d][User: %d] Answer: %s',
-        message.groupId,
-        message.userId,
-        musicInfo.title
-      );
-
-      // 构建音乐URL
-      const musicUrl = `https://storage.sekai.best/sekai-jp-assets/music/long/${musicInfo.assetbundleName}/${musicInfo.assetbundleName}.mp3`;
-
-      // 发送下载提示
-      const downloadMessage = await new SendMessage({
-        message: new SendTextMessage('正在下载并处理音乐，请稍候...'),
-      }).send({
-        recvMessage: message,
-      });
-
-      // 裁剪音乐片段
-      const musicBuffer = await cutMusic(musicUrl, duration);
-
-      // 删除下载提示
-      await downloadMessage.delete();
-
-      // 将Buffer转换为base64格式
-      const musicBase64 = `base64://${musicBuffer.toString('base64')}`;
-
-      // 发送音乐片段给用户
-      await new SendMessage({
-        message: [new SendTextMessage(`接下来你有${timeout}秒猜中这首歌曲`)],
-      }).send({
-        recvMessage: message,
-      });
-      await new SendMessage({
-        message: [new SendRecordMessage(musicBase64)],
-      }).send({
-        recvMessage: message,
-      });
-
-      // 记录答案
-      answers[groupId] = {
-        time: Date.now(),
-        musicId: musicInfo.musicId,
-        title: musicInfo.title,
-        answers: musicInfo.answers,
-        assetbundleName: musicInfo.assetbundleName,
-      };
-
-      // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
-      const currentAnswer = {
-        musicId: musicInfo.musicId,
-        title: musicInfo.title,
-      };
-      setTimeout(async () => {
-        if (
-          answers[groupId] &&
-          answers[groupId].musicId === currentAnswer.musicId &&
-          answers[groupId].title === currentAnswer.title
-        ) {
-          await sendAnswer(message, musicInfo, true);
-          delete answers[groupId];
-        }
-      }, timeout * 1000);
-    } catch (error: any) {
-      logger.error('[feature.guess-song] Failed to process music:', error);
-      await new SendMessage({
-        message: new SendTextMessage('处理音乐失败，请稍后再试'),
-      }).send({
-        recvMessage: message,
-      });
-    }
+    }, timeout * 1000);
+  } catch (error: any) {
+    logger.error('[feature.guess-song] Failed to process music:', error);
+    await new SendMessage({
+      message: new SendTextMessage('处理音乐失败，请稍后再试'),
+    }).send({
+      recvMessage: message,
+    });
   }
 }
 
@@ -471,9 +458,13 @@ async function guessSong(data: Record<string, any>) {
  */
 export async function init() {
   logger.info('[feature] Init guess-song feature');
-  onebot.registerCommand('听歌识曲', async (data) => {
-    await guessSong(data);
-  });
+  onebot.registerCommand(
+    '听歌识曲',
+    async (data) => {
+      await guessSong(data);
+    },
+    'guess-song'
+  );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);
     await checkAnswer(message);

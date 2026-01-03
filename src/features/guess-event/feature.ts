@@ -6,9 +6,9 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import sharp from 'sharp';
 import { FeatureModule } from '../feature-manager';
+import { getGameState, setGameState, deleteGameState } from '../../service/db';
 
 // 难度映射表
 const difficulty = {
@@ -23,16 +23,6 @@ const difficulty = {
 const timeout = 60.0; // 60秒超时
 const targetSimilarity = 0.5; // 相似度阈值
 
-// 类型定义
-interface Answer {
-  time: number; // 游戏开始时间
-  eventId: number; // 活动ID
-  name: string; // 活动名称
-  answers: string[]; // 活动名称和别名
-  assetbundleName: string; // 活动资源包名称
-  server: string; // 服务器（cn/jp）
-}
-
 interface EventInfo {
   imageUrl: string; // 活动背景图URL
   eventId: number; // 活动ID
@@ -42,9 +32,6 @@ interface EventInfo {
   server: string; // 服务器（cn/jp）
   event: Record<string, any>; // 完整活动数据
 }
-
-// 全局变量
-let answers: Record<number, Answer> = {};
 
 // 实现Levenshtein相似度算法
 function levenshtein_similarity(s1: string, s2: string): number {
@@ -226,11 +213,16 @@ async function sendAnswer(
 async function checkAnswer(message: RecvMessage): Promise<void> {
   const groupId = message.groupId;
   // 检查是否有记录
-  if (groupId === null || !answers[groupId]) {
+  if (groupId === null) {
     return;
   }
 
-  const answer = answers[groupId];
+  const gameState = await getGameState(groupId, 'guess-event');
+  if (!gameState) {
+    return;
+  }
+
+  const answer = gameState.answer_data;
   const userInput = message.content.toLowerCase();
 
   // 计算相似度
@@ -248,118 +240,144 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
     await sendAnswer(message, eventInfo, false);
 
     // 删除记录
-    delete answers[groupId];
+    await deleteGameState(groupId, 'guess-event');
   }
 }
 
 // 猜活动主函数
 async function guessEvent(data: Record<string, any>) {
-  if (await checkFeatureEnabled(data.group_id, 'guess-event')) {
-    const message = RecvMessage.fromMap(data);
+  const message = RecvMessage.fromMap(data);
+  logger.info(
+    '[feature.guess-event][Group: %d][User: %d] %s',
+    message.groupId,
+    message.userId,
+    message.rawMessage
+  );
+
+  // 检查当前群是否已有未结束的游戏
+
+  const groupId = message.groupId;
+
+  if (groupId === null) {
+    return;
+  }
+
+  const existingGame = await getGameState(groupId, 'guess-event');
+
+  if (existingGame) {
+    // 已有未结束的游戏，发送提示
+
+    await new SendMessage({
+      message: new SendTextMessage('当前有未结束的猜活动'),
+    }).send({
+      recvMessage: message,
+    });
+
+    return;
+  }
+
+  // 解析服务器（默认cn）
+
+  let server = 'cn';
+
+  if (message.content.toLowerCase().includes('jp')) {
+    server = 'jp';
+  }
+
+  // 解析难度
+
+  let cropSize = difficulty.hd; // 默认困难难度
+
+  for (const key in difficulty) {
+    if (message.content.toLowerCase().includes(key)) {
+      cropSize = difficulty[key as keyof typeof difficulty];
+
+      break;
+    }
+  }
+
+  try {
+    // 获取随机活动信息
+
+    const eventInfo = await getRandomEvent(server);
+
     logger.info(
-      '[feature.guess-event][Group: %d][User: %d] %s',
+      '[feature.guess-event][Group: %d][User: %d] Answer: %s',
+
       message.groupId,
+
       message.userId,
-      message.rawMessage
+
+      eventInfo.name
     );
 
-    // 检查当前群是否已有未结束的游戏
-    const groupId = message.groupId;
-    if (groupId === null) {
-      return;
-    }
+    // 裁剪图片
 
-    if (answers[groupId]) {
-      // 已有未结束的游戏，发送提示
-      await new SendMessage({
-        message: new SendTextMessage('当前有未结束的猜活动'),
-      }).send({
-        recvMessage: message,
-      });
-      return;
-    }
+    const croppedImageBuffer = await cutImage(eventInfo.imageUrl, cropSize);
 
-    // 解析服务器（默认cn）
-    let server = 'cn';
-    if (message.content.toLowerCase().includes('jp')) {
-      server = 'jp';
-    }
+    // 存储答案
 
-    // 解析难度
-    let cropSize = difficulty.hd; // 默认困难难度
-    for (const key in difficulty) {
-      if (message.content.toLowerCase().includes(key)) {
-        cropSize = difficulty[key as keyof typeof difficulty];
-        break;
+    const answer = {
+      eventId: eventInfo.eventId,
+
+      name: eventInfo.name,
+
+      answers: eventInfo.answers,
+
+      assetbundleName: eventInfo.assetbundleName,
+
+      server: server,
+    };
+
+    await setGameState(groupId, 'guess-event', answer);
+
+    // 发送裁剪后的图片
+
+    await new SendMessage({
+      message: [
+        new SendTextMessage(`接下来你有${timeout}秒猜中这个活动`),
+
+        new SendImageMessage(croppedImageBuffer),
+      ],
+    }).send({
+      recvMessage: message,
+    });
+
+    // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
+
+    setTimeout(async () => {
+      const gameState = await getGameState(groupId, 'guess-event');
+
+      if (
+        gameState &&
+        gameState.answer_data.eventId === answer.eventId &&
+        gameState.answer_data.name === answer.name
+      ) {
+        await sendAnswer(message, eventInfo, true);
+
+        await deleteGameState(groupId, 'guess-event');
       }
-    }
-
-    try {
-      // 获取随机活动信息
-      const eventInfo = await getRandomEvent(server);
-
-      logger.info(
-        '[feature.guess-event][Group: %d][User: %d] Answer: %s',
-        message.groupId,
-        message.userId,
-        eventInfo.name
-      );
-
-      // 裁剪图片
-      const croppedImageBuffer = await cutImage(eventInfo.imageUrl, cropSize);
-
-      // 存储答案
-      answers[groupId] = {
-        time: Date.now(),
-        eventId: eventInfo.eventId,
-        name: eventInfo.name,
-        answers: eventInfo.answers,
-        assetbundleName: eventInfo.assetbundleName,
-        server: server,
-      };
-
-      // 发送裁剪后的图片
-      await new SendMessage({
-        message: [
-          new SendTextMessage(`接下来你有${timeout}秒猜中这个活动`),
-          new SendImageMessage(croppedImageBuffer),
-        ],
-      }).send({
-        recvMessage: message,
-      });
-
-      // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
-      const currentAnswer = {
-        eventId: eventInfo.eventId,
-        name: eventInfo.name,
-      };
-      setTimeout(async () => {
-        if (
-          answers[groupId] &&
-          answers[groupId].eventId === currentAnswer.eventId &&
-          answers[groupId].name === currentAnswer.name
-        ) {
-          await sendAnswer(message, eventInfo, true);
-          delete answers[groupId];
-        }
-      }, timeout * 1000);
-    } catch (error: unknown) {
-      logger.error('[feature.guess-event] Failed to process event:', error);
-      await new SendMessage({
-        message: new SendTextMessage('处理活动失败，请稍后再试'),
-      }).send({
-        recvMessage: message,
-      });
-    }
+    }, timeout * 1000);
+  } catch (error: unknown) {
+    logger.error('[feature.guess-event] Failed to process event:', error);
+    await new SendMessage({
+      message: new SendTextMessage('处理活动失败，请稍后再试'),
+    }).send({
+      recvMessage: message,
+    });
   }
 }
 
 // 初始化猜活动功能
 export async function init() {
   logger.info('[feature] Init guess-event feature');
-  onebot.registerCommand('猜活动', async (data) => {
-    await guessEvent(data);
-  });
+  onebot.registerCommand(
+    '猜活动',
+    async (data) => {
+      await guessEvent(data);
+    },
+    'guess-event'
+  );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);
     await checkAnswer(message);

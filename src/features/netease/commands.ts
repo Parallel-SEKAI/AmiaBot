@@ -38,6 +38,17 @@ const api: NeteaseApi = new NeteaseApi();
 const searchHistory: Map<string, { songs: Song[]; timestamp: number }> =
   new Map();
 
+// 定时清理过期搜索历史 (每 30 分钟运行一次)
+setInterval(() => {
+  const now = Date.now();
+  const expirationTime = 2 * 60 * 60 * 1000; // 2 小时
+  for (const [id, data] of searchHistory.entries()) {
+    if (now - data.timestamp > expirationTime) {
+      searchHistory.delete(id);
+    }
+  }
+}, 1800000);
+
 // 辅助函数：获取有效的groupId
 function getValidGroupId(groupId: number | null): number | string | undefined {
   return groupId ?? undefined;

@@ -1,13 +1,11 @@
 import fetch from 'node-fetch';
 import { createHash } from 'crypto';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import logger from '../../config/logger';
 import { config } from '../../config';
-
-const execPromise = promisify(exec);
+import { safeUnlink } from '../../utils';
 
 // From python script
 const mixinKeyEncTab = [
@@ -229,11 +227,33 @@ export async function downloadBilibiliVideo(
     }
 
     // 5. Merge with ffmpeg
-    const ffmpegCommand = `ffmpeg -y -i "${tempVideoPath}" -i "${tempAudioPath}" -c copy "${finalVideoPath}"`;
     logger.info(
       '[feature.bilibili.download] Merging video and audio with ffmpeg...'
     );
-    await execPromise(ffmpegCommand);
+    await new Promise<void>((resolve, reject) => {
+      const ffmpeg = spawn('ffmpeg', [
+        '-y',
+        '-i',
+        tempVideoPath,
+        '-i',
+        tempAudioPath,
+        '-c',
+        'copy',
+        finalVideoPath,
+      ]);
+
+      ffmpeg.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`ffmpeg exited with code ${code}`));
+        }
+      });
+
+      ffmpeg.on('error', (err) => {
+        reject(err);
+      });
+    });
     logger.info(
       '[feature.bilibili.download] Video %s merged successfully.',
       bv
@@ -249,15 +269,7 @@ export async function downloadBilibiliVideo(
     return null;
   } finally {
     // 6. Cleanup
-    try {
-      await fs.unlink(tempVideoPath);
-    } catch (e) {
-      /* ignore */
-    }
-    try {
-      await fs.unlink(tempAudioPath);
-    } catch (e) {
-      /* ignore */
-    }
+    await safeUnlink(tempVideoPath);
+    await safeUnlink(tempAudioPath);
   }
 }

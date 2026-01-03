@@ -7,7 +7,6 @@ import {
   SendImageMessage,
   SendMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import { generatePage } from '../../service/enana';
 import {
   WidgetComponent,
@@ -20,8 +19,9 @@ import {
 
 export async function init() {
   logger.info('[feature] Init query.group feature');
-  onebot.registerCommand('group', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'query')) {
+  onebot.registerCommand(
+    'group',
+    async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[feature.query.group][Group: %d][User: %d] %s',
@@ -30,8 +30,9 @@ export async function init() {
         message.rawMessage
       );
       await sendGroupInfo(message.groupId!, message);
-    }
-  });
+    },
+    'query'
+  );
 }
 
 async function sendGroupInfo(groupId: number, message: RecvMessage) {

@@ -7,7 +7,6 @@ import {
   SendForwardMessage,
   ForwardMessageNode,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import {
   imageToBase64DataURL,
   parseCommandLineArgs,
@@ -56,8 +55,9 @@ const CHARACTERS = [
 
 export async function init() {
   logger.info('[feature] init pjsk-sticker feature');
-  onebot.registerCommand('pjsk', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'pjsk-sticker')) {
+  onebot.registerCommand(
+    'pjsk',
+    async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[feature.pjsk-sticker][Group: %d][User: %d] %s',
@@ -102,8 +102,9 @@ export async function init() {
           ),
         }).reply(message);
       }
-    }
-  });
+    },
+    'pjsk-sticker'
+  );
 }
 
 /**

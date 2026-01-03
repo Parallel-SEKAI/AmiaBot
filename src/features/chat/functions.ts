@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { join } from 'path';
 import {
   SendMessage,
   SendRecordMessage,
@@ -7,7 +8,7 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 
 export async function getCharacterAlias(alias: string): Promise<Array<string>> {
   const character_alias = readFileSync(
-    'assets/pjsk/character_alias.json',
+    join(process.cwd(), 'assets/pjsk/character_alias.json'),
     'utf8'
   );
   // 为alias_map添加类型断言，指定为字符ID到别名数组的映射
@@ -70,7 +71,6 @@ export async function sendMusic(
       headers: {
         'Content-Type': 'application/json',
       },
-      rejectUnauthorized: false, // 绕过证书验证
     };
 
     const req = https.request(

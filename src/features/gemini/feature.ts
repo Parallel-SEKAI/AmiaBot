@@ -10,7 +10,6 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import { openai } from '../../service/openai'; // 使用已导出的 openai 实例
 import {
   extractAfterCaseInsensitive,
@@ -19,8 +18,9 @@ import {
 
 export async function init() {
   logger.info('[feature] Init gemini feature');
-  onebot.registerCommand('gemini', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'gemini')) {
+  onebot.registerCommand(
+    'gemini',
+    async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[feature.gemini][Group: %d][User: %d] %s',
@@ -137,7 +137,11 @@ export async function init() {
         }).send({ recvMessage: message });
       } catch (error) {
         logger.error('[feature.gemini] Error:', error);
+        await new SendMessage({
+          message: new SendTextMessage('AI 好像开小差了，请稍后再试喵~'),
+        }).send({ recvMessage: message });
       }
-    }
-  });
+    },
+    'gemini'
+  );
 }

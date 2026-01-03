@@ -1,9 +1,6 @@
 import logger from '../../config/logger';
 import { onebot } from '../../main';
-import {
-  recalledMessageIds,
-  messageHistory,
-} from '../../onebot/message/send.entity';
+import { stateService } from '../../service/state';
 
 export async function init() {
   logger.info('[feature] Init auto-recall feature');
@@ -21,7 +18,7 @@ export async function init() {
       logger.info('[auto-recall] Processing recall for message %d', msgId);
 
       // 将原消息ID加入撤回集合，禁止后续关联消息发送
-      recalledMessageIds.add(msgId);
+      stateService.markAsRecalled(msgId);
 
       // 递归撤回所有关联消息
       await recallRelatedMessages(msgId);
@@ -37,10 +34,19 @@ export async function init() {
 /**
  * 递归撤回所有关联消息
  * @param originalMsgId 被撤回的原始消息ID
+ * @param depth 递归深度，防止死循环
  */
-async function recallRelatedMessages(originalMsgId: number) {
+async function recallRelatedMessages(originalMsgId: number, depth: number = 0) {
+  if (depth > 10) {
+    logger.warn(
+      '[auto-recall] Max recall depth reached for message %d',
+      originalMsgId
+    );
+    return;
+  }
+
   try {
-    const relatedMessages = messageHistory[originalMsgId];
+    const relatedMessages = stateService.getRelatedMessages(originalMsgId);
     if (!relatedMessages || relatedMessages.length === 0) {
       logger.info(
         '[auto-recall] No related messages found for %d',
@@ -50,9 +56,10 @@ async function recallRelatedMessages(originalMsgId: number) {
     }
 
     logger.info(
-      '[auto-recall] Found %d related messages for %d',
+      '[auto-recall] Found %d related messages for %d (depth: %d)',
       relatedMessages.length,
-      originalMsgId
+      originalMsgId,
+      depth
     );
 
     // 遍历所有关联消息，依次撤回
@@ -77,7 +84,7 @@ async function recallRelatedMessages(originalMsgId: number) {
         );
 
         // 递归撤回该关联消息的关联消息
-        await recallRelatedMessages(Number(relatedMsgId));
+        await recallRelatedMessages(Number(relatedMsgId), depth + 1);
       } catch (error) {
         logger.error(
           '[feature.auto-recall] Failed to recall message %s:',
