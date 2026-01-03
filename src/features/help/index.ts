@@ -1,21 +1,9 @@
-import { config } from '../../config';
-import logger from '../../config/logger';
-import { onebot } from '../../main';
-import { RecvMessage } from '../../onebot/message/recv.entity';
-import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
+import { init } from './feature';
+import { FeatureModule } from '../feature-manager';
 
-export async function init() {
-  logger.info('[feature] Init help feature');
-  onebot.on('message.command.help', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    logger.info(
-      '[feature.help][Group: %d][User: %d] %s',
-      message.groupId,
-      message.userId,
-      message.rawMessage
-    );
-    new SendMessage({
-      message: new SendTextMessage(config.helpText.replace(/\\n/g, '\n')),
-    }).reply(message);
-  });
-}
+export const helpFeature: FeatureModule = {
+  name: 'help',
+  description: '帮助功能',
+  init,
+  needEnable: false,
+};

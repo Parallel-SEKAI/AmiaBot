@@ -3,6 +3,21 @@ import { RecvMessage } from './message/recv.entity';
 import logger from '../config/logger';
 import { config } from '../config';
 
+/**
+ * 指令处理器类型
+ * @param data 原始事件数据
+ * @param match 匹配结果（字符串或正则匹配数组）
+ */
+export type CommandHandler = (
+  data: Record<string, any>,
+  match: string | RegExpExecArray
+) => Promise<void>;
+
+interface RegisteredCommand {
+  pattern: string | RegExp;
+  handler: CommandHandler;
+}
+
 export class OneBotClient extends EventEmitter {
   public qq: number = 0;
   public nickname: string = '';
@@ -14,12 +29,29 @@ export class OneBotClient extends EventEmitter {
   private reconnectAttempts: number = 0;
   private maxReconnectDelay: number = 30000; // 最大重连延迟30秒
 
+  // 存储注册的指令
+  private registeredCommands: RegisteredCommand[] = [];
+
   constructor(httpUrl: string, wsUrl: string, token: string) {
     super();
     this.httpUrl = httpUrl;
     this.wsUrl = wsUrl;
     this.token = token;
   }
+
+  /**
+   * 注册一个新的指令
+   * @param pattern 字符串或正则表达式
+   * @param handler 触发后的回调函数
+   */
+  public registerCommand(pattern: string | RegExp, handler: CommandHandler) {
+    this.registeredCommands.push({ pattern, handler });
+    logger.info(
+      '[onebot.command] Registered command: %s',
+      pattern instanceof RegExp ? pattern.toString() : pattern
+    );
+  }
+
   public async action(
     action: string,
     params: Record<string, any> = {}
@@ -90,15 +122,54 @@ export class OneBotClient extends EventEmitter {
       if (eventData.post_type == 'message') {
         this.emit(`message.${eventData.message_type}`, eventData);
         const message = RecvMessage.fromMap(eventData);
-        let text = message.content;
+        const text = message.content;
+
+        let stripped = text;
         for (const prefix of config.prefixes) {
           if (text.startsWith(prefix)) {
-            text = text.slice(prefix.length);
+            stripped = text.slice(prefix.length);
             break;
           }
         }
-        const command = text.split(' ')[0].toLowerCase();
-        this.emit(`message.command.${command}`, eventData);
+
+        // 尝试匹配注册的指令
+        let matched = false;
+        for (const cmd of this.registeredCommands) {
+          if (typeof cmd.pattern === 'string') {
+            if (stripped.toLowerCase().startsWith(cmd.pattern.toLowerCase())) {
+              matched = true;
+              cmd.handler(eventData, cmd.pattern).catch((err) => {
+                logger.error(
+                  '[onebot.command] Error executing command handler for %s:',
+                  cmd.pattern,
+                  err
+                );
+              });
+              break;
+            }
+          } else if (cmd.pattern instanceof RegExp) {
+            const match = cmd.pattern.exec(stripped);
+            if (match) {
+              matched = true;
+              cmd.handler(eventData, match).catch((err) => {
+                logger.error(
+                  '[onebot.command] Error executing command handler for %s:',
+                  cmd.pattern,
+                  err
+                );
+              });
+              break;
+            }
+          }
+        }
+
+        // 如果没有匹配到注册指令，回退到旧的指令检测机制（基于空格分隔）
+        if (!matched) {
+          const command = stripped.split(' ')[0].toLowerCase();
+          if (command) {
+            this.emit(`message.command.${command}`, eventData);
+          }
+        }
       } else if (eventData.post_type == 'notice') {
         this.emit(`notice.${eventData.notice_type}`, eventData);
       }
