@@ -155,6 +155,29 @@ async function sendUserInfo(message: RecvMessage) {
     } as RowComponent);
   }
 
+  // 添加Q龄（仅当存在时显示）
+  if (user.regYear) {
+    const qAge = new Date().getFullYear() - user.regYear;
+    infoSection.children.push({
+      type: 'Row',
+      children: [
+        {
+          type: 'Text',
+          text: 'Q龄:',
+          font_size: 16,
+          font: config.enana.font,
+          width: 100,
+        } as TextComponent,
+        {
+          type: 'Text',
+          text: `${qAge}年 (${user.regYear}年注册)`,
+          font_size: 16,
+          font: config.enana.font,
+        } as TextComponent,
+      ],
+    } as RowComponent);
+  }
+
   // 添加QQ等级（仅当存在时显示）
   if (user.qqLevel) {
     infoSection.children.push({
