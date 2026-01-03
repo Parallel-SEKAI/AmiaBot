@@ -29,7 +29,7 @@ export async function init() {
           message: new SendImageMessage(randomImageUrl),
         }).reply(message);
       } catch (error) {
-        logger.error('Error in comic feature:', error);
+        logger.error('[feature.comic] Error in comic feature:', error);
         // 发送错误提示
         new SendMessage({
           message: new SendTextMessage('获取漫画失败，请稍后重试'),

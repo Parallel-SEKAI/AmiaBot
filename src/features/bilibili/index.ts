@@ -113,7 +113,9 @@ export async function init() {
             } catch (e) {
               lastError = e;
               logger.error(
-                `[feature.bilibili] ${context} attempt ${i + 1} failed:`,
+                '[feature.bilibili] %s attempt %d failed:',
+                context,
+                i + 1,
                 e
               );
               if (i < retries - 1) {
@@ -180,10 +182,10 @@ export async function init() {
                       );
                     } catch (e) {
                       logger.error(
-                        `[feature.bilibili] Failed to delete cached video file: %s`,
-                        videoPath
+                        '[feature.bilibili] Failed to delete cached video file: %s',
+                        videoPath,
+                        e
                       );
-                      logger.error('[feature.bilibili] %s', e);
                     }
                   }
                 }

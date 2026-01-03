@@ -31,23 +31,24 @@ export async function getIssueInfo(
     });
   } catch (error: any) {
     logger.error(
-      '[feature.github.issue][Issue: %s/%s#%d] %s',
+      '[feature.github.issue][Issue: %s/%s#%d]',
       owner,
       repo,
       issueNumber,
-      error.message
+      error
     );
     return false;
   }
+
+  const issueData = response.data;
+
   logger.info(
-    '[feature.github.issue][Issue: %s/%s#%d] %s',
+    '[feature.github.issue][Issue: %s/%s#%d] Title: %s',
     owner,
     repo,
     issueNumber,
-    response.data.title
+    issueData.title
   );
-
-  const issueData = response.data;
 
   // 构建Issue信息UI组件
   const issueInfoWidget: WidgetComponent = {

@@ -73,10 +73,10 @@ export async function init() {
         let answers = choice.content || '';
 
         if (thoughts) {
-          logger.info(`[Gemini] Thoughts: ${thoughts}`);
+          logger.info('[feature.gemini] Thoughts: %s', thoughts);
         }
         if (answers) {
-          logger.info(`[Gemini] Answers: ${answers}`);
+          logger.info('[feature.gemini] Answers: %s', answers);
         }
 
         await new SendMessage({
@@ -136,7 +136,7 @@ export async function init() {
           ]),
         }).send({ recvMessage: message });
       } catch (error) {
-        logger.error('[Gemini] Error: %o', error);
+        logger.error('[feature.gemini] Error:', error);
       }
     }
   });

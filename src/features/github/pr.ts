@@ -31,16 +31,16 @@ export async function getPRInfo(
     });
   } catch (error: any) {
     logger.error(
-      '[feature.github.pr][PR: %s/%s#%d] %s',
+      '[feature.github.pr][PR: %s/%s#%d]',
       owner,
       repo,
       prNumber,
-      error.message
+      error
     );
     return false;
   }
   logger.info(
-    '[feature.github.pr][PR: %s/%s#%d] %s',
+    '[feature.github.pr][PR: %s/%s#%d] Title: %s',
     owner,
     repo,
     prNumber,

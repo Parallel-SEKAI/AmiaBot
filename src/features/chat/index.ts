@@ -52,10 +52,10 @@ async function chat(data: Record<string, any>) {
       // 1. 读取用户信息
       const userInfo = await getUserInfo(message.userId!);
       logger.info(
-        '[feature.chat][User: %d] 好感度: %d, 记忆: %s',
+        '[feature.chat][User: %d] favor: %d, memory: %s',
         message.userId,
         userInfo?.favor || 0,
-        userInfo?.memory || '无'
+        userInfo?.memory || 'none'
       );
 
       const group = new Group(message.groupId!);
@@ -99,11 +99,11 @@ async function chat(data: Record<string, any>) {
               },
             });
           } catch (error) {
-            logger.error('[feature.chat] 处理图片失败:', error);
+            logger.error('[feature.chat] Failed to process image:', error);
             // 如果图片处理失败，添加文本提示
             content.push({
               type: 'text',
-              text: '[无法处理图片]',
+              text: '[Unable to process image]',
             });
           }
         }
@@ -217,10 +217,12 @@ VIP等级: ${user.vipLevel}
           );
 
           logger.info(
-            `[feature.chat] 好感度变化: ${validatedResponse.favor}, 记忆: ${validatedResponse.memory}`
+            '[feature.chat] Favor change: %d, memory: %s',
+            validatedResponse.favor,
+            validatedResponse.memory
           );
         } catch (error) {
-          logger.error('[feature.chat] 解析JSON响应失败:', error);
+          logger.error('[feature.chat] Failed to parse JSON response:', error);
           // 如果解析失败，回退到直接发送原始文本
           new SendMessage({ message: new SendTextMessage(responseText) }).send({
             recvMessage: message,
@@ -228,7 +230,7 @@ VIP等级: ${user.vipLevel}
         }
       }
     } catch (error) {
-      logger.error('[feature.chat] 处理聊天消息失败:', error);
+      logger.error('[feature.chat] Failed to process chat message:', error);
       // 发送错误提示
       new SendMessage({
         message: new SendTextMessage('抱歉，我现在有点忙，稍后再和你聊吧。'),

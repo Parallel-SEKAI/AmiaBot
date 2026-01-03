@@ -26,11 +26,11 @@ export async function getUserInfo(
       username,
     });
   } catch (error: any) {
-    logger.error('[feature.github][User: %s] %s', username, error.message);
+    logger.error('[feature.github.user][User: %s]', username, error);
     return false;
   }
   logger.info(
-    '[feature.github.user][User: %s] %s',
+    '[feature.github.user][User: %s] Name: %s',
     username,
     response.data.name || response.data.login
   );

@@ -91,7 +91,10 @@ export async function init() {
           message: new SendImageMessage(apiUrl),
         }).reply(message);
       } catch (error) {
-        logger.error('PJSK贴纸生成失败:', error);
+        logger.error(
+          '[feature.pjsk-sticker] Failed to generate PJSK sticker:',
+          error
+        );
         new SendMessage({
           message: new SendTextMessage(
             '贴纸生成失败，请检查参数是否正确或稍后重试'

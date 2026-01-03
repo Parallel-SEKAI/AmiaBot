@@ -106,9 +106,8 @@ export class OneBotClient extends EventEmitter {
 
     this.ws.onclose = (event) => {
       logger.warn(
-        '[onebot] WebSocket disconnected, code:',
+        '[onebot] WebSocket disconnected, code: %d, reason: %s',
         event.code,
-        'reason:',
         event.reason
       );
       this.ws = null;
@@ -136,17 +135,20 @@ export class OneBotClient extends EventEmitter {
     );
 
     logger.info(
-      `[onebot] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`
+      '[onebot] Attempting to reconnect in %dms (attempt %d)',
+      delay,
+      this.reconnectAttempts
     );
 
     setTimeout(() => {
       try {
         logger.info(
-          `[onebot] Reconnecting... (attempt ${this.reconnectAttempts})`
+          '[onebot] Reconnecting... (attempt %d)',
+          this.reconnectAttempts
         );
         this.connectWebSocket();
       } catch (error) {
-        logger.error(`[onebot] Reconnect failed:`, error);
+        logger.error('[onebot] Reconnect failed:', error);
         this.isReconnecting = false;
         // 使用setTimeout确保非递归调用，避免栈溢出
         setTimeout(() => this.reconnect(), 0);

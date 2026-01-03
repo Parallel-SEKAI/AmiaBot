@@ -53,7 +53,7 @@ export class Song {
     try {
       // 获取歌曲URL
       const songUrl = await this.api.getSongUrl(this.id);
-      logger.info(`[netease] 获取到歌曲URL: ${songUrl}`);
+      logger.info('[service.netease] Got song URL: %s', songUrl);
       if (!songUrl) {
         return null;
       }
@@ -80,7 +80,7 @@ export class Song {
 
       return { path: filePath, suffix };
     } catch (error) {
-      logger.error(`[netease] 下载歌曲失败:`, error);
+      logger.error('[service.netease] Failed to download song:', error);
       return null;
     }
   }

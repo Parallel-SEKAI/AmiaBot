@@ -27,8 +27,8 @@ export async function init() {
       await recallRelatedMessages(msgId);
     } catch (error) {
       logger.error(
-        '[auto-recall] Error processing group_recall: %s',
-        error instanceof Error ? error.message : String(error)
+        '[feature.auto-recall] Error processing group_recall:',
+        error
       );
     }
   });
@@ -61,7 +61,10 @@ async function recallRelatedMessages(originalMsgId: number) {
         const relatedMsgId = relatedMsg.messageId;
         if (!relatedMsgId) continue;
 
-        logger.info('[auto-recall] Recalling related message %s', relatedMsgId);
+        logger.info(
+          '[feature.auto-recall] Recalling related message: %s',
+          relatedMsgId
+        );
 
         // 调用OneBot API撤回消息
         await onebot.action('delete_msg', {
@@ -69,7 +72,7 @@ async function recallRelatedMessages(originalMsgId: number) {
         });
 
         logger.info(
-          '[auto-recall] Successfully recalled message %s',
+          '[feature.auto-recall] Successfully recalled message: %s',
           relatedMsgId
         );
 
@@ -77,16 +80,16 @@ async function recallRelatedMessages(originalMsgId: number) {
         await recallRelatedMessages(Number(relatedMsgId));
       } catch (error) {
         logger.error(
-          '[auto-recall] Failed to recall message %s: %s',
+          '[feature.auto-recall] Failed to recall message %s:',
           relatedMsg.messageId,
-          error instanceof Error ? error.message : String(error)
+          error
         );
       }
     }
   } catch (error) {
     logger.error(
-      '[auto-recall] Error recalling related messages: %s',
-      error instanceof Error ? error.message : String(error)
+      '[feature.auto-recall] Error recalling related messages:',
+      error
     );
   }
 }
