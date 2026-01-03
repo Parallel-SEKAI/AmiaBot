@@ -48,6 +48,9 @@ importers:
       '@types/node':
         specifier: ^25.0.3
         version: 25.0.3
+      '@types/node-fetch':
+        specifier: ^2.6.13
+        version: 2.6.13
       '@types/pg':
         specifier: ^8.16.0
         version: 8.16.0
