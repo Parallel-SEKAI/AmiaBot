@@ -2,7 +2,7 @@ import logger from '../../config/logger';
 import { onebot } from '../../main';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
+import { FeatureModule } from '../feature-manager';
 
 const pattern = /^r(\d*)d(\d*)/i;
 
@@ -20,8 +20,9 @@ export function parseDiceCommand(
 
 export async function init() {
   logger.info('[feature] Init dice feature');
-  onebot.registerCommand(pattern, async (data, match) => {
-    if (await checkFeatureEnabled(data.group_id, 'dice')) {
+  onebot.registerCommand(
+    pattern,
+    async (data, match) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[feature.dice][Group: %d][User: %d] %s',
@@ -41,6 +42,7 @@ export async function init() {
       new SendMessage({
         message: new SendTextMessage(`You rolled: ${results.join(', ')}`),
       }).reply(message);
-    }
-  });
+    },
+    'dice'
+  );
 }

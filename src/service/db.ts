@@ -102,3 +102,35 @@ export async function setFeatureEnabled(
   `;
   await pool.query(query, [groupId, feature, enabled]);
 }
+
+export async function getGameState(groupId: number, gameType: string) {
+  const query = `
+    SELECT answer_data, start_time 
+    FROM amia_game_state 
+    WHERE group_id = $1 AND game_type = $2
+  `;
+  const result = await pool.query(query, [groupId, gameType]);
+  return result.rows[0];
+}
+
+export async function setGameState(
+  groupId: number,
+  gameType: string,
+  answerData: any
+) {
+  const query = `
+    INSERT INTO amia_game_state (group_id, game_type, answer_data)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (group_id, game_type)
+    DO UPDATE SET answer_data = EXCLUDED.answer_data, start_time = CURRENT_TIMESTAMP
+  `;
+  await pool.query(query, [groupId, gameType, JSON.stringify(answerData)]);
+}
+
+export async function deleteGameState(groupId: number, gameType: string) {
+  const query = `
+    DELETE FROM amia_game_state 
+    WHERE group_id = $1 AND game_type = $2
+  `;
+  await pool.query(query, [groupId, gameType]);
+}

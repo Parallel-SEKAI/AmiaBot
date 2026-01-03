@@ -6,9 +6,11 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import sharp from 'sharp';
 import { FeatureModule } from '../feature-manager';
+import * as fs from 'fs';
+import * as path from 'path';
+import { getGameState, setGameState, deleteGameState } from '../../service/db';
 
 const difficulty = {
   ez: 160,
@@ -21,19 +23,15 @@ const difficulty = {
 
 const timeout = 40.0; // 40s
 
-interface Answer {
-  time: number;
-  cardId: number;
-  characterId: number;
-}
-
-let answers: Record<number, Answer> = {};
-
 export async function init() {
   logger.info('[feature] Init guess-card feature');
-  onebot.registerCommand('猜卡面', async (data) => {
-    await guessCard(data);
-  });
+  onebot.registerCommand(
+    '猜卡面',
+    async (data) => {
+      await guessCard(data);
+    },
+    'guess-card'
+  );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);
     await checkAnswer(message);
@@ -41,85 +39,81 @@ export async function init() {
 }
 
 async function guessCard(data: Record<string, any>) {
-  if (await checkFeatureEnabled(data.group_id, 'guess-card')) {
-    const message = RecvMessage.fromMap(data);
-    logger.info(
-      '[feature.guess-card][Group: %d][User: %d] %s',
-      message.groupId,
-      message.userId,
-      message.rawMessage
-    );
+  const message = RecvMessage.fromMap(data);
+  logger.info(
+    '[feature.guess-card][Group: %d][User: %d] %s',
+    message.groupId,
+    message.userId,
+    message.rawMessage
+  );
 
-    // 检查当前群是否已有未结束的游戏
-    const groupId = message.groupId;
-    if (groupId === null) {
-      return;
-    }
+  // 检查当前群是否已有未结束的游戏
+  const groupId = message.groupId;
+  if (groupId === null) {
+    return;
+  }
 
-    if (answers[groupId]) {
-      // 已有未结束的游戏，发送提示
-      await new SendMessage({
-        message: new SendTextMessage('当前有未结束的猜卡面'),
-      }).send({
-        recvMessage: message,
-      });
-      return;
-    }
-
-    const cardInfo = await getRandomCard();
-    let size = 128;
-    for (const key in difficulty) {
-      if (message.content.toLowerCase().includes(key)) {
-        size = difficulty[key as keyof typeof difficulty];
-        break;
-      }
-    }
-    // 发送裁剪后的图片
-    const croppedImageBuffer = await cropImage(
-      cardInfo.imageUrl,
-      Math.floor(size * 1.0)
-    );
-    // 存储答案
-    answers[groupId] = {
-      time: Date.now(),
-      cardId: cardInfo.cardId,
-      characterId: cardInfo.characterId,
-    };
-
-    // 获取正确答案并输出
-    const characterName = await getCharacterName(cardInfo.characterId);
-    logger.info(
-      '[feature.guess-card] CardId: %d CharacterId: %d Answer: %s',
-      cardInfo.cardId,
-      cardInfo.characterId,
-      characterName
-    );
-
+  const existingGame = await getGameState(groupId, 'guess-card');
+  if (existingGame) {
+    // 已有未结束的游戏，发送提示
     await new SendMessage({
-      message: [
-        new SendTextMessage(`接下来你有${timeout}秒猜中这张卡面`),
-        new SendImageMessage(croppedImageBuffer),
-      ],
+      message: new SendTextMessage('当前有未结束的猜卡面'),
     }).send({
       recvMessage: message,
     });
-
-    // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
-    const currentAnswer = {
-      cardId: cardInfo.cardId,
-      characterId: cardInfo.characterId,
-    };
-    setTimeout(async () => {
-      if (
-        answers[groupId] &&
-        answers[groupId].cardId === currentAnswer.cardId &&
-        answers[groupId].characterId === currentAnswer.characterId
-      ) {
-        await sendAnswer(message, cardInfo, true);
-        delete answers[groupId];
-      }
-    }, timeout * 1000);
+    return;
   }
+
+  const cardInfo = await getRandomCard();
+  let size = 128;
+  for (const key in difficulty) {
+    if (message.content.toLowerCase().includes(key)) {
+      size = difficulty[key as keyof typeof difficulty];
+      break;
+    }
+  }
+  // 发送裁剪后的图片
+  const croppedImageBuffer = await cropImage(
+    cardInfo.imageUrl,
+    Math.floor(size * 1.0)
+  );
+  // 存储答案
+  const answer = {
+    cardId: cardInfo.cardId,
+    characterId: cardInfo.characterId,
+  };
+  await setGameState(groupId, 'guess-card', answer);
+
+  // 获取正确答案并输出
+  const characterName = await getCharacterName(cardInfo.characterId);
+  logger.info(
+    '[feature.guess-card] CardId: %d CharacterId: %d Answer: %s',
+    cardInfo.cardId,
+    cardInfo.characterId,
+    characterName
+  );
+
+  await new SendMessage({
+    message: [
+      new SendTextMessage(`接下来你有${timeout}秒猜中这张卡面`),
+      new SendImageMessage(croppedImageBuffer),
+    ],
+  }).send({
+    recvMessage: message,
+  });
+
+  // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
+  setTimeout(async () => {
+    const gameState = await getGameState(groupId, 'guess-card');
+    if (
+      gameState &&
+      gameState.answer_data.cardId === answer.cardId &&
+      gameState.answer_data.characterId === answer.characterId
+    ) {
+      await sendAnswer(message, cardInfo, true);
+      await deleteGameState(groupId, 'guess-card');
+    }
+  }, timeout * 1000);
 }
 
 /**
@@ -127,11 +121,9 @@ async function guessCard(data: Record<string, any>) {
  * @returns Promise<Record<number, string[]>> - 角色ID到别名列表的映射
  */
 async function getCharacterAliases(): Promise<Record<number, string[]>> {
-  const fs = require('fs');
-  const path = require('path');
   const aliasPath = path.join(
-    __dirname,
-    '../../../assets/pjsk/character_alias.json'
+    process.cwd(),
+    'assets/pjsk/character_alias.json'
   );
   const content = fs.readFileSync(aliasPath, 'utf-8');
   return JSON.parse(content);
@@ -192,11 +184,16 @@ async function sendAnswer(
 async function checkAnswer(message: RecvMessage): Promise<void> {
   const groupId = message.groupId;
   // 检查是否有记录
-  if (groupId === null || !answers[groupId]) {
+  if (groupId === null) {
     return;
   }
 
-  const answer = answers[groupId];
+  const gameState = await getGameState(groupId, 'guess-card');
+  if (!gameState) {
+    return;
+  }
+
+  const answer = gameState.answer_data;
   const aliases = await getCharacterAliases();
   const characterAliases = aliases[answer.characterId] || [];
 
@@ -237,7 +234,7 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
       // 发送正确答案
       await sendAnswer(message, cardInfo, false);
       // 删除记录
-      delete answers[groupId];
+      await deleteGameState(groupId, 'guess-card');
     }
   }
 }

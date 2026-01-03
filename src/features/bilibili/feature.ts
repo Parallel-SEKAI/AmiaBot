@@ -25,6 +25,7 @@ import fetch from 'node-fetch';
 import { downloadBilibiliVideo } from './download';
 import * as fs from 'fs/promises';
 import { FeatureModule } from '../feature-manager';
+import { safeUnlink } from '../../utils';
 
 export async function init() {
   logger.info('[feature] Init bilibili feature');
@@ -152,11 +153,14 @@ export async function init() {
             3,
             2000,
             'Send Info Image'
-          ).catch((e) => {
+          ).catch(async (e) => {
             logger.error(
               '[feature.bilibili] Failed to send info image after retries:',
               e
             );
+            await new SendMessage({
+              message: new SendTextMessage('生成视频预览图失败了喵~'),
+            }).send({ recvMessage: message });
           });
 
           const downloadVideoPromise = retry(
@@ -174,20 +178,11 @@ export async function init() {
                       recvMessage: message,
                     });
                   } finally {
-                    // Clean up the downloaded file
-                    try {
-                      await fs.unlink(videoPath);
-                      logger.info(
-                        '[feature.bilibili] Deleted cached video file: %s',
-                        videoPath
-                      );
-                    } catch (e) {
-                      logger.error(
-                        '[feature.bilibili] Failed to delete cached video file: %s',
-                        videoPath,
-                        e
-                      );
-                    }
+                    await safeUnlink(videoPath);
+                    logger.info(
+                      '[feature.bilibili] Deleted cached video file: %s',
+                      videoPath
+                    );
                   }
                 }
               }
@@ -200,6 +195,9 @@ export async function init() {
               '[feature.bilibili] Failed to download/send video after retries:',
               e
             );
+            await new SendMessage({
+              message: new SendTextMessage('视频下载失败了喵~'),
+            }).send({ recvMessage: message });
           });
 
           await Promise.all([sendInfoPromise, downloadVideoPromise]);
@@ -208,6 +206,9 @@ export async function init() {
             '[feature.bilibili] Failed to get video info after retries:',
             error
           );
+          await new SendMessage({
+            message: new SendTextMessage('获取视频信息失败了喵，请稍后再试喵~'),
+          }).send({ recvMessage: message });
         }
         return;
       }

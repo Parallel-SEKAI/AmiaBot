@@ -373,7 +373,11 @@ export class RecvXmlMessage extends RecvBaseMessage {
 }
 
 export class RecvMessage {
-  private static _instances: Record<number, RecvMessage> = {};
+  private static _instances = new Map<
+    number,
+    { instance: RecvMessage; timestamp: number }
+  >();
+  private static _cleanupStarted = false;
   private _initialized = false;
 
   public messageId: number;
@@ -393,6 +397,21 @@ export class RecvMessage {
 
   constructor(messageId: number) {
     this.messageId = messageId;
+    RecvMessage.ensureCleanupTask();
+  }
+
+  private static ensureCleanupTask() {
+    if (this._cleanupStarted) return;
+    this._cleanupStarted = true;
+    setInterval(() => {
+      const expirationTime = 3600000; // 1 hour
+      const now = Date.now();
+      for (const [id, item] of this._instances.entries()) {
+        if (now - item.timestamp > expirationTime) {
+          this._instances.delete(id);
+        }
+      }
+    }, 600000); // 10 minutes
   }
 
   public async init() {
@@ -420,11 +439,18 @@ export class RecvMessage {
 
   public static fromMap(data: Record<string, any>): RecvMessage {
     const messageId = data.message_id ?? 0;
-    if (!RecvMessage._instances[messageId]) {
-      RecvMessage._instances[messageId] = new RecvMessage(messageId);
-    }
-    const msg = RecvMessage._instances[messageId];
+    const now = Date.now();
 
+    let entry = RecvMessage._instances.get(messageId);
+    if (!entry) {
+      const instance = new RecvMessage(messageId);
+      entry = { instance, timestamp: now };
+      RecvMessage._instances.set(messageId, entry);
+    } else {
+      entry.timestamp = now;
+    }
+
+    const msg = entry.instance;
     if (msg._initialized) return msg;
 
     msg.raw = data;

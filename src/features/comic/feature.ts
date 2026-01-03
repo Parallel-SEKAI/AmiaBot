@@ -4,7 +4,6 @@ import {
   SendImageMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import logger from '../../config/logger';
 import { getRandomComic } from './api';
@@ -12,8 +11,9 @@ import { FeatureModule } from '../feature-manager';
 
 export async function init() {
   logger.info('[feature] Init comic feature');
-  onebot.registerCommand('comic', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'comic')) {
+  onebot.registerCommand(
+    'comic',
+    async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
         '[feature.comic][Group: %d][User: %d] %s',
@@ -36,6 +36,7 @@ export async function init() {
           message: new SendTextMessage('获取漫画失败，请稍后重试'),
         }).reply(message);
       }
-    }
-  });
+    },
+    'comic'
+  );
 }

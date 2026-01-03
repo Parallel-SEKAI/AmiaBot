@@ -61,10 +61,7 @@ let lastUsedTime = 0;
 
 // 获取prompt模板
 function getPromptTemplate(): string {
-  const promptPath = join(
-    __dirname,
-    '../../../assets/message-statistics/prompt.md'
-  );
+  const promptPath = join(process.cwd(), 'assets/message-statistics/prompt.md');
   if (!existsSync(promptPath)) {
     throw new Error(`Prompt file not found: ${promptPath}`);
   }
@@ -198,10 +195,14 @@ https://amiabot.parallel-sekai.org/
 
 export async function init() {
   logger.info('[feature] Init message-statistics feature');
-  onebot.registerCommand('消息统计', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    await handleMessageStatistics(message);
-  });
+  onebot.registerCommand(
+    '消息统计',
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
+      await handleMessageStatistics(message);
+    },
+    'message-statistics'
+  );
 }
 
 // 处理消息统计逻辑

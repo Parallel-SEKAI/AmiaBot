@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { RecvMessage } from './message/recv.entity';
 import logger from '../config/logger';
 import { config } from '../config';
+import { checkFeatureEnabled } from '../service/db';
 
 /**
  * 指令处理器类型
@@ -43,12 +44,37 @@ export class OneBotClient extends EventEmitter {
    * 注册一个新的指令
    * @param pattern 字符串或正则表达式
    * @param handler 触发后的回调函数
+   * @param featureName 可选，功能模块名称，如果提供则会自动检查该功能是否开启
    */
-  public registerCommand(pattern: string | RegExp, handler: CommandHandler) {
-    this.registeredCommands.push({ pattern, handler });
+  public registerCommand(
+    pattern: string | RegExp,
+    handler: CommandHandler,
+    featureName?: string
+  ) {
+    const wrappedHandler = async (
+      data: Record<string, any>,
+      match: string | RegExpExecArray
+    ) => {
+      if (featureName && data.group_id) {
+        const enabled = await checkFeatureEnabled(data.group_id, featureName);
+        if (!enabled) {
+          logger.debug(
+            '[onebot.command] Feature %s is disabled in group %d, skipping command %s',
+            featureName,
+            data.group_id,
+            pattern
+          );
+          return;
+        }
+      }
+      await handler(data, match);
+    };
+
+    this.registeredCommands.push({ pattern, handler: wrappedHandler });
     logger.info(
-      '[onebot.command] Registered command: %s',
-      pattern instanceof RegExp ? pattern.toString() : pattern
+      '[onebot.command] Registered command: %s%s',
+      pattern instanceof RegExp ? pattern.toString() : pattern,
+      featureName ? ` (Feature: ${featureName})` : ''
     );
   }
 
