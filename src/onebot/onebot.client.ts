@@ -119,6 +119,123 @@ export class OneBotClient extends EventEmitter {
     }
   }
 
+  /**
+   * 使用流式上传文件 (NapCat 扩展 API)
+   * @param filePath 本地文件路径
+   * @param filename 可选的文件名
+   * @returns 上传后的文件路径或标识符
+   */
+  public async uploadFileStream(
+    filePath: string,
+    filename?: string
+  ): Promise<string> {
+    const { promises: fs, createReadStream } = await import('fs');
+    const { basename } = await import('path');
+    const { randomUUID } = await import('crypto');
+
+    const stats = await fs.stat(filePath);
+    const fileSize = stats.size;
+    const streamId = randomUUID();
+    const chunkSize = 64 * 1024; // 64KB chunks
+    const totalChunks = Math.ceil(fileSize / chunkSize);
+
+    logger.info(
+      '[onebot.upload] Starting stream upload for %s (Size: %d, Chunks: %d)',
+      filePath,
+      fileSize,
+      totalChunks
+    );
+
+    const stream = createReadStream(filePath, { highWaterMark: chunkSize });
+    let chunkIndex = 0;
+
+    for await (const chunk of stream) {
+      const isComplete = chunkIndex === totalChunks - 1;
+      const res = await this.action('upload_file_stream', {
+        stream_id: streamId,
+        chunk_data: chunk.toString('base64'),
+        chunk_index: chunkIndex,
+        total_chunks: totalChunks,
+        file_size: fileSize,
+        is_complete: isComplete,
+        filename: filename || basename(filePath),
+        file_retention: 300000, // 5 minutes
+      });
+
+      if (res.status !== 'ok') {
+        throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
+      }
+
+      if (isComplete && res.data && res.data.file_path) {
+        logger.info(
+          '[onebot.upload] Stream upload complete: %s',
+          res.data.file_path
+        );
+        return res.data.file_path;
+      }
+
+      chunkIndex++;
+    }
+
+    throw new Error('Stream upload finished without returning a file path');
+  }
+
+  /**
+   * 使用流式上传内存中的 Buffer (NapCat 扩展 API)
+   * @param buffer 要上传的 Buffer
+   * @param filename 建议的文件名
+   * @returns 上传后的文件路径或标识符
+   */
+  public async uploadBufferStream(
+    buffer: Buffer,
+    filename: string
+  ): Promise<string> {
+    const { randomUUID } = await import('crypto');
+
+    const fileSize = buffer.length;
+    const streamId = randomUUID();
+    const chunkSize = 64 * 1024; // 64KB chunks
+    const totalChunks = Math.ceil(fileSize / chunkSize);
+
+    logger.info(
+      '[onebot.upload] Starting buffer stream upload (Size: %d, Chunks: %d)',
+      fileSize,
+      totalChunks
+    );
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, fileSize);
+      const chunk = buffer.subarray(start, end);
+      const isComplete = chunkIndex === totalChunks - 1;
+
+      const res = await this.action('upload_file_stream', {
+        stream_id: streamId,
+        chunk_data: chunk.toString('base64'),
+        chunk_index: chunkIndex,
+        total_chunks: totalChunks,
+        file_size: fileSize,
+        is_complete: isComplete,
+        filename: filename,
+        file_retention: 300000,
+      });
+
+      if (res.status !== 'ok') {
+        throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
+      }
+
+      if (isComplete && res.data && res.data.file_path) {
+        logger.info(
+          '[onebot.upload] Buffer stream upload complete: %s',
+          res.data.file_path
+        );
+        return res.data.file_path;
+      }
+    }
+
+    throw new Error('Buffer stream upload finished without returning a path');
+  }
+
   private connectWebSocket(): void {
     this.ws = new WebSocket(this.wsUrl, {
       headers: {

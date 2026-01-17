@@ -54,10 +54,10 @@ function template(widget: WidgetComponent): PageComponent {
 /**
  * 根据提供的组件配置生成图片
  * @param content 组件配置,需符合 Enana UI Component Schema 规范
- * @returns 生成的图片的 base64 data URL
+ * @returns 生成的图片的 Buffer
  * @throws Error 当生成图片失败时抛出错误
  */
-export async function generatePage(content: WidgetComponent): Promise<string> {
+export async function generatePage(content: WidgetComponent): Promise<Buffer> {
   const baseUrl = config.enana.baseUrl;
   const token = config.enana.token;
   const scale = config.enana.scale;
@@ -90,12 +90,7 @@ export async function generatePage(content: WidgetComponent): Promise<string> {
         // 获取响应的二进制数据
         const arrayBuffer = await response.arrayBuffer();
         // 将 ArrayBuffer 转换为 Buffer
-        const buffer = Buffer.from(arrayBuffer);
-        // 获取内容类型
-        const contentType = response.headers.get('content-type') || 'image/png';
-        // 构建 base64 data URL
-        const base64 = `data:${contentType};base64,${buffer.toString('base64')}`;
-        return base64;
+        return Buffer.from(arrayBuffer);
       }
 
       // 处理响应错误

@@ -407,8 +407,20 @@ async function guessSong(data: Record<string, any>) {
     // 删除下载提示
     await downloadMessage.delete();
 
-    // 将Buffer转换为base64格式
-    const musicBase64 = `base64://${musicBuffer.toString('base64')}`;
+    // 将音频写入临时文件并流式上传
+    const tempDir = os.tmpdir();
+    const tempAudioPath = path.join(
+      tempDir,
+      `guess_song_${Date.now()}.mp3`
+    );
+    await fs.promises.writeFile(tempAudioPath, musicBuffer);
+
+    let uploadedAudioPath: string;
+    try {
+      uploadedAudioPath = await onebot.uploadFileStream(tempAudioPath);
+    } finally {
+      await safeUnlink(tempAudioPath);
+    }
 
     // 发送音乐片段给用户
     await new SendMessage({
@@ -417,7 +429,7 @@ async function guessSong(data: Record<string, any>) {
       recvMessage: message,
     });
     await new SendMessage({
-      message: [new SendRecordMessage(musicBase64)],
+      message: [new SendRecordMessage(uploadedAudioPath)],
     }).send({
       recvMessage: message,
     });

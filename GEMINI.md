@@ -96,3 +96,20 @@ There are no pre-configured tests for this project.
 *   **Commits:** (No explicit commit conventions found, but it is recommended to follow conventional commit standards).
 *   **Branching:** (No explicit branching strategy found, but it is recommended to use a feature-branch workflow).
 *   **Adding new features:** New features should be created as separate modules in the `src/features` directory and registered in `src/features/index.ts`.
+
+## Implementation Logic
+
+*   **Plugin System:** Uses `FeatureManager` to dynamically load features from `src/features`.
+*   **OneBot Integration:** Communicates via HTTP and WebSocket. Supports NapCat's **Stream API** for efficient file uploads (replacing legacy Base64 methods).
+*   **File Handling:** Large files (video, audio, generated images) are uploaded using `upload_file_stream` in chunks (64KB) to minimize request size and memory overhead.
+*   **Automatic Streaming:** `SendMessage.send()` automatically detects `Buffer` data in message segments and performs streaming uploads before delivery.
+
+## Current Status (Features)
+
+- [x] **Core:** OneBot client, command registration, event handling.
+- [x] **Stream API Integration:** Optimized file handling using NapCat's streaming upload.
+- [x] **Bilibili:** Video info fetching and streaming video upload.
+- [x] **Guess Song:** Music clipping and streaming audio playback.
+- [x] **Enana UI:** Dynamic image generation (now leveraging streaming uploads).
+- [ ] **State Persistence:** Audit and implement robust state-saving for plugin states.
+

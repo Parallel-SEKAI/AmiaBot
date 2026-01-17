@@ -49,6 +49,33 @@ export class SendMessage {
       return new RecvMessage(Math.floor(Math.random() * 1000000));
     }
 
+    // 处理所有消息中的 Buffer 数据
+    const processMessages = async (messages: any[]) => {
+      for (const msg of messages) {
+        if (msg.type === 'forward' && msg.data?.messages) {
+          for (const node of msg.data.messages) {
+            if (node.data?.content) {
+              await processMessages(node.data.content);
+            }
+          }
+        } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
+          const extMap: Record<string, string> = {
+            image: 'png',
+            record: 'mp3',
+            video: 'mp4',
+            file: 'dat',
+          };
+          const ext = extMap[msg.type] || 'dat';
+          msg.data.file = await onebot.uploadBufferStream(
+            msg.data.file,
+            `upload_${Date.now()}.${ext}`
+          );
+        }
+      }
+    };
+
+    await processMessages(this.messages);
+
     const is_private =
       this.userId ||
       args.userId ||
@@ -121,6 +148,33 @@ export class SendMessage {
       return new RecvMessage(Math.floor(Math.random() * 1000000));
     }
 
+    // 处理所有消息中的 Buffer 数据
+    const processMessages = async (messages: any[]) => {
+      for (const msg of messages) {
+        if (msg.type === 'forward' && msg.data?.messages) {
+          for (const node of msg.data.messages) {
+            if (node.data?.content) {
+              await processMessages(node.data.content);
+            }
+          }
+        } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
+          const extMap: Record<string, string> = {
+            image: 'png',
+            record: 'mp3',
+            video: 'mp4',
+            file: 'dat',
+          };
+          const ext = extMap[msg.type] || 'dat';
+          msg.data.file = await onebot.uploadBufferStream(
+            msg.data.file,
+            `upload_${Date.now()}.${ext}`
+          );
+        }
+      }
+    };
+
+    await processMessages(this.messages);
+
     if (this.messages[0] instanceof SendForwardMessage) {
       return await this.send({ recvMessage });
     }
@@ -192,12 +246,7 @@ export class SendImageMessage extends SendBaseMessage {
    * @param file 图片文件路径，可以是本地路径 (e.g., /path/to/image.jpg), file URL (e.g., file:///path/to/image.jpg), 网络 URL (e.g., http://...), 或 Buffer 对象
    */
   constructor(file: string | Buffer) {
-    let filePath = file;
-    if (Buffer.isBuffer(file)) {
-      // 如果是 Buffer 对象，转换为 base64 编码的字符串，使用 base64:// 协议
-      filePath = `base64://${file.toString('base64')}`;
-    }
-    super('image', { file: filePath });
+    super('image', { file });
   }
 }
 
@@ -214,9 +263,9 @@ export class SendFaceMessage extends SendBaseMessage {
 export class SendRecordMessage extends SendBaseMessage {
   /**
    * 发送语音消息
-   * @param file 语音文件路径，可以是本地路径 或 网络URL
+   * @param file 语音文件路径，可以是本地路径、网络URL或 Buffer 对象
    */
-  constructor(file: string) {
+  constructor(file: string | Buffer) {
     super('record', { file });
   }
 }
@@ -224,9 +273,9 @@ export class SendRecordMessage extends SendBaseMessage {
 export class SendVideoMessage extends SendBaseMessage {
   /**
    * 发送视频消息
-   * @param file 视频文件路径，可以是本地路径 或 网络URL
+   * @param file 视频文件路径，可以是本地路径、网络URL或 Buffer 对象
    */
-  constructor(file: string) {
+  constructor(file: string | Buffer) {
     super('video', { file });
   }
 }

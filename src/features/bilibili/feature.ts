@@ -138,14 +138,7 @@ export async function init() {
 
           const sendInfoPromise = retry(
             async () => {
-              let infoImage = await generateVideoInfoImage(info);
-              // Convert data:image/png;base64,... to base64://...
-              if (infoImage.startsWith('data:')) {
-                const parts = infoImage.split(';base64,');
-                if (parts.length === 2) {
-                  infoImage = `base64://${parts[1]}`;
-                }
-              }
+              const infoImage = await generateVideoInfoImage(info);
               await new SendMessage({
                 message: new SendImageMessage(infoImage),
               }).reply(message);
@@ -169,11 +162,11 @@ export async function init() {
                 const videoPath = await downloadBilibiliVideo(info.bv);
                 if (videoPath) {
                   try {
-                    const videoData = await fs.readFile(videoPath);
+                    const uploadedPath = await onebot.uploadFileStream(
+                      videoPath
+                    );
                     await new SendMessage({
-                      message: new SendVideoMessage(
-                        `base64://${videoData.toString('base64')}`
-                      ),
+                      message: new SendVideoMessage(uploadedPath),
                     }).send({
                       recvMessage: message,
                     });
@@ -241,7 +234,7 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
   }
 }
 
-async function generateVideoInfoImage(info: VideoInfo): Promise<string> {
+async function generateVideoInfoImage(info: VideoInfo): Promise<Buffer> {
   const fetchImageAsBase64 = async (url: string) => {
     const response = await fetch(url);
     const imageBuffer = await response.buffer();
