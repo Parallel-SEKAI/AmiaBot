@@ -7,11 +7,7 @@ import {
   SendForwardMessage,
   ForwardMessageNode,
 } from '../../onebot/message/send.entity';
-import {
-  imageToBase64DataURL,
-  parseCommandLineArgs,
-  hexToRgba,
-} from '../../utils/index';
+import { parseCommandLineArgs, hexToRgba } from '../../utils/index';
 import logger from '../../config/logger';
 import { generatePage } from '../../service/enana';
 import {
@@ -23,6 +19,7 @@ import {
 import { COLORS } from '../../const';
 import { config } from '../../config';
 import { FeatureModule } from '../feature-manager';
+import { promises as fs } from 'fs';
 
 const CHARACTERS = [
   'miku',
@@ -267,7 +264,7 @@ async function help(message: RecvMessage) {
   } as ColumnComponent;
 
   // 使用 Enana API 生成帮助图片
-  const imageDataUrl = await generatePage(helpWidget);
+  const helpImageBuffer = await generatePage(helpWidget);
 
   // 发送生成的帮助图片
   await new SendMessage({
@@ -277,7 +274,7 @@ async function help(message: RecvMessage) {
         data: {
           userId: onebot.qq,
           nickname: onebot.nickname,
-          content: [new SendImageMessage(imageDataUrl)],
+          content: [new SendImageMessage(helpImageBuffer)],
         },
       } as ForwardMessageNode,
       {
@@ -287,7 +284,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/vs.png')
+              await fs.readFile('assets/pjsk-sticker/vs.png')
             ),
           ],
         },
@@ -299,7 +296,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/ln.png')
+              await fs.readFile('assets/pjsk-sticker/ln.png')
             ),
           ],
         },
@@ -311,7 +308,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/mmj.png')
+              await fs.readFile('assets/pjsk-sticker/mmj.png')
             ),
           ],
         },
@@ -323,7 +320,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/vbs.png')
+              await fs.readFile('assets/pjsk-sticker/vbs.png')
             ),
           ],
         },
@@ -335,7 +332,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/ws.png')
+              await fs.readFile('assets/pjsk-sticker/ws.png')
             ),
           ],
         },
@@ -347,7 +344,7 @@ async function help(message: RecvMessage) {
           nickname: onebot.nickname,
           content: [
             new SendImageMessage(
-              await imageToBase64DataURL('assets/pjsk-sticker/25.png')
+              await fs.readFile('assets/pjsk-sticker/25.png')
             ),
           ],
         },
