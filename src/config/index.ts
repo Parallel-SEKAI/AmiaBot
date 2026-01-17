@@ -24,6 +24,7 @@ const envVarsSchema = z
     OPENAI_API_KEY: z.string().optional().default(''),
     OPENAI_BASEURL: z.string().optional().default(''),
     OPENAI_MODEL: z.string().optional().default(''),
+    OPENAI_MAX_TOKEN: z.coerce.number().optional().default(0),
     GITHUB_TOKEN: z.string().optional().default(''),
     NETEASE_COOKIES: z.string().optional().default(''),
     BILIBILI_COOKIES: z.string().optional().default(''),
@@ -58,6 +59,7 @@ export interface IConfig {
     apiKey: string;
     baseUrl: string;
     model: string;
+    maxToken: number;
   };
   github: {
     token: string;
@@ -97,6 +99,7 @@ export const config: IConfig = {
     apiKey: envVars.OPENAI_API_KEY || '',
     baseUrl: envVars.OPENAI_BASEURL || '',
     model: envVars.OPENAI_MODEL || '',
+    maxToken: envVars.OPENAI_MAX_TOKEN || 0,
   },
   github: {
     token: envVars.GITHUB_TOKEN || '',
