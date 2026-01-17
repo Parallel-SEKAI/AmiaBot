@@ -283,7 +283,9 @@ async function help(message: RecvMessage) {
           userId: onebot.qq,
           nickname: onebot.nickname,
           content: [
-            new SendImageMessage(await fs.readFile('assets/pjsk-sticker/vs.png')),
+            new SendImageMessage(
+              await fs.readFile('assets/pjsk-sticker/vs.png')
+            ),
           ],
         },
       } as ForwardMessageNode,
@@ -293,7 +295,9 @@ async function help(message: RecvMessage) {
           userId: onebot.qq,
           nickname: onebot.nickname,
           content: [
-            new SendImageMessage(await fs.readFile('assets/pjsk-sticker/ln.png')),
+            new SendImageMessage(
+              await fs.readFile('assets/pjsk-sticker/ln.png')
+            ),
           ],
         },
       } as ForwardMessageNode,
@@ -327,7 +331,9 @@ async function help(message: RecvMessage) {
           userId: onebot.qq,
           nickname: onebot.nickname,
           content: [
-            new SendImageMessage(await fs.readFile('assets/pjsk-sticker/ws.png')),
+            new SendImageMessage(
+              await fs.readFile('assets/pjsk-sticker/ws.png')
+            ),
           ],
         },
       } as ForwardMessageNode,
@@ -337,7 +343,9 @@ async function help(message: RecvMessage) {
           userId: onebot.qq,
           nickname: onebot.nickname,
           content: [
-            new SendImageMessage(await fs.readFile('assets/pjsk-sticker/25.png')),
+            new SendImageMessage(
+              await fs.readFile('assets/pjsk-sticker/25.png')
+            ),
           ],
         },
       } as ForwardMessageNode,

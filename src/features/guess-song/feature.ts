@@ -409,10 +409,7 @@ async function guessSong(data: Record<string, any>) {
 
     // 将音频写入临时文件并流式上传
     const tempDir = os.tmpdir();
-    const tempAudioPath = path.join(
-      tempDir,
-      `guess_song_${Date.now()}.mp3`
-    );
+    const tempAudioPath = path.join(tempDir, `guess_song_${Date.now()}.mp3`);
     await fs.promises.writeFile(tempAudioPath, musicBuffer);
 
     let uploadedAudioPath: string;

@@ -162,9 +162,8 @@ export async function init() {
                 const videoPath = await downloadBilibiliVideo(info.bv);
                 if (videoPath) {
                   try {
-                    const uploadedPath = await onebot.uploadFileStream(
-                      videoPath
-                    );
+                    const uploadedPath =
+                      await onebot.uploadFileStream(videoPath);
                     await new SendMessage({
                       message: new SendVideoMessage(uploadedPath),
                     }).send({
