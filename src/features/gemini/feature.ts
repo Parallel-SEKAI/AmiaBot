@@ -54,11 +54,9 @@ export async function init() {
             { role: 'system', content: '请使用中文回答' },
             { role: 'user', content: content },
           ],
-          extra_body: {
-            thinking_config: {
-              include_thoughts: true,
-            },
-          },
+          ...(config.openai.maxToken > 0
+            ? { max_tokens: config.openai.maxToken }
+            : {}),
         } as any);
 
         const usage = response.usage;

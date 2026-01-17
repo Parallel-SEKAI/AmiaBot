@@ -354,6 +354,9 @@ async function handleMessageStatistics(message: RecvMessage) {
         { role: 'user', content: filledPrompt },
       ],
       response_format: { type: 'json_object' },
+      ...(config.openai.maxToken > 0
+        ? { max_tokens: config.openai.maxToken }
+        : {}),
     });
     const aiEndTime = Date.now();
     const analysisTime = (aiEndTime - aiStartTime) / 1000;

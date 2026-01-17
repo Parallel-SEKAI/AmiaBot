@@ -166,6 +166,9 @@ VIP等级: ${user.vipLevel}
         { role: 'user', content: content }, // 添加包含图片的消息内容
       ],
       response_format: { type: 'json_object' },
+      ...(config.openai.maxToken > 0
+        ? { max_tokens: config.openai.maxToken }
+        : {}),
     });
 
     const usage = response.usage;

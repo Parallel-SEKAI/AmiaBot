@@ -157,6 +157,9 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
         const response = await openai.chat.completions.create({
           model: config.openai.model,
           messages: [{ role: 'user', content: filledPrompt }],
+          ...(config.openai.maxToken > 0
+            ? { max_tokens: config.openai.maxToken }
+            : {}),
         });
 
         // 处理OpenAI API响应
