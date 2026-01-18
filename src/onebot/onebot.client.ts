@@ -122,7 +122,7 @@ export class OneBotClient extends EventEmitter {
   }
 
   /**
-   * 使用流式上传文件 (NapCat 扩展 API)
+   * 使用流式上传文件 (NapCat 扩展 API - HTTP 适配版)
    * @param filePath 本地文件路径
    * @param filename 可选的文件名
    * @returns 上传后的文件路径或标识符
@@ -139,8 +139,9 @@ export class OneBotClient extends EventEmitter {
     const fileSize = stats.size;
     const streamId = randomUUID();
     const totalChunks = Math.ceil(fileSize / DEFAULT_CHUNK_SIZE);
+    const resolvedFilename = filename || basename(filePath);
 
-    // Pre-calculate SHA256 using stream to avoid OOM
+    // 计算 SHA256 以供校验
     const hash = createHash('sha256');
     const hashStream = createReadStream(filePath);
     for await (const chunk of hashStream) {
@@ -149,11 +150,10 @@ export class OneBotClient extends EventEmitter {
     const expectedSha256 = hash.digest('hex');
 
     logger.info(
-      '[onebot.upload] Starting stream upload for %s (Size: %d, Chunks: %d, SHA256: %s)',
-      filePath,
-      fileSize,
-      totalChunks,
-      expectedSha256
+      '[onebot.upload] Starting HTTP stream upload: %s (ID: %s, Chunks: %d)',
+      resolvedFilename,
+      streamId,
+      totalChunks
     );
 
     const stream = createReadStream(filePath, {
@@ -161,40 +161,50 @@ export class OneBotClient extends EventEmitter {
     });
     let chunkIndex = 0;
 
+    // 1. 发送所有数据分片
     for await (const chunk of stream) {
-      const isComplete = chunkIndex === totalChunks - 1;
-
-      const res = await this.action('upload_file_stream', {
+      const params: Record<string, any> = {
         stream_id: streamId,
         chunk_data: chunk.toString('base64'),
         chunk_index: chunkIndex,
         total_chunks: totalChunks,
-        file_size: fileSize,
-        expected_sha256: expectedSha256,
-        is_complete: isComplete,
-        filename: filename || basename(filePath),
-        file_retention: 300000, // 5 minutes
-      });
+      };
 
+      // 仅在第一个分片或必要时携带元数据
+      if (chunkIndex === 0) {
+        params.file_size = fileSize;
+        params.filename = resolvedFilename;
+        params.expected_sha256 = expectedSha256;
+        params.file_retention = 300000; // 5 min
+      }
+
+      const res = await this.action('upload_file_stream', params);
       if (res.status !== 'ok') {
         throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
       }
-
-      if (isComplete) {
-        const resultPath =
-          res.data?.file_path || res.data?.file || `stream://${streamId}`;
-        logger.info('[onebot.upload] Stream upload complete: %s', resultPath);
-        return resultPath;
-      }
-
       chunkIndex++;
     }
 
-    throw new Error('Stream upload finished without returning a file path');
+    // 2. 发送合并请求 (is_complete: true)
+    logger.debug('[onebot.upload] Finalizing stream upload: %s', streamId);
+    const finalRes = await this.action('upload_file_stream', {
+      stream_id: streamId,
+      is_complete: true,
+    });
+
+    if (finalRes.status === 'ok' && finalRes.data?.file_path) {
+      logger.info(
+        '[onebot.upload] Stream upload complete: %s',
+        finalRes.data.file_path
+      );
+      return finalRes.data.file_path;
+    }
+
+    throw new Error('Stream upload failed to return server file path');
   }
 
   /**
-   * 使用流式上传内存中的 Buffer (NapCat 扩展 API)
+   * 使用流式上传内存中的 Buffer (NapCat 扩展 API - HTTP 适配版)
    * @param buffer 要上传的 Buffer
    * @param filename 建议的文件名
    * @returns 上传后的文件路径或标识符
@@ -211,46 +221,52 @@ export class OneBotClient extends EventEmitter {
     const expectedSha256 = createHash('sha256').update(buffer).digest('hex');
 
     logger.info(
-      '[onebot.upload] Starting buffer stream upload (Size: %d, Chunks: %d, SHA256: %s)',
-      fileSize,
-      totalChunks,
-      expectedSha256
+      '[onebot.upload] Starting HTTP buffer upload (ID: %s, Chunks: %d)',
+      streamId,
+      totalChunks
     );
 
+    // 1. 分片上传
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const start = chunkIndex * DEFAULT_CHUNK_SIZE;
       const end = Math.min(start + DEFAULT_CHUNK_SIZE, fileSize);
       const chunk = buffer.subarray(start, end);
-      const isComplete = chunkIndex === totalChunks - 1;
 
-      const res = await this.action('upload_file_stream', {
+      const params: Record<string, any> = {
         stream_id: streamId,
         chunk_data: chunk.toString('base64'),
         chunk_index: chunkIndex,
         total_chunks: totalChunks,
-        file_size: fileSize,
-        expected_sha256: expectedSha256,
-        is_complete: isComplete,
-        filename: filename,
-        file_retention: 300000,
-      });
+      };
 
+      if (chunkIndex === 0) {
+        params.file_size = fileSize;
+        params.filename = filename;
+        params.expected_sha256 = expectedSha256;
+        params.file_retention = 300000;
+      }
+
+      const res = await this.action('upload_file_stream', params);
       if (res.status !== 'ok') {
         throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
       }
-
-      if (isComplete) {
-        const resultPath =
-          res.data?.file_path || res.data?.file || `stream://${streamId}`;
-        logger.info(
-          '[onebot.upload] Buffer stream upload complete: %s',
-          resultPath
-        );
-        return resultPath;
-      }
     }
 
-    throw new Error('Buffer stream upload finished without returning a path');
+    // 2. 合并
+    const finalRes = await this.action('upload_file_stream', {
+      stream_id: streamId,
+      is_complete: true,
+    });
+
+    if (finalRes.status === 'ok' && finalRes.data?.file_path) {
+      logger.info(
+        '[onebot.upload] Buffer stream upload complete: %s',
+        finalRes.data.file_path
+      );
+      return finalRes.data.file_path;
+    }
+
+    throw new Error('Buffer stream upload failed to return server file path');
   }
 
   private connectWebSocket(): void {
