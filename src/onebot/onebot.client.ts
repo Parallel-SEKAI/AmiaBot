@@ -180,12 +180,11 @@ export class OneBotClient extends EventEmitter {
         throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
       }
 
-      if (isComplete && res.data && res.data.file_path) {
-        logger.info(
-          '[onebot.upload] Stream upload complete: %s',
-          res.data.file_path
-        );
-        return res.data.file_path;
+      if (isComplete) {
+        const resultPath =
+          res.data?.file_path || res.data?.file || `stream://${streamId}`;
+        logger.info('[onebot.upload] Stream upload complete: %s', resultPath);
+        return resultPath;
       }
 
       chunkIndex++;
@@ -240,12 +239,14 @@ export class OneBotClient extends EventEmitter {
         throw new Error(`Failed to upload chunk ${chunkIndex}: ${res.message}`);
       }
 
-      if (isComplete && res.data && res.data.file_path) {
+      if (isComplete) {
+        const resultPath =
+          res.data?.file_path || res.data?.file || `stream://${streamId}`;
         logger.info(
           '[onebot.upload] Buffer stream upload complete: %s',
-          res.data.file_path
+          resultPath
         );
-        return res.data.file_path;
+        return resultPath;
       }
     }
 
