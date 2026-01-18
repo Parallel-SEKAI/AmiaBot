@@ -105,8 +105,8 @@ There are no pre-configured tests for this project.
 *   **Automatic Streaming:** `SendMessage.send()` automatically detects `Buffer` data in message segments and performs streaming uploads before delivery.
 
 ## Current Project Status (Dynamically Updated)
-- **Current Task**: Completed bug fixes for OneBot client and message entities.
+- **Current Task**: Refactored HTTP stream upload to follow the three-step workflow (chunks then is_complete).
 - **Environment**: CachyOS | TypeScript | Node.js.
-- **Latest CI Status**: Build and Format passing.
+- **Latest CI Status**: Build passing after refactoring.
 - **Next Steps**: Monitor for any further integration issues with NapCat.
 
