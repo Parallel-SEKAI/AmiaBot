@@ -49,32 +49,7 @@ export class SendMessage {
       return new RecvMessage(Math.floor(Math.random() * 1000000));
     }
 
-    // 处理所有消息中的 Buffer 数据
-    const processMessages = async (messages: any[]) => {
-      for (const msg of messages) {
-        if (msg.type === 'forward' && msg.data?.messages) {
-          for (const node of msg.data.messages) {
-            if (node.data?.content) {
-              await processMessages(node.data.content);
-            }
-          }
-        } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
-          const extMap: Record<string, string> = {
-            image: 'png',
-            record: 'mp3',
-            video: 'mp4',
-            file: 'dat',
-          };
-          const ext = extMap[msg.type] || 'dat';
-          msg.data.file = await onebot.uploadBufferStream(
-            msg.data.file,
-            `upload_${Date.now()}.${ext}`
-          );
-        }
-      }
-    };
-
-    await processMessages(this.messages);
+    await this.processMessages(this.messages);
 
     const is_private =
       this.userId ||
@@ -148,32 +123,7 @@ export class SendMessage {
       return new RecvMessage(Math.floor(Math.random() * 1000000));
     }
 
-    // 处理所有消息中的 Buffer 数据
-    const processMessages = async (messages: any[]) => {
-      for (const msg of messages) {
-        if (msg.type === 'forward' && msg.data?.messages) {
-          for (const node of msg.data.messages) {
-            if (node.data?.content) {
-              await processMessages(node.data.content);
-            }
-          }
-        } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
-          const extMap: Record<string, string> = {
-            image: 'png',
-            record: 'mp3',
-            video: 'mp4',
-            file: 'dat',
-          };
-          const ext = extMap[msg.type] || 'dat';
-          msg.data.file = await onebot.uploadBufferStream(
-            msg.data.file,
-            `upload_${Date.now()}.${ext}`
-          );
-        }
-      }
-    };
-
-    await processMessages(this.messages);
+    await this.processMessages(this.messages);
 
     if (this.messages[0] instanceof SendForwardMessage) {
       return await this.send({ recvMessage });
@@ -214,6 +164,30 @@ export class SendMessage {
       message.rawMessage
     );
     return message;
+  }
+
+  private async processMessages(messages: any[]) {
+    for (const msg of messages) {
+      if (msg.type === 'forward' && msg.data?.messages) {
+        for (const node of msg.data.messages) {
+          if (node.data?.content) {
+            await this.processMessages(node.data.content);
+          }
+        }
+      } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
+        const extMap: Record<string, string> = {
+          image: 'png',
+          record: 'mp3',
+          video: 'mp4',
+          file: 'dat',
+        };
+        const ext = extMap[msg.type] || 'dat';
+        msg.data.file = await onebot.uploadBufferStream(
+          msg.data.file,
+          `upload_${Date.now()}.${ext}`
+        );
+      }
+    }
   }
 }
 
