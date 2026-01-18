@@ -19,6 +19,8 @@ interface RegisteredCommand {
   handler: CommandHandler;
 }
 
+const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
+
 export class OneBotClient extends EventEmitter {
   public qq: number = 0;
   public nickname: string = '';
@@ -131,32 +133,44 @@ export class OneBotClient extends EventEmitter {
   ): Promise<string> {
     const { promises: fs, createReadStream } = await import('fs');
     const { basename } = await import('path');
-    const { randomUUID } = await import('crypto');
+    const { randomUUID, createHash } = await import('crypto');
 
     const stats = await fs.stat(filePath);
     const fileSize = stats.size;
     const streamId = randomUUID();
-    const chunkSize = 64 * 1024; // 64KB chunks
-    const totalChunks = Math.ceil(fileSize / chunkSize);
+    const totalChunks = Math.ceil(fileSize / DEFAULT_CHUNK_SIZE);
+
+    // Pre-calculate SHA256 using stream to avoid OOM
+    const hash = createHash('sha256');
+    const hashStream = createReadStream(filePath);
+    for await (const chunk of hashStream) {
+      hash.update(chunk);
+    }
+    const expectedSha256 = hash.digest('hex');
 
     logger.info(
-      '[onebot.upload] Starting stream upload for %s (Size: %d, Chunks: %d)',
+      '[onebot.upload] Starting stream upload for %s (Size: %d, Chunks: %d, SHA256: %s)',
       filePath,
       fileSize,
-      totalChunks
+      totalChunks,
+      expectedSha256
     );
 
-    const stream = createReadStream(filePath, { highWaterMark: chunkSize });
+    const stream = createReadStream(filePath, {
+      highWaterMark: DEFAULT_CHUNK_SIZE,
+    });
     let chunkIndex = 0;
 
     for await (const chunk of stream) {
       const isComplete = chunkIndex === totalChunks - 1;
+
       const res = await this.action('upload_file_stream', {
         stream_id: streamId,
         chunk_data: chunk.toString('base64'),
         chunk_index: chunkIndex,
         total_chunks: totalChunks,
         file_size: fileSize,
+        expected_sha256: expectedSha256,
         is_complete: isComplete,
         filename: filename || basename(filePath),
         file_retention: 300000, // 5 minutes
@@ -190,22 +204,23 @@ export class OneBotClient extends EventEmitter {
     buffer: Buffer,
     filename: string
   ): Promise<string> {
-    const { randomUUID } = await import('crypto');
+    const { randomUUID, createHash } = await import('crypto');
 
     const fileSize = buffer.length;
     const streamId = randomUUID();
-    const chunkSize = 64 * 1024; // 64KB chunks
-    const totalChunks = Math.ceil(fileSize / chunkSize);
+    const totalChunks = Math.ceil(fileSize / DEFAULT_CHUNK_SIZE);
+    const expectedSha256 = createHash('sha256').update(buffer).digest('hex');
 
     logger.info(
-      '[onebot.upload] Starting buffer stream upload (Size: %d, Chunks: %d)',
+      '[onebot.upload] Starting buffer stream upload (Size: %d, Chunks: %d, SHA256: %s)',
       fileSize,
-      totalChunks
+      totalChunks,
+      expectedSha256
     );
 
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * chunkSize;
-      const end = Math.min(start + chunkSize, fileSize);
+      const start = chunkIndex * DEFAULT_CHUNK_SIZE;
+      const end = Math.min(start + DEFAULT_CHUNK_SIZE, fileSize);
       const chunk = buffer.subarray(start, end);
       const isComplete = chunkIndex === totalChunks - 1;
 
@@ -215,6 +230,7 @@ export class OneBotClient extends EventEmitter {
         chunk_index: chunkIndex,
         total_chunks: totalChunks,
         file_size: fileSize,
+        expected_sha256: expectedSha256,
         is_complete: isComplete,
         filename: filename,
         file_retention: 300000,
