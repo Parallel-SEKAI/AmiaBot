@@ -64,28 +64,59 @@ pool.on('error', (err) => {
   }
 });
 
-// 监听连接池获取连接事件
+// 监听连接 pool 的成功事件
 pool.on('connect', () => {
   logger.info('[db] Database connected successfully');
   // 重置重连尝试次数
   reconnectAttempts = 0;
 });
 
+/**
+ * 执行数据库查询并记录日志
+ * @param text SQL 语句
+ * @param params 参数列表
+ */
+export async function query(text: string, params?: any[]) {
+  const start = Date.now();
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    logger.debug('[db] Query: %s', text.replace(/\s+/g, ' ').trim());
+    if (params && params.length > 0) {
+      logger.debug('[db] Params: %o', params);
+    }
+    logger.debug('[db] Result: %d rows (%dms)', res.rowCount, duration);
+    return res;
+  } catch (err) {
+    const duration = Date.now() - start;
+    logger.error(
+      '[db] Query Error: %s (%dms)',
+      text.replace(/\s+/g, ' ').trim(),
+      duration
+    );
+    if (params && params.length > 0) {
+      logger.error('[db] Params: %o', params);
+    }
+    logger.error('[db] Error Details: %o', err);
+    throw err;
+  }
+}
+
 export default pool;
 
 export async function initDb() {
   const initSqlPath = path.resolve(__dirname, '../../db/init.sql');
   const initSql = await fs.readFile(initSqlPath, 'utf8');
-  await pool.query(initSql);
+  await query(initSql);
 }
 
 export async function checkFeatureEnabled(groupId: number, feature: string) {
-  const query = `
+  const text = `
     SELECT is_enabled 
     FROM group_features 
     WHERE group_id = $1 AND feature_name = $2
   `;
-  const result = await pool.query(query, [groupId, feature]);
+  const result = await query(text, [groupId, feature]);
   return result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
 }
 
@@ -94,22 +125,22 @@ export async function setFeatureEnabled(
   feature: string,
   enabled: boolean
 ) {
-  const query = `
+  const text = `
     INSERT INTO group_features (group_id, feature_name, is_enabled)
     VALUES ($1, $2, $3)
     ON CONFLICT (group_id, feature_name)
     DO UPDATE SET is_enabled = EXCLUDED.is_enabled
   `;
-  await pool.query(query, [groupId, feature, enabled]);
+  await query(text, [groupId, feature, enabled]);
 }
 
 export async function getGameState(groupId: number, gameType: string) {
-  const query = `
+  const text = `
     SELECT answer_data, start_time 
     FROM amia_game_state 
     WHERE group_id = $1 AND game_type = $2
   `;
-  const result = await pool.query(query, [groupId, gameType]);
+  const result = await query(text, [groupId, gameType]);
   return result.rows[0];
 }
 
@@ -118,19 +149,19 @@ export async function setGameState(
   gameType: string,
   answerData: any
 ) {
-  const query = `
+  const text = `
     INSERT INTO amia_game_state (group_id, game_type, answer_data)
     VALUES ($1, $2, $3)
     ON CONFLICT (group_id, game_type)
     DO UPDATE SET answer_data = EXCLUDED.answer_data, start_time = CURRENT_TIMESTAMP
   `;
-  await pool.query(query, [groupId, gameType, JSON.stringify(answerData)]);
+  await query(text, [groupId, gameType, JSON.stringify(answerData)]);
 }
 
 export async function deleteGameState(groupId: number, gameType: string) {
-  const query = `
+  const text = `
     DELETE FROM amia_game_state 
     WHERE group_id = $1 AND game_type = $2
   `;
-  await pool.query(query, [groupId, gameType]);
+  await query(text, [groupId, gameType]);
 }

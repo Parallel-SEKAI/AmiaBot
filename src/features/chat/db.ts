@@ -1,4 +1,4 @@
-import pool from '../../service/db';
+import { query } from '../../service/db';
 
 /**
  * 聊天历史记录类型定义
@@ -35,11 +35,11 @@ export async function addChatHistory(
   userNick: string,
   message: string
 ): Promise<void> {
-  const query = `
+  const text = `
     INSERT INTO amia_chat_history (group_id, user_id, user_nick, message)
     VALUES ($1, $2, $3, $4)
   `;
-  await pool.query(query, [groupId, userId, userNick, message]);
+  await query(text, [groupId, userId, userNick, message]);
 }
 
 /**
@@ -56,14 +56,14 @@ export async function getChatHistory(
   offset: number = 0,
   orderByTime: 'asc' | 'desc' = 'desc'
 ): Promise<ChatHistory[]> {
-  const query = `
+  const text = `
     SELECT id, group_id, user_id, user_nick, time, message
     FROM amia_chat_history
     WHERE group_id = $1
     ORDER BY time ${orderByTime.toUpperCase()}
     LIMIT $2 OFFSET $3
   `;
-  const result = await pool.query(query, [groupId, limit, offset]);
+  const result = await query(text, [groupId, limit, offset]);
   return result.rows as ChatHistory[];
 }
 
@@ -99,12 +99,12 @@ export async function getOldestChatHistory(
  * @returns Promise<ChatUser | null>
  */
 export async function getUserInfo(userId: number): Promise<ChatUser | null> {
-  const query = `
+  const text = `
     SELECT user_id, favor, memory
     FROM amia_chat_user
     WHERE user_id = $1
   `;
-  const result = await pool.query(query, [userId]);
+  const result = await query(text, [userId]);
   return result.rows[0] as ChatUser | null;
 }
 
@@ -120,7 +120,7 @@ export async function updateUserInfo(
   favor: number,
   memory: string
 ): Promise<void> {
-  const query = `
+  const text = `
     INSERT INTO amia_chat_user (user_id, favor, memory)
     VALUES ($1, $2, $3)
     ON CONFLICT (user_id)
@@ -128,5 +128,5 @@ export async function updateUserInfo(
       favor = amia_chat_user.favor + EXCLUDED.favor,
       memory = EXCLUDED.memory
   `;
-  await pool.query(query, [userId, favor, memory]);
+  await query(text, [userId, favor, memory]);
 }
