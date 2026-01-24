@@ -89,7 +89,11 @@ export async function query(text: string, params?: any[]) {
     return res;
   } catch (err) {
     const duration = Date.now() - start;
-    logger.error('[db] Query Error: %s (%dms)', text.replace(/\s+/g, ' ').trim(), duration);
+    logger.error(
+      '[db] Query Error: %s (%dms)',
+      text.replace(/\s+/g, ' ').trim(),
+      duration
+    );
     if (params && params.length > 0) {
       logger.error('[db] Params: %o', params);
     }
