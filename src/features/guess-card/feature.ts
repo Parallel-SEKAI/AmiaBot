@@ -1,5 +1,5 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendImageMessage,
@@ -11,6 +11,8 @@ import { FeatureModule } from '../feature-manager';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getGameState, setGameState, deleteGameState } from '../../service/db';
+import { browserService } from '../../service/browser';
+import { TemplateEngine } from '../../utils/template';
 
 const difficulty = {
   ez: 160,
@@ -274,18 +276,17 @@ async function getRandomCard(): Promise<CardInfo> {
 }
 
 /**
- * 从图片随机选取指定大小的范围进行裁剪后返回
+ * 从图片随机选取指定大小的范围进行裁剪后返回 (使用 Sharp 提高性能)
  * @param imageUrl - 图片URL
  * @param cropSize - 裁剪大小
  * @returns Promise<Buffer> - 裁剪后的图片Buffer
  */
 async function cropImage(imageUrl: string, cropSize: number): Promise<Buffer> {
   try {
-    // 获取原始图片
     const response = await fetch(imageUrl);
-    const buffer = await response.arrayBuffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    // 获取图片信息
     const image = sharp(buffer);
     const metadata = await image.metadata();
 
@@ -293,15 +294,11 @@ async function cropImage(imageUrl: string, cropSize: number): Promise<Buffer> {
       throw new Error('Failed to get image dimensions');
     }
 
-    // 确保裁剪大小不超过图片尺寸
     const safeCropSize = Math.min(cropSize, metadata.width, metadata.height);
-
-    // 随机生成裁剪区域的起始坐标
     const x = Math.floor(Math.random() * (metadata.width - safeCropSize));
     const y = Math.floor(Math.random() * (metadata.height - safeCropSize));
 
-    // 裁剪图片
-    const croppedBuffer = await image
+    return await image
       .extract({
         left: x,
         top: y,
@@ -309,23 +306,13 @@ async function cropImage(imageUrl: string, cropSize: number): Promise<Buffer> {
         height: safeCropSize,
       })
       .toBuffer();
-
-    logger.info(
-      '[feature.guess-card] Crop image - Original size: %dx%d, Crop size: %dx%d, Crop area: (%d,%d)',
-      metadata.width,
-      metadata.height,
-      safeCropSize,
-      safeCropSize,
-      x,
-      y
-    );
-
-    return croppedBuffer;
   } catch (error) {
-    logger.error('[feature.guess-card] Failed to crop image:', error);
-    // 失败时返回原始图片
+    logger.error(
+      '[feature.guess-card] Failed to crop image with sharp:',
+      error
+    );
+    // 兜底返回原图
     const response = await fetch(imageUrl);
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer);
+    return Buffer.from(await response.arrayBuffer());
   }
 }

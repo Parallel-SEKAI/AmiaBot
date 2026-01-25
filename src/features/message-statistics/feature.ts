@@ -1,11 +1,10 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendMessage,
   SendTextMessage,
-  SendForwardMessage,
-  ForwardMessageNode,
+  SendImageMessage,
 } from '../../onebot/message/send.entity';
 import { openai } from '../../service/openai';
 import { renderTemplate } from '../../utils/index';
@@ -13,7 +12,8 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Group } from '../../onebot/group/group.entity';
 import { config } from '../../config';
-import { FeatureModule } from '../feature-manager';
+import { browserService } from '../../service/browser';
+import { TemplateEngine } from '../../utils/template';
 
 // 参数配置常量
 // 冷却时间（毫秒）
@@ -68,19 +68,18 @@ function getPromptTemplate(): string {
   return readFileSync(promptPath, 'utf-8');
 }
 
-// 构建合并聊天记录，生成统计报告
-async function buildStatisticsReport(
+// 构建渲染数据并生成图片
+async function generateStatisticsImage(
   groupName: string,
   startTime: string,
   endTime: string,
   messageCount: number,
   memberCount: number,
-  textCount: number,
   analysisTime: number,
   tokenUsage: string,
   analysisResult: AnalysisResult,
-  group: Group // 添加group参数，用于获取成员信息
-): Promise<SendForwardMessage> {
+  group: Group
+): Promise<Buffer> {
   // 获取群成员信息，用于转换QQ号为真实昵称
   const members = await group.getMembers();
   const memberMap = new Map<number, string>();
@@ -88,109 +87,27 @@ async function buildStatisticsReport(
     memberMap.set(member.id, member.fullName);
   });
 
-  // 构建合并消息节点
-  const messageNodes: ForwardMessageNode[] = [];
+  const data = {
+    groupName,
+    startTime,
+    endTime,
+    messageCount,
+    memberCount,
+    analysisTime: analysisTime.toFixed(2),
+    tokenUsage,
+    hot_topics: analysisResult.hot_topics,
+    group_members_titles: analysisResult.group_members_titles.map((t) => ({
+      ...t,
+      name: memberMap.get(t.qq_number) || `QQ${t.qq_number}`,
+    })),
+    group_bible: analysisResult.group_bible.map((b) => ({
+      ...b,
+      name: memberMap.get(b.interpreter) || `QQ${b.interpreter}`,
+    })),
+  };
 
-  // 1. 标题节点
-  messageNodes.push({
-    type: 'node',
-    data: {
-      userId: onebot.qq,
-      nickname: onebot.nickname,
-      content: [new SendTextMessage('📊 QQ群消息统计分析报告 📊')],
-    },
-  });
-
-  // 2. 基本信息摘要节点
-  const summaryText = `🔍 基本信息
-\n群名称: ${groupName}
-统计时段: ${startTime} - ${endTime}
-消息总数: ${messageCount}条
-参与成员: ${memberCount}人
-总文字数: ${textCount}字
-分析耗时: ${analysisTime.toFixed(2)}秒
-消耗Token: ${tokenUsage}`;
-  messageNodes.push({
-    type: 'node',
-    data: {
-      userId: onebot.qq,
-      nickname: onebot.nickname,
-      content: [new SendTextMessage(summaryText)],
-    },
-  });
-
-  // 3. 热门话题节点
-  if (analysisResult.hot_topics.length > 0) {
-    let topicsText = '🔥 热门话题\n\n';
-    analysisResult.hot_topics.forEach((topic) => {
-      topicsText += `#${topic.topic_id} ${topic.topic_name}\n`;
-      topicsText += `参与人数: ${topic.participants.length}人\n`;
-      topicsText += `话题内容: ${topic.content}\n\n`;
-    });
-    messageNodes.push({
-      type: 'node',
-      data: {
-        userId: onebot.qq,
-        nickname: onebot.nickname,
-        content: [new SendTextMessage(topicsText)],
-      },
-    });
-  }
-
-  // 4. 群友称号节点
-  if (analysisResult.group_members_titles.length > 0) {
-    let titlesText = '🏆 群友称号\n\n';
-    analysisResult.group_members_titles.forEach((title) => {
-      const memberName =
-        memberMap.get(title.qq_number) || `QQ${title.qq_number}`;
-      titlesText += `${memberName} - ${title.title}\n`;
-      titlesText += `${title.feature}\n\n`;
-    });
-    messageNodes.push({
-      type: 'node',
-      data: {
-        userId: onebot.qq,
-        nickname: onebot.nickname,
-        content: [new SendTextMessage(titlesText)],
-      },
-    });
-  }
-
-  // 5. 群圣经节点
-  if (analysisResult.group_bible.length > 0) {
-    let bibleText = '📖 群圣经\n\n';
-    analysisResult.group_bible.forEach((bible) => {
-      const interpreterName =
-        memberMap.get(bible.interpreter) || `QQ${bible.interpreter}`;
-      bibleText += `💬 ${bible.sentence}\n`;
-      bibleText += `👤 ${interpreterName}: ${bible.explanation}\n\n`;
-    });
-    messageNodes.push({
-      type: 'node',
-      data: {
-        userId: onebot.qq,
-        nickname: onebot.nickname,
-        content: [new SendTextMessage(bibleText)],
-      },
-    });
-  }
-
-  messageNodes.push({
-    type: 'node',
-    data: {
-      userId: onebot.qq,
-      nickname: onebot.nickname,
-      content: [
-        new SendTextMessage(`
-由AmiaBot总结
-https://amiabot.parallel-sekai.org/
-          `),
-      ],
-    },
-  });
-
-  // 创建并返回合并消息
-  return new SendForwardMessage(messageNodes);
+  const html = TemplateEngine.render('message-statistics/report.hbs', data);
+  return await browserService.render(html);
 }
 
 export async function init() {
@@ -296,12 +213,6 @@ async function handleMessageStatistics(message: RecvMessage) {
     });
     const memberCount = memberSet.size;
 
-    // 统计总文字数
-    const textCount = filteredHistory.reduce(
-      (count: number, msg: RecvMessage) => count + msg.rawMessage.length,
-      0
-    );
-
     // 获取开始和结束时间
     const startTime = new Date(filteredHistory[0].time)
       .toISOString()
@@ -381,23 +292,22 @@ async function handleMessageStatistics(message: RecvMessage) {
     }
 
     const tokenUsage = `${response.usage?.prompt_tokens || 0}/${response.usage?.completion_tokens || 0}`;
-    const forwardMessage = await buildStatisticsReport(
+    const reportImage = await generateStatisticsImage(
       group.name || '未知群',
       startTime,
       endTime,
       filteredHistory.length,
       memberCount,
-      textCount,
       analysisTime,
       tokenUsage,
       analysisResult,
       group
     );
 
-    // 发送统计报告合并聊天记录
+    // 发送统计报告图片
     await message.reply(
       new SendMessage({
-        message: forwardMessage,
+        message: new SendImageMessage(reportImage),
         groupId: message.groupId || undefined,
       })
     );

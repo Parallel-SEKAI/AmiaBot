@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '..';
 import { SendMessage } from './send.entity';
 
 export class RecvBaseMessage {
@@ -431,9 +431,15 @@ export class RecvMessage {
     this.rawMessage = msgData.raw_message ?? '';
     this.groupId = msgData.group_id ?? null;
     this.groupName = msgData.group_name ?? null;
-    this.message = (msgData.message ?? []).map((item: any) =>
-      RecvBaseMessage.fromMap(item)
-    );
+
+    let rawMsg = msgData.message;
+    if (typeof rawMsg === 'string') {
+      rawMsg = [{ type: 'text', data: { text: rawMsg } }];
+    } else if (!Array.isArray(rawMsg)) {
+      rawMsg = [];
+    }
+
+    this.message = rawMsg.map((item: any) => RecvBaseMessage.fromMap(item));
     this._initialized = true;
   }
 
@@ -465,9 +471,15 @@ export class RecvMessage {
     msg.rawMessage = data.raw_message ?? '';
     msg.groupId = data.group_id ?? null;
     msg.groupName = data.group_name ?? null;
-    msg.message = (data.message ?? []).map((item: any) =>
-      RecvBaseMessage.fromMap(item)
-    );
+
+    let rawMsg = data.message;
+    if (typeof rawMsg === 'string') {
+      rawMsg = [{ type: 'text', data: { text: rawMsg } }];
+    } else if (!Array.isArray(rawMsg)) {
+      rawMsg = [];
+    }
+
+    msg.message = rawMsg.map((item: any) => RecvBaseMessage.fromMap(item));
     msg._initialized = true;
 
     return msg;

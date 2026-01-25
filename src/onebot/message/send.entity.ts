@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { onebot } from '../../main';
+import { onebot } from '..';
 import { RecvMessage } from './recv.entity';
 import logger from '../../config/logger';
 import { stateService } from '../../service/state';
@@ -103,12 +103,20 @@ export class SendMessage {
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
-    await message.init();
-    logger.info(
-      '[onebot.send][Group: %d] %s',
-      message.groupId,
-      message.rawMessage
-    );
+    try {
+      await message.init();
+      logger.info(
+        '[onebot.send][Group: %d] %s',
+        message.groupId,
+        message.rawMessage
+      );
+    } catch (e) {
+      logger.warn(
+        '[onebot.send] Failed to init message %d: %s',
+        message.messageId,
+        e
+      );
+    }
     return message;
   }
 
@@ -156,13 +164,30 @@ export class SendMessage {
       );
     }
 
+    if (!data.data || !data.data.message_id) {
+      const tempId = Math.floor(Math.random() * 1000000);
+      logger.warn(
+        '[onebot.send] No message_id returned in reply, using temporary ID: %d',
+        tempId
+      );
+      return new RecvMessage(tempId);
+    }
+
     const message = new RecvMessage(Number(data.data.message_id));
-    await message.init();
-    logger.info(
-      '[onebot.send][Group: %d] %s',
-      message.groupId,
-      message.rawMessage
-    );
+    try {
+      await message.init();
+      logger.info(
+        '[onebot.send][Group: %d] %s',
+        message.groupId,
+        message.rawMessage
+      );
+    } catch (e) {
+      logger.warn(
+        '[onebot.send] Failed to init message %d: %s',
+        message.messageId,
+        e
+      );
+    }
     return message;
   }
 

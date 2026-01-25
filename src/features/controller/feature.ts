@@ -1,6 +1,6 @@
-import { featureManager } from '../index';
+import { featureManager } from '../feature-manager';
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvAtMessage, RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { parseCommandLineArgs } from '../../utils';

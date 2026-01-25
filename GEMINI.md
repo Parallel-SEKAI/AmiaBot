@@ -105,8 +105,8 @@ There are no pre-configured tests for this project.
 *   **Automatic Streaming:** `SendMessage.send()` automatically detects `Buffer` data in message segments and performs streaming uploads before delivery.
 
 ## Current Project Status (Dynamically Updated)
-- **Current Task**: Refactored HTTP stream upload to follow the three-step workflow (chunks then is_complete).
+- **Current Task**: Completed migration to Playwright rendering engine.
 - **Environment**: CachyOS | TypeScript | Node.js.
-- **Latest CI Status**: Build passing after refactoring.
-- **Next Steps**: Monitor for any further integration issues with NapCat.
+- **Latest CI Status**: Build passing after full migration and legacy code cleanup.
+- **Next Steps**: Monitor performance and stability of the new rendering system.
 

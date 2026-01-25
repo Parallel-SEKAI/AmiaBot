@@ -9,6 +9,7 @@ const envVarsSchema = z
     PREFIXES: z.string().optional().default(''),
     HELP_TEXT: z.string().optional().default(''),
     FEATURES_DEFAULT_ENABLED: z.string().optional().default('true'),
+    EXIT_WHEN_ERROR: z.string().optional().default('true'),
     ONEBOT_HTTP_URL: z.string().optional().default(''),
     ONEBOT_WS_URL: z.string().optional().default(''),
     ONEBOT_TOKEN: z.string().optional().default(''),
@@ -17,10 +18,6 @@ const envVarsSchema = z
     APP_DB_NAME: z.string().optional().default(''),
     APP_DB_USER: z.string().optional().default(''),
     APP_DB_PASSWORD: z.string().optional().default(''),
-    ENANA_BASEURL: z.string().optional().default(''),
-    ENANA_TOKEN: z.string().optional().default(''),
-    ENANA_SCALE: z.coerce.number().optional().default(0), // 自动将字符串转换为数字
-    ENANA_FONT: z.string().optional().default(''),
     OPENAI_API_KEY: z.string().optional().default(''),
     OPENAI_BASEURL: z.string().optional().default(''),
     OPENAI_MODEL: z.string().optional().default(''),
@@ -28,6 +25,8 @@ const envVarsSchema = z
     GITHUB_TOKEN: z.string().optional().default(''),
     NETEASE_COOKIES: z.string().optional().default(''),
     BILIBILI_COOKIES: z.string().optional().default(''),
+    PLAYWRIGHT_WS_ENDPOINT: z.string().optional().default(''),
+    PLAYWRIGHT_CONCURRENCY: z.coerce.number().optional().default(5),
   })
   .loose();
 
@@ -37,6 +36,7 @@ export interface IConfig {
   prefixes: string[];
   helpText: string;
   featuresDefaultEnabled: boolean;
+  exitWhenError: boolean;
   onebot: {
     httpUrl: string;
     wsUrl: string;
@@ -48,12 +48,6 @@ export interface IConfig {
     name: string;
     user: string;
     password: string;
-  };
-  enana: {
-    baseUrl: string;
-    token: string;
-    scale: number;
-    font: string;
   };
   openai: {
     apiKey: string;
@@ -70,6 +64,10 @@ export interface IConfig {
   bilibili: {
     cookies: string;
   };
+  playwright: {
+    wsEndpoint: string;
+    concurrency: number;
+  };
 }
 
 export const config: IConfig = {
@@ -77,6 +75,7 @@ export const config: IConfig = {
   helpText: envVars.HELP_TEXT || '',
   featuresDefaultEnabled:
     envVars.FEATURES_DEFAULT_ENABLED.toLowerCase() === 'true',
+  exitWhenError: envVars.EXIT_WHEN_ERROR.toLowerCase() === 'true',
   onebot: {
     httpUrl: envVars.ONEBOT_HTTP_URL || '',
     wsUrl: envVars.ONEBOT_WS_URL || '',
@@ -88,12 +87,6 @@ export const config: IConfig = {
     name: envVars.APP_DB_NAME || '',
     user: envVars.APP_DB_USER || '',
     password: envVars.APP_DB_PASSWORD || '',
-  },
-  enana: {
-    baseUrl: envVars.ENANA_BASEURL || '',
-    token: envVars.ENANA_TOKEN || '',
-    scale: envVars.ENANA_SCALE || 0,
-    font: envVars.ENANA_FONT || '',
   },
   openai: {
     apiKey: envVars.OPENAI_API_KEY || '',
@@ -109,5 +102,9 @@ export const config: IConfig = {
   },
   bilibili: {
     cookies: envVars.BILIBILI_COOKIES || '',
+  },
+  playwright: {
+    wsEndpoint: envVars.PLAYWRIGHT_WS_ENDPOINT || '',
+    concurrency: envVars.PLAYWRIGHT_CONCURRENCY || 5,
   },
 };

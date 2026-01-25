@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import {
   SendMessage,
   SendImageMessage,
@@ -7,7 +7,6 @@ import {
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import logger from '../../config/logger';
 import { getRandomComic } from './api';
-import { FeatureModule } from '../feature-manager';
 
 export async function init() {
   logger.info('[feature] Init comic feature');

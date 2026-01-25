@@ -35,26 +35,30 @@ export class FeatureManager {
       this.features.size
     );
 
-    const initializationPromises = Array.from(this.features.entries()).map(
-      async ([name, feature]) => {
+    const featureList = Array.from(this.features.values());
+
+    const results = await Promise.allSettled(
+      featureList.map(async (feature) => {
         try {
           await feature.init();
-          logger.info('[feature.manager] Initialized feature: %s', name);
-          return { name, success: true };
+          logger.info(
+            '[feature.manager] Initialized feature: %s',
+            feature.name
+          );
+          return feature.name;
         } catch (error) {
           logger.error(
             '[feature.manager] Failed to initialize feature %s:',
-            name,
+            feature.name,
             error
           );
-          return { name, success: false, error };
+          throw error;
         }
-      }
+      })
     );
 
-    const results = await Promise.all(initializationPromises);
-    const successful = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
 
     logger.info(
       '[feature.manager] Feature initialization completed: %d successful, %d failed',
@@ -79,3 +83,6 @@ export class FeatureManager {
     return Array.from(this.features.keys());
   }
 }
+
+// 导出全局单例，其它模块直接导入此变量
+export const featureManager = FeatureManager.getInstance();

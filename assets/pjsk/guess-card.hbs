@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: transparent;
+    }
+
+    #render-target {
+      width: {{cropSize}}px;
+      height: {{cropSize}}px;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 2px solid #6750A4;
+      background-color: #FEF7FF;
+      position: relative;
+    }
+
+    .cropped-image {
+      position: absolute;
+      left: -{{x}}px;
+      top: -{{y}}px;
+      /* 这里不需要指定 width/height，保持原图比例 */
+    }
+  </style>
+</head>
+<body>
+  <div id="render-target">
+    <img src="{{imageUrl}}" class="cropped-image" alt="Card">
+  </div>
+</body>
+</html>
