@@ -386,8 +386,9 @@ export class OneBotClient extends EventEmitter {
           '[onebot] WebSocket disconnected and config.exitWhenError is true, exiting...'
         );
         process.exit(1);
+      } else {
+        this.reconnect();
       }
-      this.reconnect();
     };
 
     this.ws.onerror = (error) => {
@@ -398,6 +399,8 @@ export class OneBotClient extends EventEmitter {
           '[onebot] WebSocket error and config.exitWhenError is true, exiting...'
         );
         process.exit(1);
+      } else {
+        this.reconnect();
       }
     };
   }

@@ -414,6 +414,16 @@ export class RecvMessage {
     }, 600000); // 10 minutes
   }
 
+  private static normalizeRawMessage(rawMsg: any): any[] {
+    if (typeof rawMsg === 'string') {
+      return [{ type: 'text', data: { text: rawMsg } }];
+    }
+    if (!Array.isArray(rawMsg)) {
+      return [];
+    }
+    return rawMsg;
+  }
+
   public async init() {
     const data = await onebot.action('get_msg', { message_id: this.messageId });
     if (data.status !== 'ok') {
@@ -432,14 +442,9 @@ export class RecvMessage {
     this.groupId = msgData.group_id ?? null;
     this.groupName = msgData.group_name ?? null;
 
-    let rawMsg = msgData.message;
-    if (typeof rawMsg === 'string') {
-      rawMsg = [{ type: 'text', data: { text: rawMsg } }];
-    } else if (!Array.isArray(rawMsg)) {
-      rawMsg = [];
-    }
-
-    this.message = rawMsg.map((item: any) => RecvBaseMessage.fromMap(item));
+    this.message = RecvMessage.normalizeRawMessage(msgData.message).map(
+      (item: any) => RecvBaseMessage.fromMap(item)
+    );
     this._initialized = true;
   }
 
@@ -472,14 +477,9 @@ export class RecvMessage {
     msg.groupId = data.group_id ?? null;
     msg.groupName = data.group_name ?? null;
 
-    let rawMsg = data.message;
-    if (typeof rawMsg === 'string') {
-      rawMsg = [{ type: 'text', data: { text: rawMsg } }];
-    } else if (!Array.isArray(rawMsg)) {
-      rawMsg = [];
-    }
-
-    msg.message = rawMsg.map((item: any) => RecvBaseMessage.fromMap(item));
+    msg.message = RecvMessage.normalizeRawMessage(data.message).map(
+      (item: any) => RecvBaseMessage.fromMap(item)
+    );
     msg._initialized = true;
 
     return msg;

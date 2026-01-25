@@ -48,8 +48,8 @@ export async function getPRInfo(
       title: prData.title,
       isOpen: prData.state === 'open',
       isMerged: !!prData.merged,
-      authorAvatarUrl: prData.user.avatar_url,
-      authorLogin: prData.user.login,
+      authorAvatarUrl: prData.user?.avatar_url ?? null,
+      authorLogin: prData.user?.login ?? 'ghost',
       createdAt: new Date(prData.created_at).toLocaleString('zh-CN'),
       updatedAt: new Date(prData.updated_at).toLocaleString('zh-CN'),
       mergedAt: prData.merged_at

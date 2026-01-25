@@ -95,12 +95,14 @@ async function generateStatisticsImage(
     memberCount,
     analysisTime: analysisTime.toFixed(2),
     tokenUsage,
-    hot_topics: analysisResult.hot_topics,
-    group_members_titles: analysisResult.group_members_titles.map((t) => ({
-      ...t,
-      name: memberMap.get(t.qq_number) || `QQ${t.qq_number}`,
-    })),
-    group_bible: analysisResult.group_bible.map((b) => ({
+    hot_topics: analysisResult.hot_topics ?? [],
+    group_members_titles: (analysisResult.group_members_titles ?? []).map(
+      (t) => ({
+        ...t,
+        name: memberMap.get(t.qq_number) || `QQ${t.qq_number}`,
+      })
+    ),
+    group_bible: (analysisResult.group_bible ?? []).map((b) => ({
       ...b,
       name: memberMap.get(b.interpreter) || `QQ${b.interpreter}`,
     })),

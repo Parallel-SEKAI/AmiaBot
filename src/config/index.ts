@@ -105,6 +105,6 @@ export const config: IConfig = {
   },
   playwright: {
     wsEndpoint: envVars.PLAYWRIGHT_WS_ENDPOINT || '',
-    concurrency: envVars.PLAYWRIGHT_CONCURRENCY || 5,
+    concurrency: envVars.PLAYWRIGHT_CONCURRENCY,
   },
 };

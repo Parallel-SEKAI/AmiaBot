@@ -1,21 +1,31 @@
-import { chromium, Browser, BrowserContext, Page } from 'playwright-core';
+import { chromium, Browser, Page } from 'playwright-core';
 import pLimit from 'p-limit';
 import logger from '../config/logger';
-import { join, resolve, relative, isAbsolute } from 'path';
+import { resolve, relative, isAbsolute } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { config } from '../config';
 
+/**
+ * 浏览器服务类，负责管理 Playwright 实例并提供 HTML 渲染功能
+ * 采用单例模式并支持并发控制
+ */
 export class BrowserService {
   private static instance: BrowserService;
   private browser: Browser | null = null;
   private initPromise: Promise<void> | null = null;
+  /** 并发限制器，防止同时开启过多浏览器页面导致 OOM */
   public limit = pLimit(config.playwright.concurrency);
 
   private constructor() {
-    this.ensureInitialized();
+    this.ensureInitialized().catch((e) =>
+      logger.error('[service.browser] Initial background init failed: %s', e)
+    );
     this.setupLifecycle();
   }
 
+  /**
+   * 获取 BrowserService 的全局单例
+   */
   public static getInstance(): BrowserService {
     if (!BrowserService.instance) {
       BrowserService.instance = new BrowserService();
@@ -23,21 +33,23 @@ export class BrowserService {
     return BrowserService.instance;
   }
 
-  private async ensureInitialized() {
+  /**
+   * 确保浏览器实例已初始化并连接
+   * @returns 初始化完成的 Promise
+   */
+  private async ensureInitialized(): Promise<void> {
     if (this.browser && this.browser.isConnected()) {
       return;
     }
-    if (this.initPromise) {
-      return this.initPromise;
+    if (!this.initPromise) {
+      this.initPromise = this.init();
     }
-    this.initPromise = this.init();
-    try {
-      await this.initPromise;
-    } finally {
-      this.initPromise = null;
-    }
+    return this.initPromise;
   }
 
+  /**
+   * 执行实际的浏览器启动或连接逻辑
+   */
   private async init() {
     logger.info('[service.browser] Initializing browser service...');
     try {
@@ -71,6 +83,7 @@ export class BrowserService {
       this.browser.on('disconnected', () => {
         logger.warn('[service.browser] Browser disconnected');
         this.browser = null;
+        this.initPromise = null; // 允许重新初始化
         if (config.exitWhenError) {
           process.exit(1);
         }
@@ -83,9 +96,14 @@ export class BrowserService {
         error
       );
       this.browser = null;
+      this.initPromise = null;
+      throw error;
     }
   }
 
+  /**
+   * 注册生命周期钩子，确保进程退出时正常关闭浏览器
+   */
   private setupLifecycle() {
     const cleanup = async () => {
       await this.close();
@@ -95,17 +113,23 @@ export class BrowserService {
     process.on('SIGTERM', cleanup);
   }
 
+  /**
+   * 关闭浏览器实例并重置状态
+   */
   private async close() {
     if (this.browser) {
       this.browser.removeAllListeners('disconnected');
       await this.browser.close();
       this.browser = null;
+      this.initPromise = null;
       logger.info('[service.browser] Browser closed');
     }
   }
 
   /**
    * 通用页面使用辅助函数，处理并发限制、Context 隔离和自动销毁
+   * @param callback 在页面上下文中执行的异步函数
+   * @param timeout 操作超时时间（毫秒）
    */
   public async usePage<T>(
     callback: (page: Page) => Promise<T>,
@@ -141,13 +165,8 @@ export class BrowserService {
             const assetsRoot = resolve(process.cwd(), 'assets');
             const filePath = resolve(assetsRoot, relativePath);
 
-            // 安全校验：确保请求路径在 assets 目录内
-            const relativeFromRoot = relative(assetsRoot, filePath);
-            const isInside =
-              !relativeFromRoot.startsWith('..') &&
-              !isAbsolute(relativeFromRoot);
-
-            if (!isInside) {
+            // 安全校验：確保路徑確實在 assets 目錄內（防止 .. 繞過）
+            if (!filePath.startsWith(assetsRoot)) {
               logger.warn(
                 '[service.browser] Security blocked path traversal attempt: %s',
                 url

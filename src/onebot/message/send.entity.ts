@@ -92,31 +92,13 @@ export class SendMessage {
     }
 
     if (!data.data || !data.data.message_id) {
-      // 如果没有返回有效的message_id，生成一个临时ID
-      const tempId = Math.floor(Math.random() * 1000000);
-      logger.warn(
-        '[onebot.send] No message_id returned, using temporary ID: %d',
-        tempId
+      throw new Error(
+        `Failed to get message_id from OneBot response: ${JSON.stringify(data)}`
       );
-      const message = new RecvMessage(tempId);
-      return message;
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
-    try {
-      await message.init();
-      logger.info(
-        '[onebot.send][Group: %d] %s',
-        message.groupId,
-        message.rawMessage
-      );
-    } catch (e) {
-      logger.warn(
-        '[onebot.send] Failed to init message %d: %s',
-        message.messageId,
-        e
-      );
-    }
+    await this.initMessageWithLogging(message);
     return message;
   }
 
@@ -127,8 +109,7 @@ export class SendMessage {
         '[onebot.reply] Message not replied because original message %d was recalled',
         recvMessage.messageId
       );
-      // 返回一个临时消息对象，避免后续处理出错
-      return new RecvMessage(Math.floor(Math.random() * 1000000));
+      throw new Error(`Original message ${recvMessage.messageId} was recalled`);
     }
 
     await this.processMessages(this.messages);
@@ -165,15 +146,17 @@ export class SendMessage {
     }
 
     if (!data.data || !data.data.message_id) {
-      const tempId = Math.floor(Math.random() * 1000000);
-      logger.warn(
-        '[onebot.send] No message_id returned in reply, using temporary ID: %d',
-        tempId
+      throw new Error(
+        `Failed to get message_id from OneBot response: ${JSON.stringify(data)}`
       );
-      return new RecvMessage(tempId);
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
+    await this.initMessageWithLogging(message);
+    return message;
+  }
+
+  private async initMessageWithLogging(message: RecvMessage): Promise<void> {
     try {
       await message.init();
       logger.info(
@@ -188,7 +171,6 @@ export class SendMessage {
         e
       );
     }
-    return message;
   }
 
   private async processMessages(messages: any[]) {

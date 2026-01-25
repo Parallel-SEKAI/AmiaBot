@@ -11,8 +11,6 @@ import { FeatureModule } from '../feature-manager';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getGameState, setGameState, deleteGameState } from '../../service/db';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
 
 const difficulty = {
   ez: 160,
