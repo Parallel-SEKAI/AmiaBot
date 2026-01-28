@@ -1,7 +1,15 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import { Star, GitFork, AlertCircle, Eye, Shield, Code, Calendar } from 'lucide-react';
+import {
+  Star,
+  GitFork,
+  AlertCircle,
+  Eye,
+  Shield,
+  Code,
+  Calendar,
+} from 'lucide-react';
 
 interface RepoCardProps {
   fullName: string;
@@ -31,7 +39,11 @@ export const RepoCard: React.FC<RepoCardProps> = (props) => {
 
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary">
-            <img src={props.ownerAvatarUrl} alt={props.ownerLogin} className="w-full h-full object-cover" />
+            <img
+              src={props.ownerAvatarUrl}
+              alt={props.ownerLogin}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="text-xl font-bold">{props.ownerLogin}</div>
@@ -45,24 +57,58 @@ export const RepoCard: React.FC<RepoCardProps> = (props) => {
         </div>
 
         <Container label="Description" variant="tertiary">
-          <p className="text-base leading-relaxed italic">"{props.description}"</p>
+          <p className="text-base leading-relaxed italic">
+            "{props.description}"
+          </p>
         </Container>
 
         <div className="grid grid-cols-4 gap-4">
-          <StatBox icon={<Star size={16} />} label="STARS" value={props.stars} />
-          <StatBox icon={<GitFork size={16} />} label="FORKS" value={props.forks} />
-          <StatBox icon={<AlertCircle size={16} />} label="ISSUES" value={props.issues} />
-          <StatBox icon={<Eye size={16} />} label="WATCHERS" value={props.watchers} />
+          <StatBox
+            icon={<Star size={16} />}
+            label="STARS"
+            value={props.stars}
+          />
+          <StatBox
+            icon={<GitFork size={16} />}
+            label="FORKS"
+            value={props.forks}
+          />
+          <StatBox
+            icon={<AlertCircle size={16} />}
+            label="ISSUES"
+            value={props.issues}
+          />
+          <StatBox
+            icon={<Eye size={16} />}
+            label="WATCHERS"
+            value={props.watchers}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-3">
-            <InfoItem icon={<Code size={16} />} label="Language" value={props.language} />
-            <InfoItem icon={<Shield size={16} />} label="License" value={props.license} />
+            <InfoItem
+              icon={<Code size={16} />}
+              label="Language"
+              value={props.language}
+            />
+            <InfoItem
+              icon={<Shield size={16} />}
+              label="License"
+              value={props.license}
+            />
           </div>
           <div className="space-y-3">
-            <InfoItem icon={<Calendar size={16} />} label="Created At" value={props.createdAt} />
-            <InfoItem icon={<Calendar size={16} />} label="Updated At" value={props.updatedAt} />
+            <InfoItem
+              icon={<Calendar size={16} />}
+              label="Created At"
+              value={props.createdAt}
+            />
+            <InfoItem
+              icon={<Calendar size={16} />}
+              label="Updated At"
+              value={props.updatedAt}
+            />
           </div>
         </div>
       </div>
@@ -70,7 +116,15 @@ export const RepoCard: React.FC<RepoCardProps> = (props) => {
   );
 };
 
-const StatBox = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: number | string }) => (
+const StatBox = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+}) => (
   <div className="flex flex-col items-center p-3 border border-outline-variant rounded-md bg-surface-container">
     <div className="text-primary mb-1">{icon}</div>
     <div className="text-xl font-bold text-primary">{value}</div>
@@ -78,7 +132,15 @@ const StatBox = ({ icon, label, value }: { icon: React.ReactNode, label: string,
   </div>
 );
 
-const InfoItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) => (
+const InfoItem = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) => (
   <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-sm border border-outline-variant">
     <div className="text-secondary">{icon}</div>
     <div>

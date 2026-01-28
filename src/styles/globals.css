@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-primary: #834c75;
@@ -42,6 +42,7 @@
   }
   body {
     @apply bg-surface text-on-surface antialiased;
-    font-family: "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+    font-family:
+      'Noto Sans CJK SC', 'Source Han Sans SC', system-ui, sans-serif;
   }
 }

@@ -1,7 +1,13 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import { MessageSquare, Calendar, User, CircleDot, CheckCircle2 } from 'lucide-react';
+import {
+  MessageSquare,
+  Calendar,
+  User,
+  CircleDot,
+  CheckCircle2,
+} from 'lucide-react';
 
 interface IssueCardProps {
   number: number;
@@ -36,7 +42,11 @@ export const IssueCard: React.FC<IssueCardProps> = (props) => {
               )}
               <div className="flex items-center gap-2 text-sm text-on-surface-variant">
                 <div className="w-6 h-6 rounded-full overflow-hidden border border-outline-variant">
-                  <img src={props.authorAvatarUrl} alt={props.authorLogin} className="w-full h-full object-cover" />
+                  <img
+                    src={props.authorAvatarUrl}
+                    alt={props.authorLogin}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="font-medium">{props.authorLogin}</span>
                 <span>opened on {props.createdAt}</span>
@@ -46,7 +56,11 @@ export const IssueCard: React.FC<IssueCardProps> = (props) => {
         </div>
 
         {props.body && (
-          <Container label="Description" variant="outline" className="bg-surface-container-low">
+          <Container
+            label="Description"
+            variant="outline"
+            className="bg-surface-container-low"
+          >
             <div className="text-sm text-on-surface whitespace-pre-wrap max-h-[300px] overflow-hidden relative">
               {props.body}
               <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-surface-container-low to-transparent" />
@@ -58,7 +72,9 @@ export const IssueCard: React.FC<IssueCardProps> = (props) => {
           <div className="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container rounded-md">
             <MessageSquare size={16} />
             <span className="font-bold">{props.comments}</span>
-            <span className="text-xs uppercase opacity-70 tracking-tighter">Comments</span>
+            <span className="text-xs uppercase opacity-70 tracking-tighter">
+              Comments
+            </span>
           </div>
         </div>
       </div>

@@ -1,7 +1,15 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import { GitPullRequest, GitMerge, MessageSquare, Calendar, Plus, Minus, GitBranch } from 'lucide-react';
+import {
+  GitPullRequest,
+  GitMerge,
+  MessageSquare,
+  Calendar,
+  Plus,
+  Minus,
+  GitBranch,
+} from 'lucide-react';
 
 interface PRCardProps {
   number: number;
@@ -46,7 +54,7 @@ export const PRCard: React.FC<PRCardProps> = (props) => {
                   <GitPullRequest size={14} /> Closed
                 </span>
               )}
-              
+
               <div className="flex items-center gap-2 text-sm text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded border border-outline-variant">
                 <GitBranch size={12} />
                 <span>{props.baseBranch}</span>
@@ -59,12 +67,18 @@ export const PRCard: React.FC<PRCardProps> = (props) => {
 
         <div className="flex items-center gap-3 mb-4 p-3 bg-surface-container-high rounded-md">
           <div className="w-10 h-10 rounded-full overflow-hidden border border-primary shadow-sm">
-            <img src={props.authorAvatarUrl || ''} alt={props.authorLogin} className="w-full h-full object-cover" />
+            <img
+              src={props.authorAvatarUrl || ''}
+              alt={props.authorLogin}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex-1">
             <div className="text-sm font-bold">{props.authorLogin}</div>
             <div className="text-xs opacity-70">
-              {props.isMerged ? `merged on ${props.mergedAt}` : `opened on ${props.createdAt}`}
+              {props.isMerged
+                ? `merged on ${props.mergedAt}`
+                : `opened on ${props.createdAt}`}
             </div>
           </div>
           <div className="flex gap-4">
@@ -78,22 +92,46 @@ export const PRCard: React.FC<PRCardProps> = (props) => {
         </div>
 
         {props.body && (
-          <Container label="Overview" variant="outline" className="bg-surface-container-low text-sm line-clamp-4">
-             {props.body}
+          <Container
+            label="Overview"
+            variant="outline"
+            className="bg-surface-container-low text-sm line-clamp-4"
+          >
+            {props.body}
           </Container>
         )}
 
         <div className="grid grid-cols-3 gap-3">
-          <StatBox icon={<MessageSquare size={16} />} label="Comments" value={props.comments} />
-          <StatBox icon={<GitPullRequest size={16} />} label="Commits" value={props.commits} />
-          <StatBox icon={<Calendar size={16} />} label="Updated" value={props.updatedAt.split(' ')[0]} />
+          <StatBox
+            icon={<MessageSquare size={16} />}
+            label="Comments"
+            value={props.comments}
+          />
+          <StatBox
+            icon={<GitPullRequest size={16} />}
+            label="Commits"
+            value={props.commits}
+          />
+          <StatBox
+            icon={<Calendar size={16} />}
+            label="Updated"
+            value={props.updatedAt.split(' ')[0]}
+          />
         </div>
       </div>
     </AppShell>
   );
 };
 
-const StatBox = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: number | string }) => (
+const StatBox = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+}) => (
   <div className="flex flex-col items-center p-2 border border-outline-variant rounded bg-surface-container">
     <div className="text-secondary mb-1">{icon}</div>
     <div className="text-lg font-bold text-on-surface">{value}</div>

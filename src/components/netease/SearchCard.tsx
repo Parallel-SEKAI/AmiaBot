@@ -24,19 +24,28 @@ export const SearchCard: React.FC<SearchCardProps> = (props) => {
 
         <div className="space-y-2">
           {props.songs.map((song, idx) => (
-            <div key={idx} className="flex items-center gap-4 p-3 bg-surface-container rounded-md border border-outline-variant hover:bg-surface-container-high transition-colors">
+            <div
+              key={idx}
+              className="flex items-center gap-4 p-3 bg-surface-container rounded-md border border-outline-variant hover:bg-surface-container-high transition-colors"
+            >
               <div className="text-lg font-bold text-outline w-6 text-center">
                 {idx + 1}
               </div>
               <div className="w-12 h-12 rounded bg-primary-container flex items-center justify-center text-on-primary-container overflow-hidden shrink-0 shadow-sm">
                 {song.coverUrl ? (
-                  <img src={song.coverUrl} alt={song.name} className="w-full h-full object-cover" />
+                  <img
+                    src={song.coverUrl}
+                    alt={song.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <Music size={24} />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-on-surface truncate">{song.name}</div>
+                <div className="font-bold text-on-surface truncate">
+                  {song.name}
+                </div>
                 <div className="text-xs text-on-surface-variant flex items-center gap-1 truncate opacity-70">
                   <User size={12} /> {song.artists.join(' / ')}
                 </div>
