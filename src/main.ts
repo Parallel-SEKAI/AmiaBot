@@ -9,4 +9,7 @@ async function main(): Promise<void> {
   await onebot.run();
 }
 
-main();
+main().catch((e) => {
+  logger.error('[main] Fatal error during startup: %s', e);
+  process.exit(1);
+});

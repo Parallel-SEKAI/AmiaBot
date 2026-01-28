@@ -86,7 +86,7 @@ async function chat(data: Record<string, any>) {
       .join('\n');
 
     // 构建内容数组，包含文本和图片
-    let content: Array<any> = [{ type: 'text', text: message.toString() }];
+    const content: Array<any> = [{ type: 'text', text: message.toString() }];
 
     // 处理消息中的图片
     for (const msg of message.message) {
@@ -110,7 +110,7 @@ async function chat(data: Record<string, any>) {
       }
     }
 
-    let system = renderTemplate(prompt, {
+    const system = renderTemplate(prompt, {
       group: group.name,
       group_history: formattedOnebotHistory, // Onebot获取的历史记录
       history: formattedDbHistory, // 数据库获取的历史记录
@@ -199,7 +199,7 @@ VIP等级: ${user.vipLevel}
         );
 
         // 6. 发送验证后的响应内容
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage(validatedResponse.dialogue),
         }).send({
           recvMessage: message,
@@ -228,7 +228,7 @@ VIP等级: ${user.vipLevel}
       } catch (error) {
         logger.error('[feature.chat] Failed to parse JSON response:', error);
         // 如果解析失败，回退到直接发送原始文本
-        new SendMessage({ message: new SendTextMessage(responseText) }).send({
+        void new SendMessage({ message: new SendTextMessage(responseText) }).send({
           recvMessage: message,
         });
       }
@@ -236,7 +236,7 @@ VIP等级: ${user.vipLevel}
   } catch (error) {
     logger.error('[feature.chat] Failed to process chat message:', error);
     // 发送错误提示
-    new SendMessage({
+    void new SendMessage({
       message: new SendTextMessage('抱歉，我现在有点忙，稍后再和你聊吧。'),
     }).send({
       recvMessage: message,

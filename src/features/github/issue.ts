@@ -58,7 +58,7 @@ export async function getIssueInfo(
     const html = TemplateEngine.render('github/issue.hbs', data);
     const imageBuffer = await browserService.render(html);
 
-    await new SendMessage({
+    void new SendMessage({
       message: new SendImageMessage(imageBuffer),
     }).reply(message);
     return true;

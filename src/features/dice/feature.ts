@@ -39,7 +39,7 @@ export async function init() {
       for (let i = 0; i < count; i++) {
         results.push(Math.floor(Math.random() * sides) + 1);
       }
-      new SendMessage({
+      void new SendMessage({
         message: new SendTextMessage(`You rolled: ${results.join(', ')}`),
       }).reply(message);
     },

@@ -49,7 +49,7 @@ export async function getUserInfo(
     const html = TemplateEngine.render('github/user.hbs', data);
     const imageBuffer = await browserService.render(html);
 
-    await new SendMessage({
+    void new SendMessage({
       message: new SendImageMessage(imageBuffer),
     }).reply(message);
     return true;

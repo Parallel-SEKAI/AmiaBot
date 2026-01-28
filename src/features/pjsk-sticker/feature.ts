@@ -77,7 +77,7 @@ export async function init() {
         const apiUrl = buildApiUrl(character, content, index, kwargs);
 
         // 发送图片消息
-        new SendMessage({
+        void new SendMessage({
           message: new SendImageMessage(apiUrl),
         }).reply(message);
       } catch (error) {
@@ -85,7 +85,7 @@ export async function init() {
           '[feature.pjsk-sticker] Failed to generate PJSK sticker:',
           error
         );
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage(
             '贴纸生成失败，请检查参数是否正确或稍后重试'
           ),
@@ -165,7 +165,7 @@ async function help(message: RecvMessage) {
     const helpImageBuffer = await browserService.render(html);
 
     // 发送生成的帮助图片
-    await new SendMessage({
+    void new SendMessage({
       message: new SendForwardMessage([
         {
           type: 'node',
@@ -251,7 +251,7 @@ async function help(message: RecvMessage) {
     }).reply(message);
   } catch (error) {
     logger.error('[feature.pjsk-sticker] Failed to render help image:', error);
-    await new SendMessage({
+    void new SendMessage({
       message: new SendTextMessage('获取帮助失败喵~'),
     }).reply(message);
   }

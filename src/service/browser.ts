@@ -1,7 +1,7 @@
 import { chromium, Browser, Page } from 'playwright-core';
 import pLimit from 'p-limit';
 import logger from '../config/logger';
-import { resolve, relative, isAbsolute } from 'path';
+import { resolve } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { config } from '../config';
 
@@ -13,6 +13,7 @@ export class BrowserService {
   private static instance: BrowserService;
   private browser: Browser | null = null;
   private initPromise: Promise<void> | null = null;
+  private isDisconnected = false;
   /** 并发限制器，防止同时开启过多浏览器页面导致 OOM */
   public limit = pLimit(config.playwright.concurrency);
 
@@ -38,12 +39,17 @@ export class BrowserService {
    * @returns 初始化完成的 Promise
    */
   private async ensureInitialized(): Promise<void> {
-    if (this.browser && this.browser.isConnected()) {
+    if (this.browser && this.browser.isConnected() && !this.isDisconnected) {
       return;
     }
-    if (!this.initPromise) {
-      this.initPromise = this.init();
+    // 如果正在初始化且不是处于断开状态，则等待现有任务
+    if (this.initPromise && !this.isDisconnected) {
+      return this.initPromise;
     }
+
+    // 否则（初始化未开始、已失败或浏览器已断开），启动/重新啟動初始化
+    this.isDisconnected = false;
+    this.initPromise = this.init();
     return this.initPromise;
   }
 
@@ -83,7 +89,7 @@ export class BrowserService {
       this.browser.on('disconnected', () => {
         logger.warn('[service.browser] Browser disconnected');
         this.browser = null;
-        this.initPromise = null; // 允许重新初始化
+        this.isDisconnected = true; // 标记为断开，后续 ensureInitialized 会触发重连
         if (config.exitWhenError) {
           process.exit(1);
         }
@@ -97,25 +103,24 @@ export class BrowserService {
       );
       this.browser = null;
       this.initPromise = null;
+      this.isDisconnected = true;
       throw error;
     }
   }
 
-  /**
-   * 注册生命周期钩子，确保进程退出时正常关闭浏览器
-   */
   private setupLifecycle() {
     const cleanup = async () => {
       await this.close();
       process.exit(0);
     };
-    process.on('SIGINT', cleanup);
-    process.on('SIGTERM', cleanup);
+    process.on('SIGINT', () => {
+      void cleanup();
+    });
+    process.on('SIGTERM', () => {
+      void cleanup();
+    });
   }
 
-  /**
-   * 关闭浏览器实例并重置状态
-   */
   private async close() {
     if (this.browser) {
       this.browser.removeAllListeners('disconnected');
@@ -157,7 +162,7 @@ export class BrowserService {
         });
 
         // 资源拦截逻辑 (assets:// 协议) 并防止路径遍历
-        await page.route(/^assets:\/\//, (route) => {
+        void page.route(/^assets:\/\//, (route) => {
           const url = route.request().url();
           try {
             const parsedUrl = new URL(url);
@@ -171,25 +176,25 @@ export class BrowserService {
                 '[service.browser] Security blocked path traversal attempt: %s',
                 url
               );
-              return route.abort('accessdenied');
+              return void route.abort('accessdenied');
             }
 
             if (existsSync(filePath)) {
               const buffer = readFileSync(filePath);
-              route.fulfill({
+              void route.fulfill({
                 status: 200,
                 body: buffer,
               });
             } else {
               logger.warn('[service.browser] Asset not found: %s', filePath);
-              route.abort('failed');
+              void route.abort('failed');
             }
-          } catch (e) {
+          } catch {
             logger.error(
               '[service.browser] Failed to parse asset URL: %s',
               url
             );
-            route.abort('failed');
+            void route.abort('failed');
           }
         });
 

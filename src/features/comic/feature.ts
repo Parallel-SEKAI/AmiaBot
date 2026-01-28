@@ -25,13 +25,13 @@ export async function init() {
         const randomImageUrl = await getRandomComic();
 
         // 发送图片消息
-        new SendMessage({
+        void new SendMessage({
           message: new SendImageMessage(randomImageUrl),
         }).reply(message);
       } catch (error) {
         logger.error('[feature.comic] Error in comic feature:', error);
         // 发送错误提示
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage('获取漫画失败，请稍后重试'),
         }).reply(message);
       }

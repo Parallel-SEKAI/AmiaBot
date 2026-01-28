@@ -14,7 +14,7 @@ export async function init() {
       message.userId,
       message.rawMessage
     );
-    new SendMessage({
+    void new SendMessage({
       message: new SendTextMessage(config.helpText.replace(/\\n/g, '\n')),
     }).reply(message);
   });

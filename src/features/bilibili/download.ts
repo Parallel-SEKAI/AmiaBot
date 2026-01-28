@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import { createHash } from 'crypto';
 import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
+import { createWriteStream } from 'fs';
 import * as path from 'path';
 import logger from '../../config/logger';
 import { config } from '../../config';
@@ -104,7 +105,7 @@ async function downloadFile(
       return false;
     }
 
-    const fileStream = require('fs').createWriteStream(filename);
+    const fileStream = createWriteStream(filename);
     await new Promise((resolve, reject) => {
       body.pipe(fileStream);
       body.on('error', reject);

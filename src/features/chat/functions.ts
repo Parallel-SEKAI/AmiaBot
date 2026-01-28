@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import https from 'https';
 import {
   SendMessage,
   SendRecordMessage,
@@ -60,9 +61,6 @@ export async function sendMusic(
   message: RecvMessage,
   songId: number
 ): Promise<string> {
-  // 临时绕过证书验证，解决无法验证服务器证书的问题
-  const https = require('https');
-
   const data = await new Promise((resolve, reject) => {
     const options = {
       hostname: 'wyapi-1.toubiec.cn',
@@ -101,7 +99,7 @@ export async function sendMusic(
   });
 
   const url = (data as Record<string, any>).data[0].url;
-  await new SendMessage({ message: new SendRecordMessage(url) }).send({
+  void new SendMessage({ message: new SendRecordMessage(url) }).send({
     recvMessage: message,
   });
   return 'OK';
