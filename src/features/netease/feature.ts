@@ -2,7 +2,6 @@ import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import { emojilyric, search, play, download } from './commands.js';
-import { FeatureModule } from '../feature-manager.js';
 
 export async function init() {
   logger.info('[feature] Init netease feature');

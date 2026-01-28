@@ -1,5 +1,4 @@
 import { initDb } from './service/db.js';
-import { config } from './config/index.js';
 import logger from './config/logger.js';
 import { init as initFeatures } from './features/index.js';
 import { onebot } from './onebot/index.js';

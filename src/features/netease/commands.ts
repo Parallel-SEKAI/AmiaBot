@@ -13,7 +13,7 @@ import { NeteaseApi, Song, Lyric } from '../../service/netease/index.js';
 import { ReactRenderer } from '../../service/render/react.js';
 import { SearchCard } from '../../components/netease/SearchCard.js';
 import { parseCommandLineArgs } from '../../utils/index.js';
-import { readFileSync, promises as fs, mkdirSync, existsSync } from 'fs';
+import { readFileSync, promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';

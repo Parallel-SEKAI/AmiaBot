@@ -5,7 +5,6 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
-import { FeatureModule } from '../feature-manager.js';
 
 const pattern = /^r(\d*)d(\d*)/i;
 

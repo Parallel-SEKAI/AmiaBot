@@ -6,7 +6,6 @@ import { getRepoInfo } from './repo.js';
 import { getUserInfo } from './user.js';
 import { getIssueInfo } from './issue.js';
 import { getPRInfo } from './pr.js';
-import { FeatureModule } from '../feature-manager.js';
 
 const repoRegex = /github.com\/([^/]+)\/([^/]+)/g;
 const userRegex = /github.com\/([^/]+)/g;

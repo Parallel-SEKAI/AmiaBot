@@ -2,7 +2,6 @@ import { onebot } from '../../onebot/index.js';
 import { checkFeatureEnabled } from '../../service/db.js';
 import logger from '../../config/logger.js';
 import { functions } from './functions.js';
-import { FeatureModule } from '../feature-manager.js';
 
 export async function init() {
   logger.info('[feature] Init poke feature');
