@@ -1,13 +1,14 @@
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendImageMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { octokit } from '../../service/github';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
-import logger from '../../config/logger';
+} from '../../onebot/message/send.entity.js';
+import { octokit } from '../../service/github.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { IssueCard } from '../../components/github/IssueCard.js';
+import logger from '../../config/logger.js';
 
 export async function getIssueInfo(
   message: RecvMessage,
@@ -44,19 +45,20 @@ export async function getIssueInfo(
   );
 
   try {
-    const data = {
+    const props = {
       number: issueData.number,
       title: issueData.title,
       isOpen: issueData.state === 'open',
       authorAvatarUrl: issueData.user?.avatar_url ?? '',
       authorLogin: issueData.user?.login ?? 'unknown',
       createdAt: new Date(issueData.created_at).toLocaleString('zh-CN'),
-      body: issueData.body,
+      body: issueData.body ?? null,
       comments: issueData.comments,
     };
 
-    const html = TemplateEngine.render('github/issue.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(IssueCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

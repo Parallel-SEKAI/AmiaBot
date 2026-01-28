@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AvBvParams, VideoInfo } from './typing';
+import { AvBvParams, VideoInfo } from './typing.js';
 
 const data = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf';
 const BASE = 58n;

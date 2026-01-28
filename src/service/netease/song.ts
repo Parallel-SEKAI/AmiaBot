@@ -1,9 +1,13 @@
-import { NeteaseApi } from './api';
-import { join, extname } from 'path';
+import { NeteaseApi } from './api.js';
+import { join, extname, dirname } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { promises as fs } from 'fs';
-import logger from '../../config/logger';
+import logger from '../../config/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // 实现downloadFile函数
 async function downloadFile(url: string, filePath: string): Promise<void> {
@@ -60,8 +64,8 @@ export class Song {
 
       // 确保下载目录存在
       const downloadDir = join(
-        process.cwd(),
-        'data',
+        __dirname,
+        '../../../data',
         'plugins',
         'amia_netease',
         'downloads'

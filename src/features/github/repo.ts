@@ -1,13 +1,14 @@
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendImageMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { octokit } from '../../service/github';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
-import logger from '../../config/logger';
+} from '../../onebot/message/send.entity.js';
+import { octokit } from '../../service/github.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { RepoCard } from '../../components/github/RepoCard.js';
+import logger from '../../config/logger.js';
 
 export async function getRepoInfo(
   message: RecvMessage,
@@ -34,7 +35,7 @@ export async function getRepoInfo(
   const repoData = response.data;
 
   try {
-    const data = {
+    const props = {
       fullName: repoData.full_name,
       description: repoData.description || '无描述',
       ownerAvatarUrl: repoData.owner.avatar_url,
@@ -47,13 +48,14 @@ export async function getRepoInfo(
       language: repoData.language || '无',
       license: repoData.license?.name || '无',
       defaultBranch: repoData.default_branch,
-      visibility: repoData.visibility,
+      visibility: repoData.visibility || 'public',
       createdAt: new Date(repoData.created_at).toLocaleString('zh-CN'),
       updatedAt: new Date(repoData.updated_at).toLocaleString('zh-CN'),
     };
 
-    const html = TemplateEngine.render('github/repo.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(RepoCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

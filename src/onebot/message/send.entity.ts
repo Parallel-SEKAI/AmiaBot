@@ -1,8 +1,8 @@
 import assert from 'assert';
-import { onebot } from '..';
-import { RecvMessage } from './recv.entity';
-import logger from '../../config/logger';
-import { stateService } from '../../service/state';
+import { onebot } from '../index.js';
+import { RecvMessage } from './recv.entity.js';
+import logger from '../../config/logger.js';
+import { stateService } from '../../service/state.js';
 
 interface SendMessageArgs {
   message: SendBaseMessage[] | SendBaseMessage;

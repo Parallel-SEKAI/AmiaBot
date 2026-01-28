@@ -1,3 +1,3 @@
-export { NeteaseApi } from './api';
-export { Song } from './song';
-export { Lyric } from './lyric';
+export { NeteaseApi } from './api.js';
+export { Song } from './song.js';
+export { Lyric } from './lyric.js';

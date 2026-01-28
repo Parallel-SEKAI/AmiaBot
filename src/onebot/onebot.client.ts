@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
-import { RecvMessage } from './message/recv.entity';
-import logger from '../config/logger';
-import { config } from '../config';
-import { checkFeatureEnabled } from '../service/db';
+import { RecvMessage } from './message/recv.entity.js';
+import logger from '../config/logger.js';
+import { config } from '../config/index.js';
+import { checkFeatureEnabled } from '../service/db.js';
 
 /**
  * 指令处理器类型

@@ -1,4 +1,4 @@
-import { NeteaseApi } from './api';
+import { NeteaseApi } from './api.js';
 
 export class Lyric {
   public original_lyric: string = '';

@@ -4,8 +4,8 @@ import {
   SendImageMessage,
   SendTextMessage,
   SendRecordMessage,
-} from '../../onebot/message/send.entity';
-import { getRandomComic } from '../comic/api';
+} from '../../onebot/message/send.entity.js';
+import { getRandomComic } from '../comic/api.js';
 
 export const functions = [sendComic, sendDialog, sendCard];
 

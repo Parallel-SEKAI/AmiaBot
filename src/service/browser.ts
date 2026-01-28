@@ -1,9 +1,13 @@
 import { chromium, Browser, Page } from 'playwright-core';
 import pLimit from 'p-limit';
-import logger from '../config/logger';
-import { resolve } from 'path';
-import { readFileSync, existsSync } from 'fs';
-import { config } from '../config';
+import logger from '../config/logger.js';
+import { resolve, dirname } from 'path';
+import { promises as fs, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { config } from '../config/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 浏览器服务类，负责管理 Playwright 实例并提供 HTML 渲染功能
@@ -162,15 +166,15 @@ export class BrowserService {
         });
 
         // 资源拦截逻辑 (assets:// 协议) 并防止路径遍历
-        void page.route(/^assets:\/\//, (route) => {
+        void page.route(/^assets:\/\//, async (route) => {
           const url = route.request().url();
           try {
             const parsedUrl = new URL(url);
             const relativePath = parsedUrl.pathname.replace(/^\/\//, ''); // 处理 assets:// 后面的路径
-            const assetsRoot = resolve(process.cwd(), 'assets');
+            const assetsRoot = resolve(__dirname, '../../assets');
             const filePath = resolve(assetsRoot, relativePath);
 
-            // 安全校验：確保路徑確實在 assets 目錄內（防止 .. 繞過）
+            // 安全校验：确保路径确实在 assets 目录内（防止 .. 绕过）
             if (!filePath.startsWith(assetsRoot)) {
               logger.warn(
                 '[service.browser] Security blocked path traversal attempt: %s',
@@ -180,7 +184,7 @@ export class BrowserService {
             }
 
             if (existsSync(filePath)) {
-              const buffer = readFileSync(filePath);
+              const buffer = await fs.readFile(filePath);
               void route.fulfill({
                 status: 200,
                 body: buffer,

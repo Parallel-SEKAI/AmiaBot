@@ -1,6 +1,6 @@
 import { Octokit } from 'octokit';
-import { config } from '../config';
+import { config } from '../config/index.js';
 
-export const octokit = new Octokit({
+export const octokit: Octokit = new Octokit({
   auth: config.github.token,
 });

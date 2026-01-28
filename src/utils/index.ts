@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import { extname } from 'path';
-import logger from '../config/logger';
+import logger from '../config/logger.js';
 
 /**
  * 安全地删除文件，如果失败则记录日志但不抛出异常

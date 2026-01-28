@@ -1,14 +1,17 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendImageMessage,
   SendMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
+} from '../../onebot/message/send.entity.js';
 import sharp from 'sharp';
-import { FeatureModule } from '../feature-manager';
-import { getGameState, setGameState, deleteGameState } from '../../service/db';
+import {
+  getGameState,
+  setGameState,
+  deleteGameState,
+} from '../../service/db.js';
 
 // 难度映射表
 const difficulty = {

@@ -1,7 +1,7 @@
-import { config } from '../../config';
+import { config } from '../../config/index.js';
 import fetch from 'node-fetch';
 import { createCipheriv, createHash } from 'crypto';
-import logger from '../../config/logger';
+import logger from '../../config/logger.js';
 
 // 辅助函数：将数据转换为十六进制字符串
 function HexDigest(data: Buffer): string {

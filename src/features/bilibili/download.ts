@@ -4,9 +4,13 @@ import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as path from 'path';
-import logger from '../../config/logger';
-import { config } from '../../config';
-import { safeUnlink } from '../../utils';
+import { fileURLToPath } from 'url';
+import logger from '../../config/logger.js';
+import { config } from '../../config/index.js';
+import { safeUnlink } from '../../utils/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // From python script
 const mixinKeyEncTab = [

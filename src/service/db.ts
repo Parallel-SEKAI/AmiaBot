@@ -1,8 +1,14 @@
-import { Pool, PoolConfig } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
+import type { PoolConfig } from 'pg';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { config } from '../config/index';
-import logger from '../config/logger';
+import { fileURLToPath } from 'url';
+import { config } from '../config/index.js';
+import logger from '../config/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 数据库连接配置
 const dbConfig: PoolConfig = {

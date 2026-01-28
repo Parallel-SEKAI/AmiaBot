@@ -1,14 +1,13 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendImageMessage,
   SendMessage,
   SendRecordMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { FeatureModule } from '../feature-manager';
-import { safeUnlink } from '../../utils';
+} from '../../onebot/message/send.entity.js';
+import { safeUnlink } from '../../utils/index.js';
 
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
@@ -16,7 +15,11 @@ import * as path from 'path';
 import * as os from 'os';
 import http from 'http';
 import https from 'https';
-import { getGameState, setGameState, deleteGameState } from '../../service/db';
+import {
+  getGameState,
+  setGameState,
+  deleteGameState,
+} from '../../service/db.js';
 
 const difficulty = {
   ez: 12, // 简单难度，12秒
@@ -189,12 +192,15 @@ async function cutMusic(musicUrl: string, duration: number): Promise<Buffer> {
 
         // 3. 检查音频长度是否足够
         if (audioDuration <= duration) {
-          try {
-            const buffer = fs.readFileSync(tempFilePath);
-            return resolve(buffer);
-          } catch (e) {
-            return reject(e);
-          }
+          void (async () => {
+            try {
+              const buffer = await fs.promises.readFile(tempFilePath);
+              resolve(buffer);
+            } catch (e) {
+              reject(e);
+            }
+          })();
+          return;
         }
 
         // 4. 随机生成裁剪起始点
@@ -207,12 +213,14 @@ async function cutMusic(musicUrl: string, duration: number): Promise<Buffer> {
           .setDuration(duration)
           .output(croppedFilePath)
           .on('end', () => {
-            try {
-              const buffer = fs.readFileSync(croppedFilePath);
-              resolve(buffer);
-            } catch (e) {
-              reject(e);
-            }
+            void (async () => {
+              try {
+                const buffer = await fs.promises.readFile(croppedFilePath);
+                resolve(buffer);
+              } catch (e) {
+                reject(e);
+              }
+            })();
           })
           .on('error', (error: any) => {
             reject(new Error(`裁剪音频失败: ${error.message}`));

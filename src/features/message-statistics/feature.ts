@@ -1,19 +1,24 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendTextMessage,
   SendImageMessage,
-} from '../../onebot/message/send.entity';
-import { openai } from '../../service/openai';
-import { renderTemplate } from '../../utils/index';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
-import { Group } from '../../onebot/group/group.entity';
-import { config } from '../../config';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
+} from '../../onebot/message/send.entity.js';
+import { openai } from '../../service/openai.js';
+import { renderTemplate } from '../../utils/index.js';
+import { existsSync, promises as fs } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Group } from '../../onebot/group/group.entity.js';
+import { config } from '../../config/index.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { StatsCard } from '../../components/message-statistics/StatsCard.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // 参数配置常量
 // 冷却时间（毫秒）
@@ -60,12 +65,15 @@ const groupLocks: Map<number, Promise<void>> = new Map();
 let lastUsedTime = 0;
 
 // 获取prompt模板
-function getPromptTemplate(): string {
-  const promptPath = join(process.cwd(), 'assets/message-statistics/prompt.md');
+async function getPromptTemplate(): Promise<string> {
+  const promptPath = join(
+    __dirname,
+    '../../../assets/message-statistics/prompt.md'
+  );
   if (!existsSync(promptPath)) {
     throw new Error(`Prompt file not found: ${promptPath}`);
   }
-  return readFileSync(promptPath, 'utf-8');
+  return await fs.readFile(promptPath, 'utf-8');
 }
 
 // 构建渲染数据并生成图片
@@ -87,7 +95,7 @@ async function generateStatisticsImage(
     memberMap.set(member.id, member.fullName);
   });
 
-  const data = {
+  const props = {
     groupName,
     startTime,
     endTime,
@@ -108,8 +116,9 @@ async function generateStatisticsImage(
     })),
   };
 
-  const html = TemplateEngine.render('message-statistics/report.hbs', data);
-  return await browserService.render(html);
+  return await ReactRenderer.renderToImage(
+    React.createElement(StatsCard, props)
+  );
 }
 
 export async function init() {
@@ -236,7 +245,7 @@ async function handleMessageStatistics(message: RecvMessage) {
     );
 
     // 调用OpenAI分析消息
-    const prompt = getPromptTemplate();
+    const prompt = await getPromptTemplate();
 
     // 构建群信息
     const groupInfo = `

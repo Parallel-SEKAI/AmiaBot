@@ -1,23 +1,23 @@
-import { featureManager } from './feature-manager';
-import logger from '../config/logger';
+import { featureManager } from './feature-manager.js';
+import logger from '../config/logger.js';
 
 // 导入所有功能模块
-import { chatFeature } from './chat';
-import { comicFeature } from './comic';
-import { pjskStickerFeature } from './pjsk-sticker';
-import { pokeFeature } from './poke';
-import { queryFeature } from './query';
-import { geminiFeature } from './gemini';
-import { bilibiliFeature } from './bilibili';
-import { githubFeature } from './github';
-import { guessCardFeature } from './guess-card';
-import { guessSongFeature } from './guess-song';
-import { guessEventFeature } from './guess-event';
-import { neteaseFeature } from './netease';
-import { messageStatisticsFeature } from './message-statistics';
-import { autoRecallFeature } from './auto-recall';
-import { controllerFeature } from './controller';
-import { helpFeature } from './help';
+import { chatFeature } from './chat/index.js';
+import { comicFeature } from './comic/index.js';
+import { pjskStickerFeature } from './pjsk-sticker/index.js';
+import { pokeFeature } from './poke/index.js';
+import { queryFeature } from './query/index.js';
+import { geminiFeature } from './gemini/index.js';
+import { bilibiliFeature } from './bilibili/index.js';
+import { githubFeature } from './github/index.js';
+import { guessCardFeature } from './guess-card/index.js';
+import { guessSongFeature } from './guess-song/index.js';
+import { guessEventFeature } from './guess-event/index.js';
+import { neteaseFeature } from './netease/index.js';
+import { messageStatisticsFeature } from './message-statistics/index.js';
+import { autoRecallFeature } from './auto-recall/index.js';
+import { controllerFeature } from './controller/index.js';
+import { helpFeature } from './help/index.js';
 
 const FEATURES = [
   chatFeature,

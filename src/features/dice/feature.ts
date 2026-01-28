@@ -1,8 +1,11 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
-import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
-import { FeatureModule } from '../feature-manager';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
+import {
+  SendMessage,
+  SendTextMessage,
+} from '../../onebot/message/send.entity.js';
+import { FeatureModule } from '../feature-manager.js';
 
 const pattern = /^r(\d*)d(\d*)/i;
 

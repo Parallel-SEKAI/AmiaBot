@@ -1,12 +1,12 @@
-import { onebot } from '../../onebot';
+import { onebot } from '../../onebot/index.js';
 import {
   SendMessage,
   SendImageMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { RecvMessage } from '../../onebot/message/recv.entity';
-import logger from '../../config/logger';
-import { getRandomComic } from './api';
+} from '../../onebot/message/send.entity.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
+import logger from '../../config/logger.js';
+import { getRandomComic } from './api.js';
 
 export async function init() {
   logger.info('[feature] Init comic feature');

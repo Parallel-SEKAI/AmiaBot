@@ -1,24 +1,23 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendImageMessage,
   SendVideoMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
-import { browserService } from '../../service/browser';
-import { AvBvParams, VideoInfo } from './typing';
-import { getBilibiliVideoInfo } from './video';
-import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const';
-import { config } from '../../config';
+} from '../../onebot/message/send.entity.js';
+import { checkFeatureEnabled } from '../../service/db.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { VideoCard } from '../../components/bilibili/VideoCard.js';
+import { AvBvParams, VideoInfo } from './typing.js';
+import { getBilibiliVideoInfo } from './video.js';
+import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const.js';
+import { config } from '../../config/index.js';
 import fetch from 'node-fetch';
-import { downloadBilibiliVideo } from './download';
-import * as fs from 'fs/promises';
-import { FeatureModule } from '../feature-manager';
-import { safeUnlink } from '../../utils';
-import { TemplateEngine } from '../../utils/template';
+import { downloadBilibiliVideo } from './download.js';
+import { safeUnlink } from '../../utils/index.js';
 
 export async function init() {
   logger.info('[feature] Init bilibili feature');
@@ -231,7 +230,7 @@ async function generateVideoInfoImage(info: VideoInfo): Promise<Buffer> {
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   };
 
-  const data = {
+  const props = {
     coverUrl: info.cover,
     title: info.title,
     av: info.av,
@@ -268,6 +267,7 @@ async function generateVideoInfoImage(info: VideoInfo): Promise<Buffer> {
     remainingSeasons: (info.ugc_season?.sections.length || 0) - 2,
   };
 
-  const html = TemplateEngine.render('bilibili/video.hbs', data);
-  return await browserService.render(html);
+  return await ReactRenderer.renderToImage(
+    React.createElement(VideoCard, props)
+  );
 }
