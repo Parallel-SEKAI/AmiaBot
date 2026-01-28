@@ -1,5 +1,6 @@
 import { initDb } from './service/db';
 import { config } from './config/index';
+import logger from './config/logger';
 import { init as initFeatures } from './features/index';
 import { onebot } from './onebot';
 

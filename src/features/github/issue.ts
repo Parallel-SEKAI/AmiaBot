@@ -48,8 +48,8 @@ export async function getIssueInfo(
       number: issueData.number,
       title: issueData.title,
       isOpen: issueData.state === 'open',
-      authorAvatarUrl: issueData.user.avatar_url,
-      authorLogin: issueData.user.login,
+      authorAvatarUrl: issueData.user?.avatar_url ?? '',
+      authorLogin: issueData.user?.login ?? 'unknown',
       createdAt: new Date(issueData.created_at).toLocaleString('zh-CN'),
       body: issueData.body,
       comments: issueData.comments,
@@ -58,7 +58,7 @@ export async function getIssueInfo(
     const html = TemplateEngine.render('github/issue.hbs', data);
     const imageBuffer = await browserService.render(html);
 
-    void new SendMessage({
+    await new SendMessage({
       message: new SendImageMessage(imageBuffer),
     }).reply(message);
     return true;

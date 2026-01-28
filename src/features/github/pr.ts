@@ -67,7 +67,7 @@ export async function getPRInfo(
     const html = TemplateEngine.render('github/pr.hbs', data);
     const imageBuffer = await browserService.render(html);
 
-    void new SendMessage({
+    await new SendMessage({
       message: new SendImageMessage(imageBuffer),
     }).reply(message);
     return true;
