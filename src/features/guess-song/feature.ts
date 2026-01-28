@@ -10,7 +10,8 @@ import {
 import { FeatureModule } from '../feature-manager';
 import { safeUnlink } from '../../utils';
 
-import ffmpeg from 'fluent-ffmpeg';import * as fs from 'fs';
+import ffmpeg from 'fluent-ffmpeg';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import http from 'http';
