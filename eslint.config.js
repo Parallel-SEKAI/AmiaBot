@@ -16,6 +16,13 @@ module.exports = tseslint.config(
     ],
   },
   {
+    files: ['eslint.config.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-undef': 'off',
+    },
+  },
+  {
     files: ['src/**/*.ts'],
     languageOptions: {
       parserOptions: {
