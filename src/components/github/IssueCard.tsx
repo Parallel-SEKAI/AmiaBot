@@ -1,11 +1,7 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import {
-  MessageSquare,
-  CircleDot,
-  CheckCircle2,
-} from 'lucide-react';
+import { MessageSquare, CircleDot, CheckCircle2 } from 'lucide-react';
 
 interface IssueCardProps {
   number: number;

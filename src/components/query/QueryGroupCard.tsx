@@ -1,14 +1,7 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import {
-  Users,
-  Shield,
-  Info,
-  MessageSquare,
-  Lock,
-  Hash,
-} from 'lucide-react';
+import { Users, Shield, Info, MessageSquare, Lock, Hash } from 'lucide-react';
 
 interface QueryGroupCardProps {
   avatarUrl: string;

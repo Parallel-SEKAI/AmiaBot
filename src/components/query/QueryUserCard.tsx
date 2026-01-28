@@ -1,12 +1,6 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
-import {
-  User as UserIcon,
-  Trophy,
-  Shield,
-  Hash,
-  Clock,
-} from 'lucide-react';
+import { User as UserIcon, Trophy, Shield, Hash, Clock } from 'lucide-react';
 
 interface QueryUserCardProps {
   avatarUrl: string;
