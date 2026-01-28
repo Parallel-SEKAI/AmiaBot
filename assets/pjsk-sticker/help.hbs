@@ -1,109 +1,113 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    :root {
-      --primary: #6750A4;
-      --secondary: #625B71;
-      --surface: #FEF7FF;
-      --on-surface: #1D1B20;
-      --outline: #79747E;
-    }
+<html lang='zh-CN'>
+  <head>
+    <meta charset='UTF-8' />
+    <style>
+      :root {
+        --primary: #6750a4;
+        --secondary: #625b71;
+        --surface: #fef7ff;
+        --on-surface: #1d1b20;
+        --outline: #79747e;
+      }
 
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: "Noto Sans SC", sans-serif;
-      background-color: #EADDFF;
-      display: flex;
-      justify-content: center;
-    }
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: 'Noto Sans SC', sans-serif;
+        background-color: #eaddff;
+        display: flex;
+        justify-content: center;
+      }
 
-    #render-target {
-      background-color: var(--surface);
-      color: var(--on-surface);
-      border-radius: 16px;
-      padding: 24px;
-      width: 500px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
+      #render-target {
+        background-color: var(--surface);
+        color: var(--on-surface);
+        border-radius: 16px;
+        padding: 24px;
+        width: 500px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
 
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      color: var(--primary);
-      margin-bottom: 20px;
-      text-align: center;
-    }
+      .title {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary);
+        margin-bottom: 20px;
+        text-align: center;
+      }
 
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: var(--secondary);
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }
+      .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--secondary);
+        margin-top: 16px;
+        margin-bottom: 8px;
+      }
 
-    .code-box {
-      background-color: #f0f0f0;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
+      .code-box {
+        background-color: #f0f0f0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
 
-    .params-list {
-      font-size: 14px;
-      line-height: 1.6;
-    }
+      .params-list {
+        font-size: 14px;
+        line-height: 1.6;
+      }
 
-    .param-item {
-      display: flex;
-      gap: 8px;
-    }
+      .param-item {
+        display: flex;
+        gap: 8px;
+      }
 
-    .param-name {
-      font-weight: bold;
-      color: var(--primary);
-      min-width: 80px;
-    }
+      .param-name {
+        font-weight: bold;
+        color: var(--primary);
+        min-width: 80px;
+      }
 
-    .footer {
-      margin-top: 24px;
-      padding-top: 12px;
-      border-top: 1px solid var(--outline);
-      font-size: 12px;
-      color: var(--outline);
-      text-align: right;
-    }
-  </style>
-</head>
-<body>
-  <div id="render-target">
-    <div class="title">PJSK 贴纸生成器帮助</div>
-    
-    <div class="section-title">使用方法:</div>
-    <div class="code-box">/pjsk &lt;角色名&gt; &lt;文本内容&gt; [参数]</div>
-    
-    <div class="section-title">可选参数:</div>
-    <div class="params-list">
-      <div class="param-item"><span class="param-name">pos=(x,y)</span> <span>文本位置</span></div>
-      <div class="param-item"><span class="param-name">clr=(r,g,b)</span> <span>文本颜色</span></div>
-      <div class="param-item"><span class="param-name">fs=大小</span> <span>字体大小</span></div>
-      <div class="param-item"><span class="param-name">font=字体</span> <span>字体类型</span></div>
-      <div class="param-item"><span class="param-name">rot=角度</span> <span>旋转角度</span></div>
+      .footer {
+        margin-top: 24px;
+        padding-top: 12px;
+        border-top: 1px solid var(--outline);
+        font-size: 12px;
+        color: var(--outline);
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div id='render-target'>
+      <div class='title'>PJSK 贴纸生成器帮助</div>
+
+      <div class='section-title'>使用方法:</div>
+      <div class='code-box'>/pjsk &lt;角色名&gt; &lt;文本内容&gt; [参数]</div>
+
+      <div class='section-title'>可选参数:</div>
+      <div class='params-list'>
+        <div class='param-item'><span class='param-name'>pos=(x,y)</span>
+          <span>文本位置</span></div>
+        <div class='param-item'><span class='param-name'>clr=(r,g,b)</span>
+          <span>文本颜色</span></div>
+        <div class='param-item'><span class='param-name'>fs=大小</span>
+          <span>字体大小</span></div>
+        <div class='param-item'><span class='param-name'>font=字体</span>
+          <span>字体类型</span></div>
+        <div class='param-item'><span class='param-name'>rot=角度</span>
+          <span>旋转角度</span></div>
+      </div>
+
+      <div class='section-title'>示例:</div>
+      <div class='code-box'>/pjsk miku 你好</div>
+      <div class='code-box'>/pjsk rin 测试 pos=(50,50) clr=(255,0,0)</div>
+
+      <div class='footer'>
+        Generated by AmiaBot<br />
+        Designed by Parallel SEKAI
+      </div>
     </div>
-    
-    <div class="section-title">示例:</div>
-    <div class="code-box">/pjsk miku 你好</div>
-    <div class="code-box">/pjsk rin 测试 pos=(50,50) clr=(255,0,0)</div>
-    
-    <div class="footer">
-      Generated by AmiaBot<br>
-      Designed by Parallel SEKAI
-    </div>
-  </div>
-</body>
+  </body>
 </html>

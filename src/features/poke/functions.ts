@@ -74,11 +74,11 @@ async function sendCard(groupId: number, _userId: number) {
     });
     return;
   } else {
-    void new SendMessage({ message: new SendImageMessage(cardImageNormalUrl) }).send(
-      {
-        groupId: groupId,
-      }
-    );
+    void new SendMessage({
+      message: new SendImageMessage(cardImageNormalUrl),
+    }).send({
+      groupId: groupId,
+    });
     return;
   }
 }

@@ -228,7 +228,9 @@ VIP等级: ${user.vipLevel}
       } catch (error) {
         logger.error('[feature.chat] Failed to parse JSON response:', error);
         // 如果解析失败，回退到直接发送原始文本
-        void new SendMessage({ message: new SendTextMessage(responseText) }).send({
+        void new SendMessage({
+          message: new SendTextMessage(responseText),
+        }).send({
           recvMessage: message,
         });
       }

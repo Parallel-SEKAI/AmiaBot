@@ -2,9 +2,9 @@
 # See https://pre-commit.com/hooks.html for more hooks
 
 ci:
-  autofix_commit_msg: "chore(pre-commit): [pre-commit.ci] auto fixes from pre-commit.com hooks"
+  autofix_commit_msg: 'chore(pre-commit): [pre-commit.ci] auto fixes from pre-commit.com hooks'
   autofix_prs: true
-  autoupdate_commit_msg: "chore(pre-commit): [pre-commit.ci] autoupdate"
+  autoupdate_commit_msg: 'chore(pre-commit): [pre-commit.ci] autoupdate'
   autoupdate_schedule: weekly
   skip: []
   submodules: false

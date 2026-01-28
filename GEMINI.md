@@ -6,18 +6,18 @@ AmiaBot is a versatile, plugin-based chatbot built with TypeScript and designed 
 
 **Key Technologies:**
 
-*   **Language:** TypeScript
-*   **Framework:** None (custom plugin-based architecture)
-*   **Chat Standard:** OneBot
-*   **Database:** PostgreSQL
-*   **Key Libraries:**
-    *   `onebot-client`: For communicating with OneBot-compatible chat platforms.
-    *   `pg`: For interacting with the PostgreSQL database.
-    *   `openai`: For integrating with OpenAI's API.
-    *   `octokit`: For interacting with the GitHub API.
-    *   `dotenv`: For managing environment variables.
-    *   `zod`: for schema validation of environment variables.
-    *   `winston`: for logging.
+- **Language:** TypeScript
+- **Framework:** None (custom plugin-based architecture)
+- **Chat Standard:** OneBot
+- **Database:** PostgreSQL
+- **Key Libraries:**
+  - `onebot-client`: For communicating with OneBot-compatible chat platforms.
+  - `pg`: For interacting with the PostgreSQL database.
+  - `openai`: For integrating with OpenAI's API.
+  - `octokit`: For interacting with the GitHub API.
+  - `dotenv`: For managing environment variables.
+  - `zod`: for schema validation of environment variables.
+  - `winston`: for logging.
 
 **Architecture:**
 
@@ -25,21 +25,21 @@ The bot's architecture is centered around a `FeatureManager` that dynamically lo
 
 **Features:**
 
-*   **Chat:** Core chat functionalities.
-*   **AI Integration:** Powered by OpenAI's Gemini for advanced conversations.
-*   **GitHub Integration:** Fetch information from GitHub repositories, issues, and pull requests.
-*   **Music:** Integrates with Netease Cloud Music to fetch song information and lyrics.
-*   **Games:** Includes guessing games for cards, songs, and events.
-*   **Utilities:** Provides features like comic search, message statistics, and auto-recall.
-*   **And more...**
+- **Chat:** Core chat functionalities.
+- **AI Integration:** Powered by OpenAI's Gemini for advanced conversations.
+- **GitHub Integration:** Fetch information from GitHub repositories, issues, and pull requests.
+- **Music:** Integrates with Netease Cloud Music to fetch song information and lyrics.
+- **Games:** Includes guessing games for cards, songs, and events.
+- **Utilities:** Provides features like comic search, message statistics, and auto-recall.
+- **And more...**
 
 ## Building and Running
 
 ### Prerequisites
 
-*   Node.js
-*   npm
-*   Docker (for running the database)
+- Node.js
+- npm
+- Docker (for running the database)
 
 ### Installation
 
@@ -60,9 +60,9 @@ The bot's architecture is centered around a `FeatureManager` that dynamically lo
     cp .env.example .env
     ```
 2.  Edit the `.env` file with your specific configuration, including:
-    *   Database credentials
-    *   OneBot connection details
-    *   API keys for OpenAI, GitHub, etc.
+    - Database credentials
+    - OneBot connection details
+    - API keys for OpenAI, GitHub, etc.
 
 ### Running the Bot
 
@@ -89,24 +89,24 @@ There are no pre-configured tests for this project.
 
 ## Development Conventions
 
-*   **Code Style:** The project uses Prettier for code formatting. You can format the code using:
-    ```bash
-    npm run format
-    ```
-*   **Commits:** (No explicit commit conventions found, but it is recommended to follow conventional commit standards).
-*   **Branching:** (No explicit branching strategy found, but it is recommended to use a feature-branch workflow).
-*   **Adding new features:** New features should be created as separate modules in the `src/features` directory and registered in `src/features/index.ts`.
+- **Code Style:** The project uses Prettier for code formatting. You can format the code using:
+  ```bash
+  npm run format
+  ```
+- **Commits:** (No explicit commit conventions found, but it is recommended to follow conventional commit standards).
+- **Branching:** (No explicit branching strategy found, but it is recommended to use a feature-branch workflow).
+- **Adding new features:** New features should be created as separate modules in the `src/features` directory and registered in `src/features/index.ts`.
 
 ## Implementation Logic
 
-*   **Plugin System:** Uses `FeatureManager` to dynamically load features from `src/features`.
-*   **OneBot Integration:** Communicates via HTTP and WebSocket. Supports NapCat's **Stream API** for efficient file uploads (replacing legacy Base64 methods).
-*   **File Handling:** Large files (video, audio, generated images) are uploaded using `upload_file_stream` in chunks (64KB) to minimize request size and memory overhead.
-*   **Automatic Streaming:** `SendMessage.send()` automatically detects `Buffer` data in message segments and performs streaming uploads before delivery.
+- **Plugin System:** Uses `FeatureManager` to dynamically load features from `src/features`.
+- **OneBot Integration:** Communicates via HTTP and WebSocket. Supports NapCat's **Stream API** for efficient file uploads (replacing legacy Base64 methods).
+- **File Handling:** Large files (video, audio, generated images) are uploaded using `upload_file_stream` in chunks (64KB) to minimize request size and memory overhead.
+- **Automatic Streaming:** `SendMessage.send()` automatically detects `Buffer` data in message segments and performs streaming uploads before delivery.
 
 ## Current Project Status (Dynamically Updated)
+
 - **Current Task**: Completed migration to Playwright rendering engine.
 - **Environment**: CachyOS | TypeScript | Node.js.
 - **Latest CI Status**: Build passing after full migration and legacy code cleanup.
 - **Next Steps**: Monitor performance and stability of the new rendering system.
-

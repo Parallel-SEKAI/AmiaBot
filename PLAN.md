@@ -3,6 +3,7 @@
 ## 1. 基础设施 (Infrastructure)
 
 ### 1.1 依赖与环境
+
 - [x] **依赖安装**: `pnpm add playwright-core handlebars p-limit`
 - [x] **系统适配 (CachyOS)**:
   - 确认 `/usr/bin/chromium`存在。
@@ -10,7 +11,8 @@
   - **专属脚本**: 提供 `scripts/setup-cachyos.sh` 执行 `paru -S chromium noto-fonts-cjk`。
 
 ### 1.2 BrowserService 核心实现 (`src/service/browser.ts`)
-- [x] **单例与生命周期**: 
+
+- [x] **单例与生命周期**:
   - 维持持久 `Browser` 实例。
   - 监听 `process.on('SIGINT/SIGTERM')` 确保 `await browser.close()` 执行，杜绝孤儿进程。
 - [x] **Context 隔离策略**:
@@ -25,6 +27,7 @@
   - **局部截图**: 优先使用 `locator('#render-target').screenshot()` 减少冗余边距。
 
 ### 1.3 性能与健壮性
+
 - [x] **预热机制 (Warm-up)**: 启动时异步加载空白页/Help 模板，触发 JIT 编译。
 - [x] **并发与熔断**:
   - 使用 `p-limit` 限制最大并发 Context 数量（推荐 3-5）。
@@ -34,18 +37,21 @@
 ## 2. 业务功能重构 (Feature Migration)
 
 ### 2.1 帮助系统 (Help)
+
 - [x] **Handlebars 渲染流**:
   - 实现 `src/utils/template.ts` 通用 Handlebars 包装类，集成 `assets/help/template.hbs`。
 - [x] **缓存层**: 针对静态 Help 内容，在内存中缓存渲染后的 `Buffer`。 (注：目前直接渲染，后续可按需加缓存)
 - [x] **字体回退栈**: CSS 声明 `font-family: "Noto Sans SC", "Noto Sans CJK JP", "Microsoft YaHei", sans-serif;`。
 
 ### 2.2 PJSK 猜题模块 (Guess Card/Song)
+
 - [x] **猜卡面 (CSS Art)**:
   - `div.crop-container` + `overflow: hidden`。
   - 后端注入 `object-position: {{x}}% {{y}}%; transform: scale({{zoom}})` 实现随机局部抠图。 (注：已实现基于 Playwright 的局部截图方案)
 - [x] **封面异常处理**: 增加 Loading 占位图逻辑。
 
 ### 2.3 消息统计 (Message Statistics)
+
 - [x] **异步同步化**:
   - 模板内 `window.CHART_DATA = {{{json data}}}`。
   - ECharts 监听 `finished` 事件触发 `window.isRenderFinished = true`。

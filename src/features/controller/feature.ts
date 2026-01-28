@@ -61,16 +61,18 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
 
     const reply =
       `当前已加载功能模块：\n已开启：\n${enabled.length > 0 ? enabled.join('\n') : '无'}\n\n未开启：\n${disabled.length > 0 ? disabled.join('\n') : '无'}`.trim();
-    void new SendMessage({ message: new SendTextMessage(reply) }).reply(message);
+    void new SendMessage({ message: new SendTextMessage(reply) }).reply(
+      message
+    );
     return;
   }
 
   // 处理 on/off 指令
   if (action === 'on' || action === 'off') {
     if (!target) {
-      void new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
-        message
-      );
+      void new SendMessage({
+        message: new SendTextMessage(HELP_CONTENT),
+      }).reply(message);
       return;
     }
 
@@ -131,9 +133,9 @@ export async function init() {
     // 3. 校验指令前缀 (必须是 /bot feat ...)
     // 假设 parseCommandLineArgs 返回的第一个元素是 "/bot" 或类似指令名
     if (args.length < 2 || args[1] !== 'feat') {
-      void new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
-        message
-      );
+      void new SendMessage({
+        message: new SendTextMessage(HELP_CONTENT),
+      }).reply(message);
       return;
     }
 

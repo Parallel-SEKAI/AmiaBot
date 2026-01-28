@@ -9,7 +9,7 @@ import {
 } from '../../onebot/message/send.entity';
 import { FeatureModule } from '../feature-manager';
 import { safeUnlink } from '../../utils';
- 
+
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
