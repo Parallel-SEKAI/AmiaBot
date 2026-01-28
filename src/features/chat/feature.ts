@@ -1,28 +1,37 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
 import {
   RecvMessage,
   RecvImageMessage,
-} from '../../onebot/message/recv.entity';
-import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
+} from '../../onebot/message/recv.entity.js';
+import {
+  SendMessage,
+  SendTextMessage,
+} from '../../onebot/message/send.entity.js';
 import { readFileSync } from 'fs';
-import { join } from 'path';
-import { openai } from '../../service/openai';
-import { config } from '../../config';
-import { renderTemplate, networkImageToBase64DataURL } from '../../utils';
-import { Group } from '../../onebot/group/group.entity';
-import { User } from '../../onebot/user/user.entity';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { openai } from '../../service/openai.js';
+import { config } from '../../config/index.js';
+import {
+  renderTemplate,
+  networkImageToBase64DataURL,
+} from '../../utils/index.js';
+import { Group } from '../../onebot/group/group.entity.js';
+import { User } from '../../onebot/user/user.entity.js';
 import { z } from 'zod';
 import {
   addChatHistory,
   getLatestChatHistory,
   getUserInfo,
   updateUserInfo,
-} from './db';
-import { FeatureModule } from '../feature-manager';
+} from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const prompt = readFileSync(
-  join(process.cwd(), 'assets/chat/prompt.md'),
+  join(__dirname, '../../../assets/chat/prompt.md'),
   'utf8'
 );
 

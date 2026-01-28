@@ -1,13 +1,14 @@
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendImageMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { octokit } from '../../service/github';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
-import logger from '../../config/logger';
+} from '../../onebot/message/send.entity.js';
+import { octokit } from '../../service/github.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { PRCard } from '../../components/github/PRCard.js';
+import logger from '../../config/logger.js';
 
 export async function getPRInfo(
   message: RecvMessage,
@@ -43,7 +44,7 @@ export async function getPRInfo(
   const prData = response.data;
 
   try {
-    const data = {
+    const props = {
       number: prData.number,
       title: prData.title,
       isOpen: prData.state === 'open',
@@ -57,15 +58,16 @@ export async function getPRInfo(
         : null,
       headBranch: prData.head.ref,
       baseBranch: prData.base.ref,
-      body: prData.body,
+      body: prData.body ?? null,
       comments: prData.comments,
       commits: prData.commits,
       additions: prData.additions,
       deletions: prData.deletions,
     };
 
-    const html = TemplateEngine.render('github/pr.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(PRCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

@@ -1,5 +1,5 @@
-import { onebot } from '..';
-import { SendMessage } from './send.entity';
+import { onebot } from '../index.js';
+import { SendMessage } from './send.entity.js';
 
 export class RecvBaseMessage {
   public type: string;

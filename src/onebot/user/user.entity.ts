@@ -1,4 +1,4 @@
-import { onebot } from '..';
+import { onebot } from '../index.js';
 
 export class User {
   public id: number;

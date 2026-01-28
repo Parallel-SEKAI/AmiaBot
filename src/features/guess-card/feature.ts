@@ -1,16 +1,23 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendImageMessage,
   SendMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
+} from '../../onebot/message/send.entity.js';
 import sharp from 'sharp';
-import { FeatureModule } from '../feature-manager';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getGameState, setGameState, deleteGameState } from '../../service/db';
+import { fileURLToPath } from 'url';
+import {
+  getGameState,
+  setGameState,
+  deleteGameState,
+} from '../../service/db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const difficulty = {
   ez: 160,
@@ -122,10 +129,10 @@ async function guessCard(data: Record<string, any>) {
  */
 async function getCharacterAliases(): Promise<Record<number, string[]>> {
   const aliasPath = path.join(
-    process.cwd(),
-    'assets/pjsk/character_alias.json'
+    __dirname,
+    '../../../assets/pjsk/character_alias.json'
   );
-  const content = fs.readFileSync(aliasPath, 'utf-8');
+  const content = await fs.promises.readFile(aliasPath, 'utf-8');
   return JSON.parse(content);
 }
 

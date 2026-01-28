@@ -1,8 +1,7 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
-import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
-import { checkFeatureEnabled } from '../../service/db';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
+import { checkFeatureEnabled } from '../../service/db.js';
 
 export async function init() {
   logger.info('[feature] Init example feature');

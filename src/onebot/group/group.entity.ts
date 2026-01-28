@@ -1,6 +1,6 @@
-import { onebot } from '..';
-import { User } from '../user/user.entity';
-import { RecvMessage } from '../message/recv.entity';
+import { onebot } from '../index.js';
+import { User } from '../user/user.entity.js';
+import { RecvMessage } from '../message/recv.entity.js';
 
 export class Group {
   /**

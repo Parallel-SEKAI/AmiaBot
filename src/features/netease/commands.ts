@@ -1,4 +1,5 @@
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendTextMessage,
@@ -7,17 +8,21 @@ import {
   SendForwardMessage,
   SendFileMessage,
   ForwardMessageNode,
-} from '../../onebot/message/send.entity';
-import { NeteaseApi, Song, Lyric } from '../../service/netease';
-import { parseCommandLineArgs } from '../../utils';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+} from '../../onebot/message/send.entity.js';
+import { NeteaseApi, Song, Lyric } from '../../service/netease/index.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { SearchCard } from '../../components/netease/SearchCard.js';
+import { parseCommandLineArgs } from '../../utils/index.js';
+import { readFileSync, promises as fs } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
-import { promises as fs } from 'fs';
-import { mkdirSync, existsSync } from 'fs';
-import { openai } from '../../service/openai';
-import { config } from '../../config';
-import logger from '../../config/logger';
+import { openai } from '../../service/openai.js';
+import { config } from '../../config/index.js';
+import logger from '../../config/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // 实现downloadFile函数
 async function downloadFile(url: string, filePath: string): Promise<void> {
@@ -60,7 +65,7 @@ function messageIdToString(messageId: number | string): string {
 }
 
 // 获取prompt内容
-const promptPath = join(process.cwd(), 'assets', 'netease', 'emoji_lyric.md');
+const promptPath = join(__dirname, '../../../assets/netease/emoji_lyric.md');
 const prompt = readFileSync(promptPath, 'utf-8');
 
 /**
@@ -284,18 +289,25 @@ export async function search(message: RecvMessage): Promise<void> {
     // 过滤掉获取详情失败的歌曲
     const validSongs = songs.filter((song: Song) => song.name);
 
-    // 生成搜索结果文本
-    const searchResult = validSongs
-      .map(
-        (song: Song, index: number) =>
-          `${index + 1}. ${song.name} - ${song.artists.join('/')} (ID: ${song.id})`
-      )
-      .join('\n');
+    // 使用 React SSR 渲染搜索结果卡片
+    const props = {
+      query: keywords,
+      songs: validSongs.map((song: Song) => ({
+        id: song.id,
+        name: song.name,
+        artists: song.artists,
+        coverUrl: song.cover,
+      })),
+    };
+
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(SearchCard, props)
+    );
 
     // 发送搜索结果
     const msg = await message.reply(
       new SendMessage({
-        message: new SendTextMessage(`搜索结果：\n${searchResult}`),
+        message: new SendImageMessage(imageBuffer),
         groupId: getValidGroupId(message.groupId),
       })
     );

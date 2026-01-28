@@ -1,15 +1,18 @@
-import { config } from '../../config';
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { User } from '../../onebot/user/user.entity';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { User } from '../../onebot/user/user.entity.js';
+import {
+  RecvMessage,
+  RecvAtMessage,
+} from '../../onebot/message/recv.entity.js';
 import {
   SendImageMessage,
   SendMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
+} from '../../onebot/message/send.entity.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { QueryUserCard } from '../../components/query/QueryUserCard.js';
 
 export async function init() {
   logger.info('[feature] Init query.user feature');
@@ -36,10 +39,11 @@ async function sendUserInfo(message: RecvMessage) {
 
     // 检查是否有@用户
     const atUser = message.message.find(
-      (m) => m.type === 'at' && m.data.qq !== 'all'
+      (m): m is RecvAtMessage =>
+        m.type === 'at' && (m as RecvAtMessage).qq !== 'all'
     );
     if (atUser) {
-      targetUserId = Number(atUser.data.qq);
+      targetUserId = Number(atUser.qq);
     } else {
       // 默认获取发送者自己的信息
       targetUserId = message.userId;
@@ -49,7 +53,7 @@ async function sendUserInfo(message: RecvMessage) {
     const user = new User(targetUserId, message.groupId);
     await user.init();
 
-    const data = {
+    const props = {
       avatarUrl: user.avatarUrl,
       fullName: user.fullName,
       id: user.id,
@@ -78,8 +82,9 @@ async function sendUserInfo(message: RecvMessage) {
       vipLevel: user.vipLevel,
     };
 
-    const html = TemplateEngine.render('query/user.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(QueryUserCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

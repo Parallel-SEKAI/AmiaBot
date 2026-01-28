@@ -1,4 +1,4 @@
-import pool from '../../service/db';
+import pool from '../../service/db.js';
 
 /**
  * 聊天历史记录类型定义

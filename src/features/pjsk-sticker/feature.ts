@@ -1,16 +1,17 @@
-import { onebot } from '../../onebot';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { onebot } from '../../onebot/index.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendTextMessage,
   SendImageMessage,
   SendForwardMessage,
   ForwardMessageNode,
-} from '../../onebot/message/send.entity';
-import { parseCommandLineArgs } from '../../utils/index';
-import logger from '../../config/logger';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
+} from '../../onebot/message/send.entity.js';
+import { parseCommandLineArgs } from '../../utils/index.js';
+import logger from '../../config/logger.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { PjskStickerHelpCard } from '../../components/ui/PjskStickerHelpCard.js';
 import { promises as fs } from 'fs';
 
 const CHARACTERS = [
@@ -161,8 +162,9 @@ function buildApiUrl(
 
 async function help(message: RecvMessage) {
   try {
-    const html = TemplateEngine.render('pjsk-sticker/help.hbs', {});
-    const helpImageBuffer = await browserService.render(html);
+    const helpImageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(PjskStickerHelpCard)
+    );
 
     // 发送生成的帮助图片
     void new SendMessage({

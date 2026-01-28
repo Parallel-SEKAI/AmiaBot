@@ -1,13 +1,14 @@
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendMessage,
   SendImageMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { octokit } from '../../service/github';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
-import logger from '../../config/logger';
+} from '../../onebot/message/send.entity.js';
+import { octokit } from '../../service/github.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { UserCard } from '../../components/github/UserCard.js';
+import logger from '../../config/logger.js';
 
 export async function getUserInfo(
   message: RecvMessage,
@@ -31,23 +32,24 @@ export async function getUserInfo(
   const userData = response.data;
 
   try {
-    const data = {
+    const props = {
       avatarUrl: userData.avatar_url,
       name: userData.name || userData.login,
       login: userData.login,
-      bio: userData.bio,
+      bio: userData.bio ?? null,
       publicRepos: userData.public_repos,
       following: userData.following,
       followers: userData.followers,
-      location: userData.location,
-      blog: userData.blog,
-      company: userData.company,
+      location: userData.location ?? null,
+      blog: userData.blog ?? null,
+      company: userData.company ?? null,
       createdAt: new Date(userData.created_at).toLocaleString('zh-CN'),
       updatedAt: new Date(userData.updated_at).toLocaleString('zh-CN'),
     };
 
-    const html = TemplateEngine.render('github/user.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(UserCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

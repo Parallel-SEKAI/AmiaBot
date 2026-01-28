@@ -1,20 +1,20 @@
-import { config } from '../../config';
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
+import { config } from '../../config/index.js';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
 import {
   RecvImageMessage,
   RecvMessage,
-} from '../../onebot/message/recv.entity';
+} from '../../onebot/message/recv.entity.js';
 import {
   SendForwardMessage,
   SendMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { openai } from '../../service/openai'; // 使用已导出的 openai 实例
+} from '../../onebot/message/send.entity.js';
+import { openai } from '../../service/openai.js'; // 使用已导出的 openai 实例
 import {
   extractAfterCaseInsensitive,
   networkImageToBase64DataURL,
-} from '../../utils';
+} from '../../utils/index.js';
 
 export async function init() {
   logger.info('[feature] Init gemini feature');

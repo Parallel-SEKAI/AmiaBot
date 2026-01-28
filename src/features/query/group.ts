@@ -1,15 +1,15 @@
-import { config } from '../../config';
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { Group } from '../../onebot/group/group.entity';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+import React from 'react';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { Group } from '../../onebot/group/group.entity.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import {
   SendImageMessage,
   SendMessage,
   SendTextMessage,
-} from '../../onebot/message/send.entity';
-import { browserService } from '../../service/browser';
-import { TemplateEngine } from '../../utils/template';
+} from '../../onebot/message/send.entity.js';
+import { ReactRenderer } from '../../service/render/react.js';
+import { QueryGroupCard } from '../../components/query/QueryGroupCard.js';
 
 export async function init() {
   logger.info('[feature] Init query.group feature');
@@ -34,7 +34,7 @@ async function sendGroupInfo(groupId: number, message: RecvMessage) {
     const group = new Group(groupId);
     await group.init();
 
-    const data = {
+    const props = {
       avatarUrl: group.avatarUrl,
       name: group.name || `群聊 ${group.id}`,
       id: group.id,
@@ -50,8 +50,9 @@ async function sendGroupInfo(groupId: number, message: RecvMessage) {
       description: group.description,
     };
 
-    const html = TemplateEngine.render('query/group.hbs', data);
-    const imageBuffer = await browserService.render(html);
+    const imageBuffer = await ReactRenderer.renderToImage(
+      React.createElement(QueryGroupCard, props)
+    );
 
     await new SendMessage({
       message: new SendImageMessage(imageBuffer),

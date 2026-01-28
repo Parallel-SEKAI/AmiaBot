@@ -1,8 +1,7 @@
-import { initDb } from './service/db';
-import { config } from './config/index';
-import logger from './config/logger';
-import { init as initFeatures } from './features/index';
-import { onebot } from './onebot';
+import { initDb } from './service/db.js';
+import logger from './config/logger.js';
+import { init as initFeatures } from './features/index.js';
+import { onebot } from './onebot/index.js';
 
 async function main(): Promise<void> {
   await initDb();

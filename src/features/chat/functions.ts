@@ -1,15 +1,19 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { promises as fs } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import https from 'https';
 import {
   SendMessage,
   SendRecordMessage,
-} from '../../onebot/message/send.entity';
-import { RecvMessage } from '../../onebot/message/recv.entity';
+} from '../../onebot/message/send.entity.js';
+import { RecvMessage } from '../../onebot/message/recv.entity.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export async function getCharacterAlias(alias: string): Promise<Array<string>> {
-  const character_alias = readFileSync(
-    join(process.cwd(), 'assets/pjsk/character_alias.json'),
+  const character_alias = await fs.readFile(
+    join(__dirname, '../../../assets/pjsk/character_alias.json'),
     'utf8'
   );
   // 为alias_map添加类型断言，指定为字符ID到别名数组的映射

@@ -1,6 +1,6 @@
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { stateService } from '../../service/state';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import { stateService } from '../../service/state.js';
 
 export async function init() {
   logger.info('[feature] Init auto-recall feature');

@@ -1,10 +1,16 @@
-import { featureManager } from '../feature-manager';
-import logger from '../../config/logger';
-import { onebot } from '../../onebot';
-import { RecvAtMessage, RecvMessage } from '../../onebot/message/recv.entity';
-import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
-import { parseCommandLineArgs } from '../../utils';
-import { checkFeatureEnabled, setFeatureEnabled } from '../../service/db';
+import { featureManager } from '../feature-manager.js';
+import logger from '../../config/logger.js';
+import { onebot } from '../../onebot/index.js';
+import {
+  RecvAtMessage,
+  RecvMessage,
+} from '../../onebot/message/recv.entity.js';
+import {
+  SendMessage,
+  SendTextMessage,
+} from '../../onebot/message/send.entity.js';
+import { parseCommandLineArgs } from '../../utils/index.js';
+import { checkFeatureEnabled, setFeatureEnabled } from '../../service/db.js';
 
 const HELP_CONTENT = `
 请输入命令
