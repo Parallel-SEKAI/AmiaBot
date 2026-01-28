@@ -1,8 +1,9 @@
 FROM node:25-alpine
 WORKDIR /app
 RUN apk add --no-cache ffmpeg
-COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm run build
-CMD ["npm", "start"]
+RUN pnpm run build
+CMD ["pnpm", "start"]

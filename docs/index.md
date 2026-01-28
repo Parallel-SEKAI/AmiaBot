@@ -3,8 +3,8 @@
 layout: home
 
 hero:
-  name: "AmiaBot"
-  text: "以 Project&nbsp;Sekai 的暁山瑞希为主题的基于 OneBot(NapCat) 接口的QQ机器人"
+  name: 'AmiaBot'
+  text: '以 Project&nbsp;Sekai 的暁山瑞希为主题的基于 OneBot(NapCat) 接口的QQ机器人'
   tagline: 功能丰富的智能QQ机器人,支持多种互动方式
   actions:
     - theme: brand

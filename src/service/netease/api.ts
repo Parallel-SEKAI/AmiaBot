@@ -161,10 +161,10 @@ export class NeteaseApi {
   async getSongUrl(song_id: number): Promise<string | null> {
     try {
       const data = await this.url_v1(song_id, 'hires');
-      logger.info(`[netease] 获取到歌曲URL数据: ${JSON.stringify(data)}`);
+      logger.info('[service.netease] Got song URL data: %j', data);
       return data.data?.[0]?.url || null;
     } catch (e: any) {
-      logger.error(`[netease] 获取歌曲URL失败: ${e.message}`);
+      logger.error('[service.netease] Failed to get song URL:', e);
       return null;
     }
   }
@@ -184,7 +184,7 @@ export class NeteaseApi {
         md5: data.data?.[0]?.md5 || '',
       };
     } catch (e: any) {
-      logger.error(`[netease] 获取歌曲URL和MD5失败: ${e.message}`);
+      logger.error('[service.netease] Failed to get song URL and MD5:', e);
       return null;
     }
   }

@@ -1,5 +1,23 @@
 import { promises as fs } from 'fs';
 import { extname } from 'path';
+import logger from '../config/logger';
+
+/**
+ * 安全地删除文件，如果失败则记录日志但不抛出异常
+ */
+export async function safeUnlink(filePath: string): Promise<void> {
+  try {
+    await fs.unlink(filePath);
+  } catch (error: any) {
+    if (error.code !== 'ENOENT') {
+      logger.warn(
+        '[utils.safeUnlink] Failed to delete file %s: %s',
+        filePath,
+        error.message
+      );
+    }
+  }
+}
 
 export function parseCommandLineArgs(
   cmd: string

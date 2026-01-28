@@ -1,4 +1,6 @@
 import { readFileSync } from 'fs';
+import { join } from 'path';
+import https from 'https';
 import {
   SendMessage,
   SendRecordMessage,
@@ -7,7 +9,7 @@ import { RecvMessage } from '../../onebot/message/recv.entity';
 
 export async function getCharacterAlias(alias: string): Promise<Array<string>> {
   const character_alias = readFileSync(
-    'assets/pjsk/character_alias.json',
+    join(process.cwd(), 'assets/pjsk/character_alias.json'),
     'utf8'
   );
   // 为alias_map添加类型断言，指定为字符ID到别名数组的映射
@@ -59,9 +61,6 @@ export async function sendMusic(
   message: RecvMessage,
   songId: number
 ): Promise<string> {
-  // 临时绕过证书验证，解决无法验证服务器证书的问题
-  const https = require('https');
-
   const data = await new Promise((resolve, reject) => {
     const options = {
       hostname: 'wyapi-1.toubiec.cn',
@@ -70,7 +69,6 @@ export async function sendMusic(
       headers: {
         'Content-Type': 'application/json',
       },
-      rejectUnauthorized: false, // 绕过证书验证
     };
 
     const req = https.request(
@@ -101,7 +99,7 @@ export async function sendMusic(
   });
 
   const url = (data as Record<string, any>).data[0].url;
-  await new SendMessage({ message: new SendRecordMessage(url) }).send({
+  void new SendMessage({ message: new SendRecordMessage(url) }).send({
     recvMessage: message,
   });
   return 'OK';

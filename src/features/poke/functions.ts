@@ -9,14 +9,14 @@ import { getRandomComic } from '../comic/api';
 
 export const functions = [sendComic, sendDialog, sendCard];
 
-async function sendComic(groupId: number, userId: number) {
+async function sendComic(groupId: number, _userId: number) {
   const comicUrl = await getRandomComic();
-  new SendMessage({ message: new SendImageMessage(comicUrl) }).send({
+  void new SendMessage({ message: new SendImageMessage(comicUrl) }).send({
     groupId: groupId,
   });
 }
 
-async function sendDialog(groupId: number, userId: number) {
+async function sendDialog(groupId: number, _userId: number) {
   const scenarioId = 'self_mizuki_2nd';
   // GET JSON https://storage.sekai.best/sekai-cn-assets/scenario/profile/self_mizuki_2nd.asset
   const scenarioUrl = `https://storage.sekai.best/sekai-cn-assets/scenario/profile/${scenarioId}.asset`;
@@ -28,10 +28,10 @@ async function sendDialog(groupId: number, userId: number) {
     string,
     any
   >;
-  new SendMessage({ message: new SendTextMessage(talk.Body) }).send({
+  void new SendMessage({ message: new SendTextMessage(talk.Body) }).send({
     groupId: groupId,
   });
-  new SendMessage({
+  void new SendMessage({
     message: new SendRecordMessage(
       `https://storage.sekai.best/sekai-jp-assets/sound/scenario/voice/${scenarioId}/${talk.Voices[0].VoiceId}.mp3`
     ),
@@ -40,7 +40,7 @@ async function sendDialog(groupId: number, userId: number) {
   });
 }
 
-async function sendCard(groupId: number, userId: number) {
+async function sendCard(groupId: number, _userId: number) {
   const characterId = 20;
   const cardsUrl =
     'https://sekai-world.github.io/sekai-master-db-cn-diff/cards.json';
@@ -53,7 +53,7 @@ async function sendCard(groupId: number, userId: number) {
     string,
     any
   >;
-  new SendMessage({
+  void new SendMessage({
     message: new SendTextMessage(
       `${card.prefix}\n${card.cardSkillName}\n${card.gachaPhrase}`
     ),
@@ -67,18 +67,18 @@ async function sendCard(groupId: number, userId: number) {
   ];
   const cardImageRes = await fetch(cardImageChoiceUrl);
   if (cardImageRes.status === 200) {
-    new SendMessage({
+    void new SendMessage({
       message: new SendImageMessage(cardImageChoiceUrl),
     }).send({
       groupId: groupId,
     });
     return;
   } else {
-    new SendMessage({ message: new SendImageMessage(cardImageNormalUrl) }).send(
-      {
-        groupId: groupId,
-      }
-    );
+    void new SendMessage({
+      message: new SendImageMessage(cardImageNormalUrl),
+    }).send({
+      groupId: groupId,
+    });
     return;
   }
 }

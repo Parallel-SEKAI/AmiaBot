@@ -1,13 +1,12 @@
 import fetch from 'node-fetch';
 import { createHash } from 'crypto';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
+import { createWriteStream } from 'fs';
 import * as path from 'path';
 import logger from '../../config/logger';
 import { config } from '../../config';
-
-const execPromise = promisify(exec);
+import { safeUnlink } from '../../utils';
 
 // From python script
 const mixinKeyEncTab = [
@@ -96,22 +95,34 @@ async function downloadFile(
     };
 
     const response = await fetch(url, { headers });
-    if (!response.ok || !response.body) {
-      logger.error(`Failed to download ${filename}: ${response.statusText}`);
+    const body = response.body;
+    if (!response.ok || !body) {
+      logger.error(
+        '[feature.bilibili.download] Failed to download %s: %s',
+        filename,
+        response.statusText
+      );
       return false;
     }
 
-    const fileStream = require('fs').createWriteStream(filename);
+    const fileStream = createWriteStream(filename);
     await new Promise((resolve, reject) => {
-      response.body.pipe(fileStream);
-      response.body.on('error', reject);
+      body.pipe(fileStream);
+      body.on('error', reject);
       fileStream.on('finish', resolve);
     });
 
-    logger.info(`${filename} downloaded successfully.`);
+    logger.info(
+      '[feature.bilibili.download] %s downloaded successfully.',
+      filename
+    );
     return true;
   } catch (error) {
-    logger.error(`Failed to download ${filename}:`, error);
+    logger.error(
+      '[feature.bilibili.download] Failed to download %s:',
+      filename,
+      error
+    );
     return false;
   }
 }
@@ -128,7 +139,10 @@ async function downloadWithRetry(
   if (url2 && (await downloadFile(url2, filename, referer))) {
     return true;
   }
-  logger.error(`Failed to download ${filename} from all sources.`);
+  logger.error(
+    '[feature.bilibili.download] Failed to download %s from all sources.',
+    filename
+  );
   return false;
 }
 
@@ -141,7 +155,10 @@ export async function downloadBilibiliVideo(
   const finalVideoPath = path.join(cacheDir, `${bv}.mp4`);
   try {
     await fs.access(finalVideoPath);
-    logger.info(`Video ${bv} already exists in cache.`);
+    logger.info(
+      '[feature.bilibili.download] Video %s already exists in cache.',
+      bv
+    );
     return finalVideoPath;
   } catch (e) {
     // File doesn't exist, proceed with download
@@ -211,26 +228,49 @@ export async function downloadBilibiliVideo(
     }
 
     // 5. Merge with ffmpeg
-    const ffmpegCommand = `ffmpeg -y -i "${tempVideoPath}" -i "${tempAudioPath}" -c copy "${finalVideoPath}"`;
-    logger.info('Merging video and audio with ffmpeg...');
-    await execPromise(ffmpegCommand);
-    logger.info(`Video ${bv} merged successfully.`);
+    logger.info(
+      '[feature.bilibili.download] Merging video and audio with ffmpeg...'
+    );
+    await new Promise<void>((resolve, reject) => {
+      const ffmpeg = spawn('ffmpeg', [
+        '-y',
+        '-i',
+        tempVideoPath,
+        '-i',
+        tempAudioPath,
+        '-c',
+        'copy',
+        finalVideoPath,
+      ]);
+
+      ffmpeg.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`ffmpeg exited with code ${code}`));
+        }
+      });
+
+      ffmpeg.on('error', (err) => {
+        reject(err);
+      });
+    });
+    logger.info(
+      '[feature.bilibili.download] Video %s merged successfully.',
+      bv
+    );
 
     return finalVideoPath;
   } catch (error) {
-    logger.error(`Failed to download Bilibili video ${bv}:`, error);
+    logger.error(
+      '[feature.bilibili.download] Failed to download Bilibili video %s:',
+      bv,
+      error
+    );
     return null;
   } finally {
     // 6. Cleanup
-    try {
-      await fs.unlink(tempVideoPath);
-    } catch (e) {
-      /* ignore */
-    }
-    try {
-      await fs.unlink(tempAudioPath);
-    } catch (e) {
-      /* ignore */
-    }
+    await safeUnlink(tempVideoPath);
+    await safeUnlink(tempAudioPath);
   }
 }

@@ -1,0 +1,256 @@
+<html lang='zh-CN'>
+  <head>
+    <meta charset='UTF-8' />
+    <style>
+      :root {
+        --primary: #6750a4;
+        --secondary: #625b71;
+        --tertiary: #7d5260;
+        --surface: #fef7ff;
+        --on-surface: #1d1b20;
+        --outline: #79747e;
+        --divider: rgba(0, 0, 0, 0.1);
+        --topic-bg: #eaddff;
+        --title-bg: #d0bcff;
+        --bible-bg: #ccc2dc;
+      }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: 'Noto Sans SC', sans-serif;
+        background-color: #eaddff;
+        display: flex;
+        justify-content: center;
+      }
+
+      #render-target {
+        background-color: var(--surface);
+        color: var(--on-surface);
+        border-radius: 16px;
+        padding: 32px;
+        width: 600px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .report-header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .report-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+
+      .report-meta {
+        font-size: 14px;
+        color: var(--outline);
+      }
+
+      .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+        background-color: var(--topic-bg);
+        padding: 16px;
+        border-radius: 12px;
+      }
+
+      .summary-item {
+        text-align: center;
+      }
+
+      .summary-label {
+        font-size: 12px;
+        color: var(--primary);
+      }
+
+      .summary-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--on-surface);
+      }
+
+      .section {
+        margin-bottom: 32px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .section-icon {
+        font-size: 24px;
+      }
+
+      .section-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--primary);
+      }
+
+      .card {
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border-left: 4px solid var(--primary);
+      }
+
+      .card-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .card-meta {
+        font-size: 12px;
+        color: var(--outline);
+        margin-bottom: 8px;
+      }
+
+      .card-content {
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .member-title-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .member-card {
+        background-color: #fff;
+        border: 1px solid var(--outline);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .member-name {
+        font-weight: bold;
+        color: var(--primary);
+        font-size: 14px;
+      }
+
+      .member-label {
+        background-color: var(--title-bg);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-left: 4px;
+      }
+
+      .bible-quote {
+        font-style: italic;
+        font-size: 15px;
+        color: var(--tertiary);
+        border-left: 3px solid var(--tertiary);
+        padding-left: 12px;
+        margin-bottom: 8px;
+      }
+
+      .footer {
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider);
+        font-size: 12px;
+        color: var(--outline);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id='render-target'>
+      <div class='report-header'>
+        <div class='report-title'>📊 QQ群消息统计分析报告</div>
+        <div class='report-meta'>{{groupName}}
+          |
+          {{startTime}}
+          -
+          {{endTime}}</div>
+      </div>
+
+      <div class='stats-summary'>
+        <div class='summary-item'>
+          <div class='summary-label'>消息总数</div>
+          <div class='summary-value'>{{messageCount}}</div>
+        </div>
+        <div class='summary-item'>
+          <div class='summary-label'>参与成员</div>
+          <div class='summary-value'>{{memberCount}}</div>
+        </div>
+        <div class='summary-item'>
+          <div class='summary-label'>分析耗时</div>
+          <div class='summary-value'>{{analysisTime}}s</div>
+        </div>
+      </div>
+
+      <div class='section'>
+        <div class='section-header'>
+          <span class='section-icon'>🔥</span>
+          <span class='section-title'>热门话题</span>
+        </div>
+        {{#each hot_topics}}
+          <div class='card'>
+            <div class='card-title'>#{{topic_id}} {{topic_name}}</div>
+            <div class='card-meta'>参与人数: {{participants.length}}人</div>
+            <div class='card-content'>{{content}}</div>
+          </div>
+        {{/each}}
+      </div>
+
+      <div class='section'>
+        <div class='section-header'>
+          <span class='section-icon'>🏆</span>
+          <span class='section-title'>群友称号</span>
+        </div>
+        <div class='member-title-grid'>
+          {{#each group_members_titles}}
+            <div class='member-card'>
+              <div class='member-name'>{{name}}<span
+                  class='member-label'
+                >{{title}}</span></div>
+              <div
+                style='font-size: 12px; color: var(--outline); margin-top: 4px;'
+              >{{feature}}</div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+
+      <div class='section'>
+        <div class='section-header'>
+          <span class='section-icon'>📖</span>
+          <span class='section-title'>群圣经</span>
+        </div>
+        {{#each group_bible}}
+          <div class='card' style='border-left-color: var(--tertiary);'>
+            <div class='bible-quote'>“{{sentence}}”</div>
+            <div class='card-meta'>— {{name}}</div>
+            <div
+              class='card-content'
+              style='font-size: 13px;'
+            >{{explanation}}</div>
+          </div>
+        {{/each}}
+      </div>
+
+      <div class='footer'>
+        Generated by AmiaBot<br />
+        Token Usage:
+        {{tokenUsage}}
+        | Designed by Parallel SEKAI
+      </div>
+    </div>
+  </body>
+</html>

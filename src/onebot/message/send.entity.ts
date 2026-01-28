@@ -1,10 +1,8 @@
 import assert from 'assert';
-import { onebot } from '../../main';
+import { onebot } from '..';
 import { RecvMessage } from './recv.entity';
 import logger from '../../config/logger';
-
-const messageHistory: Record<number, Array<{ messageId: string }>> = {};
-const recalledMessageIds: Set<number> = new Set();
+import { stateService } from '../../service/state';
 
 interface SendMessageArgs {
   message: SendBaseMessage[] | SendBaseMessage;
@@ -41,7 +39,7 @@ export class SendMessage {
     // 检查原消息是否已被撤回
     if (
       args.recvMessage &&
-      recalledMessageIds.has(args.recvMessage.messageId)
+      stateService.isRecalled(args.recvMessage.messageId)
     ) {
       logger.info(
         '[onebot.send] Message not sent because original message %d was recalled',
@@ -50,6 +48,8 @@ export class SendMessage {
       // 返回一个临时消息对象，避免后续处理出错
       return new RecvMessage(Math.floor(Math.random() * 1000000));
     }
+
+    await this.processMessages(this.messages);
 
     const is_private =
       this.userId ||
@@ -85,42 +85,34 @@ export class SendMessage {
     }
 
     if (args.recvMessage && data.data && data.data.message_id) {
-      (messageHistory[args.recvMessage.messageId] ||= []).push({
-        messageId: data.data.message_id,
-      });
+      stateService.addMessageRelation(
+        args.recvMessage.messageId,
+        data.data.message_id
+      );
     }
 
     if (!data.data || !data.data.message_id) {
-      // 如果没有返回有效的message_id，生成一个临时ID
-      const tempId = Math.floor(Math.random() * 1000000);
-      logger.warn(
-        '[onebot.send] No message_id returned, using temporary ID: %d',
-        tempId
+      throw new Error(
+        `Failed to get message_id from OneBot response: ${JSON.stringify(data)}`
       );
-      const message = new RecvMessage(tempId);
-      return message;
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
-    await message.init();
-    logger.info(
-      '[onebot.send][Group: %d] %s',
-      message.groupId,
-      message.rawMessage
-    );
+    await this.initMessageWithLogging(message);
     return message;
   }
 
   public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
     // 检查原消息是否已被撤回
-    if (recalledMessageIds.has(recvMessage.messageId)) {
+    if (stateService.isRecalled(recvMessage.messageId)) {
       logger.info(
         '[onebot.reply] Message not replied because original message %d was recalled',
         recvMessage.messageId
       );
-      // 返回一个临时消息对象，避免后续处理出错
-      return new RecvMessage(Math.floor(Math.random() * 1000000));
+      throw new Error(`Original message ${recvMessage.messageId} was recalled`);
     }
+
+    await this.processMessages(this.messages);
 
     if (this.messages[0] instanceof SendForwardMessage) {
       return await this.send({ recvMessage });
@@ -146,20 +138,63 @@ export class SendMessage {
       throw new Error('Could not determine message type (private or group).');
     }
 
-    if (recvMessage) {
-      (messageHistory[recvMessage.messageId] ||= []).push({
-        messageId: data!.data.message_id,
-      });
+    if (recvMessage && data.data && data.data.message_id) {
+      stateService.addMessageRelation(
+        recvMessage.messageId,
+        data.data.message_id
+      );
+    }
+
+    if (!data.data || !data.data.message_id) {
+      throw new Error(
+        `Failed to get message_id from OneBot response: ${JSON.stringify(data)}`
+      );
     }
 
     const message = new RecvMessage(Number(data.data.message_id));
-    await message.init();
-    logger.info(
-      '[onebot.send][Group: %d] %s',
-      message.groupId,
-      message.rawMessage
-    );
+    await this.initMessageWithLogging(message);
     return message;
+  }
+
+  private async initMessageWithLogging(message: RecvMessage): Promise<void> {
+    try {
+      await message.init();
+      logger.info(
+        '[onebot.send][Group: %d] %s',
+        message.groupId,
+        message.rawMessage
+      );
+    } catch (e) {
+      logger.warn(
+        '[onebot.send] Failed to init message %d: %s',
+        message.messageId,
+        e
+      );
+    }
+  }
+
+  private async processMessages(messages: any[]) {
+    for (const msg of messages) {
+      if (msg.type === 'forward' && msg.data?.messages) {
+        for (const node of msg.data.messages) {
+          if (node.data?.content) {
+            await this.processMessages(node.data.content);
+          }
+        }
+      } else if (msg.data && Buffer.isBuffer(msg.data.file)) {
+        const extMap: Record<string, string> = {
+          image: 'png',
+          record: 'mp3',
+          video: 'mp4',
+          file: 'dat',
+        };
+        const ext = extMap[msg.type] || 'dat';
+        msg.data.file = await onebot.uploadBufferStream(
+          msg.data.file,
+          `upload_${Date.now()}.${ext}`
+        );
+      }
+    }
   }
 }
 
@@ -192,12 +227,7 @@ export class SendImageMessage extends SendBaseMessage {
    * @param file 图片文件路径，可以是本地路径 (e.g., /path/to/image.jpg), file URL (e.g., file:///path/to/image.jpg), 网络 URL (e.g., http://...), 或 Buffer 对象
    */
   constructor(file: string | Buffer) {
-    let filePath = file;
-    if (Buffer.isBuffer(file)) {
-      // 如果是 Buffer 对象，转换为 base64 编码的字符串，使用 base64:// 协议
-      filePath = `base64://${file.toString('base64')}`;
-    }
-    super('image', { file: filePath });
+    super('image', { file });
   }
 }
 
@@ -214,9 +244,9 @@ export class SendFaceMessage extends SendBaseMessage {
 export class SendRecordMessage extends SendBaseMessage {
   /**
    * 发送语音消息
-   * @param file 语音文件路径，可以是本地路径或网络URL
+   * @param file 语音文件路径，可以是本地路径、网络URL或 Buffer 对象
    */
-  constructor(file: string) {
+  constructor(file: string | Buffer) {
     super('record', { file });
   }
 }
@@ -224,9 +254,9 @@ export class SendRecordMessage extends SendBaseMessage {
 export class SendVideoMessage extends SendBaseMessage {
   /**
    * 发送视频消息
-   * @param file 视频文件路径，可以是本地路径或网络URL
+   * @param file 视频文件路径，可以是本地路径、网络URL或 Buffer 对象
    */
-  constructor(file: string) {
+  constructor(file: string | Buffer) {
     super('video', { file });
   }
 }
@@ -318,8 +348,6 @@ export interface ForwardMessageNode {
     content: SendBaseMessage[];
   };
 }
-
-export { recalledMessageIds, messageHistory };
 
 export class SendForwardMessage extends SendBaseMessage {
   /**

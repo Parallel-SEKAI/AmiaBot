@@ -28,3 +28,14 @@ CREATE TABLE IF NOT EXISTS amia_chat_user (
     favor INT NOT NULL DEFAULT 0,
     memory TEXT
 );
+
+---
+
+-- 游戏状态表
+CREATE TABLE IF NOT EXISTS amia_game_state (
+    group_id BIGINT NOT NULL,
+    game_type VARCHAR(50) NOT NULL,
+    answer_data JSONB NOT NULL,
+    start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (group_id, game_type)
+);

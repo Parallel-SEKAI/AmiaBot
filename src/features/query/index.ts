@@ -1,7 +1,9 @@
-import { init as initGroup } from './group';
-import { init as initUser } from './user';
+import { init } from './feature';
+import { FeatureModule } from '../feature-manager';
 
-export async function init() {
-  initGroup();
-  initUser();
-}
+export const queryFeature: FeatureModule = {
+  name: 'query',
+  description: '查询功能',
+  init,
+  needEnable: true,
+};
