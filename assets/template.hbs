@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmiaBot</title>
+    <style>
+        :root {
+            /* Material Design 3 Core Tokens */
+            --color-primary: #834c75;
+            --color-on-primary: #ffffff;
+            --color-primary-container: #ffd7f0;
+            --color-on-primary-container: #68355c;
+
+            --color-secondary: #6f5767;
+            --color-on-secondary: #ffffff;
+            --color-secondary-container: #f9daec;
+            --color-on-secondary-container: #56404f;
+
+            --color-tertiary: #815341;
+            --color-on-tertiary: #ffffff;
+            --color-tertiary-container: #ffdbce;
+            --color-on-tertiary-container: #663c2b;
+
+            --color-error: #ba1a1a;
+            --color-on-error: #ffffff;
+            --color-error-container: #ffdad6;
+            --color-on-error-container: #93000a;
+
+            --color-surface: #fff7f9;
+            --color-on-surface: #201a1e;
+            --color-surface-variant: #4f444a;
+            --color-on-surface-variant: #4f444a;
+            --color-outline: #81737b;
+            --color-outline-variant: #d2c2ca;
+
+            --color-surface-container-low: #fef0f6;
+            --color-surface-container: #f8eaf0;
+            --color-surface-container-high: #f2e5ea;
+
+            /* Spacing & Elevation */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 24px;
+        }
+
+        /* Base Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* 禁用所有動畫以保證渲染確定性 */
+            transition: none !important;
+            animation: none !important;
+        }
+
+        body {
+            font-family: "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+            background-color: var(--color-surface);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        #screenshot-wrapper {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            min-width: 500px;
+            max-width: 900px;
+            /* 確保截圖時邊緣留白以容納陰影 */
+            background-color: var(--color-primary-container);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header / Logo Area */
+        #logo-container {
+            padding: var(--space-lg) var(--space-lg) 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #logo-container svg,
+        #logo-container img {
+            max-height: 80px;
+            width: auto;
+        }
+
+        /* Content Area */
+        #content {
+            margin: var(--space-lg);
+            padding: var(--space-md);
+            background-color: var(--color-surface);
+            color: var(--color-on-surface);
+            border-radius: var(--radius-md);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        /* Footer Area */
+        #footer {
+            padding: 0 var(--space-lg) var(--space-lg);
+            text-align: center;
+            font-size: 12px;
+            color: var(--color-on-surface-variant);
+            opacity: 0.8;
+        }
+
+        /* Utility Classes for Features */
+        .container {
+            padding: var(--space-sm);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .primary-container {
+            background-color: var(--color-primary-container);
+            color: var(--color-on-primary-container);
+        }
+
+        .secondary-container {
+            background-color: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+        }
+
+        .error-container {
+            background-color: var(--color-error-container);
+            color: var(--color-on-error-container);
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.8;
+            margin-bottom: var(--space-xs);
+        }
+
+        .value {
+            font-size: 1.1em;
+            word-break: break-all;
+        }
+    </style>
+    {{{header}}}
+</head>
+
+<body>
+    <div id="screenshot-wrapper">
+        <div id="app">
+            {{#if logo}}
+            <div id="logo-container">
+                {{{logo}}}
+            </div>
+            {{/if}}
+            <div id="content">
+                {{{content}}}
+            </div>
+            <div id="footer">
+                <span id="datetime"></span><br />
+                Generated by AmiaBot<br />
+                Designed by Parallel SEKAI
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const formatted = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            document.getElementById('datetime').textContent = formatted;
+        })();
+    </script>
+    {{{script}}}
+</body>
+
+</html>

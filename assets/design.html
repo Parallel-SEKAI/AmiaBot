@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmiaBot UI Design Spec & Test</title>
+    <style>
+        /* --- 核心 CSS 鏡像自 template.hbs --- */
+        :root {
+            --color-primary: #834c75;
+            --color-on-primary: #ffffff;
+            --color-primary-container: #ffd7f0;
+            --color-on-primary-container: #68355c;
+            --color-secondary: #6f5767;
+            --color-on-secondary: #ffffff;
+            --color-secondary-container: #f9daec;
+            --color-on-secondary-container: #56404f;
+            --color-tertiary: #815341;
+            --color-on-tertiary: #ffffff;
+            --color-tertiary-container: #ffdbce;
+            --color-on-tertiary-container: #663c2b;
+            --color-error: #ba1a1a;
+            --color-on-error: #ffffff;
+            --color-error-container: #ffdad6;
+            --color-on-error-container: #93000a;
+            --color-surface: #fff7f9;
+            --color-on-surface: #201a1e;
+            --color-on-surface-variant: #4f444a;
+            --color-outline: #81737b;
+            --color-outline-variant: #d2c2ca;
+
+            --color-surface-container-low: #fef0f6;
+            --color-surface-container: #f8eaf0;
+            --color-surface-container-high: #f2e5ea;
+
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: none !important;
+            animation: none !important;
+        }
+
+        body {
+            font-family: "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+            background-color: var(--color-surface);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        #screenshot-wrapper {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            width: 800px;
+            min-width: 500px;
+            background-color: var(--color-primary-container);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+
+        #logo-container {
+            padding: var(--space-lg) var(--space-lg) 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        #logo-container svg {
+            max-height: 80px;
+            width: auto;
+        }
+
+        #content {
+            margin: var(--space-lg);
+            padding: var(--space-md);
+            background-color: var(--color-surface);
+            color: var(--color-on-surface);
+            border-radius: var(--radius-md);
+        }
+
+        #footer {
+            padding: 0 var(--space-lg) var(--space-lg);
+            text-align: center;
+            font-size: 12px;
+            color: var(--color-on-surface-variant);
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        /* --- 組件類 --- */
+        .container {
+            padding: var(--space-md);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md);
+            border: 1px solid transparent;
+        }
+
+        .primary-container {
+            background-color: var(--color-primary-container);
+            color: var(--color-on-primary-container);
+        }
+
+        .secondary-container {
+            background-color: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+        }
+
+        .tertiary-container {
+            background-color: var(--color-tertiary-container);
+            color: var(--color-on-tertiary-container);
+        }
+
+        .error-container {
+            background-color: var(--color-error-container);
+            color: var(--color-on-error-container);
+        }
+
+        .outline-container {
+            border-color: var(--color-outline-variant);
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+
+        /* --- 新增組件樣式 --- */
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+
+        .chip {
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            background-color: var(--color-secondary-container);
+            color: var(--color-on-secondary-container);
+            border: 1px solid var(--color-outline-variant);
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--color-outline-variant);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--color-on-primary);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--color-surface-container);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: var(--space-lg);
+            border-left: 2px solid var(--color-outline-variant);
+            margin-left: var(--space-sm);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: var(--space-md);
+        }
+
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -29px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            border: 2px solid var(--color-surface);
+        }
+
+        /* --- 新增數據與媒體樣式 --- */
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .badge-success {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .badge-warning {
+            background-color: #fff9c4;
+            color: #f9a825;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--color-surface-container);
+            border-radius: 100px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-primary);
+            border-radius: 100px;
+        }
+
+        .quote {
+            padding: var(--space-sm) var(--space-md);
+            border-left: 4px solid var(--color-primary);
+            background-color: var(--color-surface-container-low);
+            font-style: italic;
+            margin: var(--space-sm) 0;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-sm);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: var(--space-md);
+            color: var(--color-primary);
+            border-bottom: 2px solid var(--color-outline-variant);
+            padding-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: var(--space-md) 0 var(--space-sm);
+            color: var(--color-secondary);
+        }
+
+        code {
+            font-family: "Fira Code", monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        p {
+            margin-bottom: var(--space-sm);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="screenshot-wrapper">
+        <div id="app">
+            <!-- Header Test -->
+            <div id="logo-container">
+            <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                <text x="20" y="60" font-family="Arial, sans-serif" font-size="40" font-weight="bold"
+                    transform="rotate(5, 20, 60)">
+                    <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="0">A</tspan>
+                    <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-10">m</tspan>
+                    <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-13">i</tspan>
+                    <tspan fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12" dx="-12">a</tspan>
+                </text>
+                <text x="118" y="65" font-family="Arial, sans-serif" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="12"
+                    font-size="40" font-weight="bold" transform="rotate(-5, 118, 65)">
+                    Bot
+                </text>
+                <text x="20" y="60" font-family="Arial, sans-serif" font-size="40" font-weight="bold"
+                    transform="rotate(5, 20, 60)">
+                    <tspan fill="#BB6688">A</tspan>
+                    <tspan fill="#8888CC" dx="-10">m</tspan>
+                    <tspan fill="#CCAA88" dx="-13">i</tspan>
+                    <tspan fill="#DDAACC" dx="-12">a</tspan>
+                </text>
+                <text x="118" y="65" font-family="Arial, sans-serif" fill="#884499" font-size="40" font-weight="bold"
+                    transform="rotate(-5, 118, 65)">
+                    Bot
+                </text>
+            </svg>
+        </div>
+
+        <!-- Content Test Area -->
+        <div id="content">
+            <h1>UI Spec & Layout Test</h1>
+
+            <section>
+                <h2>1. Typography & Hierarchy (排版測試)</h2>
+                <p>這是一個標準正文段落。測試中文字體 <code>Noto Sans CJK SC</code> 的渲染清晰度。<strong>加粗文本測試</strong>，<em>斜體測試（如環境支持）</em>。
+                </p>
+                <div class="grid-2">
+                    <div class="container outline-container">
+                        <div class="label">Heading 2</div>
+                        <div class="value">標題層級示範</div>
+                    </div>
+                    <div class="container outline-container">
+                        <div class="label">Code Block</div>
+                        <code>System.out.println("Hello Amia");</code>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>2. Container Variants (容器變體)</h2>
+                <div class="container primary-container">
+                    <strong>Primary Container</strong>: 用於核心數據（如 GitHub Star 數）。
+                </div>
+                <div class="grid-2">
+                    <div class="container secondary-container">
+                        <strong>Secondary</strong>: 用於次要標籤。
+                    </div>
+                    <div class="container tertiary-container">
+                        <strong>Tertiary</strong>: 用於中性元數據。
+                    </div>
+                </div>
+                <div class="container error-container">
+                    <strong>Error Container</strong>: 警告或錯誤信息展示（如 API 請求失敗）。
+                </div>
+            </section>
+
+            <section>
+                <h2>3. Interactive Elements (交互元素模擬)</h2>
+                <div class="container outline-container">
+                    <div class="label">Chips / Tags</div>
+                    <div class="chip-group">
+                        <div class="chip">TypeScript</div>
+                        <div class="chip">Node.js</div>
+                        <div class="chip">Material Design 3</div>
+                        <div class="chip"
+                            style="background-color: var(--color-tertiary-container); color: var(--color-on-tertiary-container);">
+                            New Tech</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="container outline-container">
+                        <div class="label">User Info List</div>
+                        <div class="list-item">
+                            <div class="avatar" style="background-color: var(--color-primary);">A</div>
+                            <div>
+                                <div style="font-weight: bold;">Amia Arknight</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Administrator</div>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="avatar" style="background-color: var(--color-secondary);">K</div>
+                            <div>
+                                <div style="font-weight: bold;">Kal'tsit</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Contributor</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="container outline-container">
+                        <div class="label">Recent Activity (Timeline)</div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div style="font-weight: bold; font-size: 14px;">Commit 7a2f4c</div>
+                                <div style="font-size: 12px; opacity: 0.7;">2 hours ago</div>
+                            </div>
+                            <div class="timeline-item">
+                                <div style="font-weight: bold; font-size: 14px;">Issue #124 closed</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Yesterday</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>4. Data & Visuals (數據與視覺化)</h2>
+                <div class="grid-2">
+                    <div class="container outline-container">
+                        <div class="label">Project Health (Progress)</div>
+                        <div style="font-size: 14px; margin-bottom: 4px;">Code Coverage <span
+                                style="float: right;">85%</span></div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: 85%;"></div>
+                        </div>
+                        <div style="font-size: 14px; margin-bottom: 4px;">Build Stability <span
+                                style="float: right;">98%</span></div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: 98%; background-color: #4caf50;"></div>
+                        </div>
+                    </div>
+                    <div class="container outline-container">
+                        <div class="label">Quick Stats</div>
+                        <div class="stat-grid">
+                            <div>
+                                <div class="stat-value">1.2k</div>
+                                <div class="stat-label">STARS</div>
+                            </div>
+                            <div>
+                                <div class="stat-value">458</div>
+                                <div class="stat-label">FORKS</div>
+                            </div>
+                            <div>
+                                <div class="stat-value">24</div>
+                                <div class="stat-label">ISSUES</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container outline-container">
+                    <div class="label">Status Badges</div>
+                    <span class="badge badge-success">Active</span>
+                    <span class="badge badge-warning">Maintenance</span>
+                    <span class="badge"
+                        style="background-color: var(--color-error-container); color: var(--color-on-error-container);">Deprecated</span>
+                </div>
+            </section>
+
+            <section>
+                <h2>5. Rich Text (富文本)</h2>
+                <div class="container outline-container">
+                    <div class="label">Quote / Emphasis</div>
+                    <div class="quote">
+                        "The best way to predict the future is to implement it."
+                    </div>
+                    <p style="font-size: 13px; text-align: right; opacity: 0.8; margin-top: 4px;">— AmiaBot OS</p>
+                </div>
+            </section>
+
+            <section>
+                <h2>6. Edge Case: Overflow (邊界溢出測試)</h2>
+                <div class="container outline-container" style="max-width: 100%;">
+                    <div class="label">Long String Test</div>
+                    <div class="value" style="word-break: break-all;">
+                        Supercalifragilisticexpialidocious_VeryLongWordThatShouldWrapCorrectly_測試長文本換行是否會破壞佈局容器邊界_12345678901234567890
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>4. Data List Style (列表樣式)</h2>
+                <div class="container secondary-container">
+                    <div
+                        style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 4px 0;">
+                        <span>項目 A</span><strong>數值 100</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                        <span>項目 B</span><strong>數值 200</strong>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer Test -->
+        <div id="footer">
+            <span id="datetime"></span><br />
+            Generated by AmiaBot<br />
+            Designed by Parallel SEKAI
+        </div>
+    </div>
+    </div>
+
+    <script>
+        (function () {
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const formatted = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            document.getElementById('datetime').textContent = formatted;
+        })();
+    </script>
+
+</body>
+
+</html>
