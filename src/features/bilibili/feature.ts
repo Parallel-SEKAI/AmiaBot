@@ -14,7 +14,6 @@ import { VideoCard } from '../../components/bilibili/VideoCard.js';
 import { AvBvParams, VideoInfo } from './typing.js';
 import { getBilibiliVideoInfo } from './video.js';
 import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const.js';
-import { config } from '../../config/index.js';
 import fetch from 'node-fetch';
 import { downloadBilibiliVideo } from './download.js';
 import { safeUnlink } from '../../utils/index.js';

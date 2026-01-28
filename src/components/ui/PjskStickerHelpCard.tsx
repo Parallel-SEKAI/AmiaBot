@@ -1,6 +1,5 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
-import { Container } from '../ui/Container.js';
 import { Sparkles, Terminal, Info, Keyboard } from 'lucide-react';
 
 export const PjskStickerHelpCard: React.FC = () => {

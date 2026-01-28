@@ -1,10 +1,6 @@
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
-import {
-  SendMessage,
-  SendTextMessage,
-} from '../../onebot/message/send.entity.js';
 import { checkFeatureEnabled } from '../../service/db.js';
 
 export async function init() {

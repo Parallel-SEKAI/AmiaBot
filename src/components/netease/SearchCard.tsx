@@ -1,6 +1,5 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
-import { Container } from '../ui/Container.js';
 import { Music, User, Hash, Headphones } from 'lucide-react';
 
 interface SearchCardProps {

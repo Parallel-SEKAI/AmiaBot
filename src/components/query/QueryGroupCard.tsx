@@ -4,7 +4,6 @@ import { Container } from '../ui/Container.js';
 import {
   Users,
   Shield,
-  Calendar,
   Info,
   MessageSquare,
   Lock,

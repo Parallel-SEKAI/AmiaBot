@@ -1,7 +1,7 @@
 import { chromium, Browser, Page } from 'playwright-core';
 import pLimit from 'p-limit';
 import logger from '../config/logger.js';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, relative, isAbsolute } from 'path';
 import { promises as fs, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { config } from '../config/index.js';
@@ -175,7 +175,8 @@ export class BrowserService {
             const filePath = resolve(assetsRoot, relativePath);
 
             // 安全校验：确保路径确实在 assets 目录内（防止 .. 绕过）
-            if (!filePath.startsWith(assetsRoot)) {
+            const rel = relative(assetsRoot, filePath);
+            if (rel.startsWith('..') || isAbsolute(rel)) {
               logger.warn(
                 '[service.browser] Security blocked path traversal attempt: %s',
                 url

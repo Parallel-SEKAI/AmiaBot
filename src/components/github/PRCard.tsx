@@ -77,7 +77,7 @@ export const PRCard: React.FC<PRCardProps> = (props) => {
             <div className="text-sm font-bold">{props.authorLogin}</div>
             <div className="text-xs opacity-70">
               {props.isMerged
-                ? `merged on ${props.mergedAt}`
+                ? `merged on ${props.mergedAt ?? props.createdAt}`
                 : `opened on ${props.createdAt}`}
             </div>
           </div>

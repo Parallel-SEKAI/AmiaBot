@@ -3,8 +3,6 @@ import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
 import {
   MessageSquare,
-  Calendar,
-  User,
   CircleDot,
   CheckCircle2,
 } from 'lucide-react';

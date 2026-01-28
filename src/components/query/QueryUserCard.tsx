@@ -1,13 +1,10 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
-import { Container } from '../ui/Container.js';
 import {
   User as UserIcon,
-  Calendar,
   Trophy,
   Shield,
   Hash,
-  MapPin,
   Clock,
 } from 'lucide-react';
 
