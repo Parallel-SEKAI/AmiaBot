@@ -1,5 +1,5 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import { emojilyric, search, play, download } from './commands';
 import { FeatureModule } from '../feature-manager';

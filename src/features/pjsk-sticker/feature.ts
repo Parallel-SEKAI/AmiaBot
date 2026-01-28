@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendMessage,
@@ -7,18 +7,10 @@ import {
   SendForwardMessage,
   ForwardMessageNode,
 } from '../../onebot/message/send.entity';
-import { parseCommandLineArgs, hexToRgba } from '../../utils/index';
+import { parseCommandLineArgs } from '../../utils/index';
 import logger from '../../config/logger';
-import { generatePage } from '../../service/enana';
-import {
-  WidgetComponent,
-  ColumnComponent,
-  TextComponent,
-  ContainerComponent,
-} from '../../types/enana';
-import { COLORS } from '../../const';
-import { config } from '../../config';
-import { FeatureModule } from '../feature-manager';
+import { browserService } from '../../service/browser';
+import { TemplateEngine } from '../../utils/template';
 import { promises as fs } from 'fs';
 
 const CHARACTERS = [
@@ -85,7 +77,7 @@ export async function init() {
         const apiUrl = buildApiUrl(character, content, index, kwargs);
 
         // 发送图片消息
-        new SendMessage({
+        void new SendMessage({
           message: new SendImageMessage(apiUrl),
         }).reply(message);
       } catch (error) {
@@ -93,7 +85,7 @@ export async function init() {
           '[feature.pjsk-sticker] Failed to generate PJSK sticker:',
           error
         );
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage(
             '贴纸生成失败，请检查参数是否正确或稍后重试'
           ),
@@ -168,187 +160,99 @@ function buildApiUrl(
 }
 
 async function help(message: RecvMessage) {
-  // 创建帮助信息的组件结构
-  const helpWidget: WidgetComponent = {
-    type: 'Column',
-    children: [
-      // 标题
-      {
-        type: 'Text',
-        text: 'PJSK 贴纸生成器帮助',
-        font_size: 24,
-        font_weight: 'bold',
-        font: config.enana.font,
-        color: hexToRgba(COLORS.primary), // primary 颜色
-      } as TextComponent,
-      // 说明文本
-      {
-        type: 'Text',
-        text: '使用方法:',
-        font_size: 18,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.secondary), // secondary 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: '/pjsk <角色名> <文本内容> [参数]',
-        font_size: 16,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: '可选参数:',
-        font_size: 18,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.secondary), // secondary 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: 'pos=(x,y) - 文本位置',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: 'clr=(r,g,b) - 文本颜色',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: 'fs=大小 - 字体大小',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: 'font=字体 - 字体类型',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: 'rot=角度 - 旋转角度',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      // 示例
-      {
-        type: 'Text',
-        text: '示例:',
-        font_size: 18,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.secondary), // secondary 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: '/pjsk miku 你好',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-      {
-        type: 'Text',
-        text: '/pjsk rin 测试 pos=(50,50) clr=(255,0,0)',
-        font_size: 14,
-        font: config.enana.font,
-        color: hexToRgba(COLORS.onSurface), // onSurface 颜色
-      } as TextComponent,
-    ],
-  } as ColumnComponent;
+  try {
+    const html = TemplateEngine.render('pjsk-sticker/help.hbs', {});
+    const helpImageBuffer = await browserService.render(html);
 
-  // 使用 Enana API 生成帮助图片
-  const helpImageBuffer = await generatePage(helpWidget);
-
-  // 发送生成的帮助图片
-  await new SendMessage({
-    message: new SendForwardMessage([
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [new SendImageMessage(helpImageBuffer)],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/vs.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/ln.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/mmj.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/vbs.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/ws.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-      {
-        type: 'node',
-        data: {
-          userId: onebot.qq,
-          nickname: onebot.nickname,
-          content: [
-            new SendImageMessage(
-              await fs.readFile('assets/pjsk-sticker/25.png')
-            ),
-          ],
-        },
-      } as ForwardMessageNode,
-    ]),
-  }).reply(message);
+    // 发送生成的帮助图片
+    void new SendMessage({
+      message: new SendForwardMessage([
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [new SendImageMessage(helpImageBuffer)],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/vs.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/ln.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/mmj.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/vbs.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/ws.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+        {
+          type: 'node',
+          data: {
+            userId: onebot.qq,
+            nickname: onebot.nickname,
+            content: [
+              new SendImageMessage(
+                await fs.readFile('assets/pjsk-sticker/25.png')
+              ),
+            ],
+          },
+        } as ForwardMessageNode,
+      ]),
+    }).reply(message);
+  } catch (error) {
+    logger.error('[feature.pjsk-sticker] Failed to render help image:', error);
+    void new SendMessage({
+      message: new SendTextMessage('获取帮助失败喵~'),
+    }).reply(message);
+  }
 }

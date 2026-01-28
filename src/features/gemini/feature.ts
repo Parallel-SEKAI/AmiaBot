@@ -1,6 +1,6 @@
 import { config } from '../../config';
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import {
   RecvImageMessage,
   RecvMessage,
@@ -34,7 +34,7 @@ export async function init() {
       ).trim();
 
       // 构建 OpenAI 消息格式
-      let content: Array<any> = [{ type: 'text', text: question }];
+      const content: Array<any> = [{ type: 'text', text: question }];
 
       for (const msg of message.message) {
         if (msg instanceof RecvImageMessage && msg.url) {
@@ -67,8 +67,8 @@ export async function init() {
         }
 
         const choice = response.choices[0].message;
-        let thoughts = (choice as any).reasoning_content || '';
-        let answers = choice.content || '';
+        const thoughts = (choice as any).reasoning_content || '';
+        const answers = choice.content || '';
 
         if (thoughts) {
           logger.info('[feature.gemini] Thoughts: %s', thoughts);

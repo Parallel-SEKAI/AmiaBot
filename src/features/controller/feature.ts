@@ -1,6 +1,6 @@
-import { featureManager } from '../index';
+import { featureManager } from '../feature-manager';
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvAtMessage, RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { parseCommandLineArgs } from '../../utils';
@@ -32,7 +32,7 @@ function isAtBot(message: RecvMessage): boolean {
 async function handleFeatCommand(message: RecvMessage, args: string[]) {
   const groupId = message.groupId;
   if (!groupId) {
-    new SendMessage({
+    void new SendMessage({
       message: new SendTextMessage('该命令仅支持群聊使用'),
     }).reply(message);
     return;
@@ -61,16 +61,18 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
 
     const reply =
       `当前已加载功能模块：\n已开启：\n${enabled.length > 0 ? enabled.join('\n') : '无'}\n\n未开启：\n${disabled.length > 0 ? disabled.join('\n') : '无'}`.trim();
-    new SendMessage({ message: new SendTextMessage(reply) }).reply(message);
+    void new SendMessage({ message: new SendTextMessage(reply) }).reply(
+      message
+    );
     return;
   }
 
   // 处理 on/off 指令
   if (action === 'on' || action === 'off') {
     if (!target) {
-      new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
-        message
-      );
+      void new SendMessage({
+        message: new SendTextMessage(HELP_CONTENT),
+      }).reply(message);
       return;
     }
 
@@ -80,7 +82,7 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
       await Promise.all(
         features.map((f) => setFeatureEnabled(groupId, f.name, isEnable))
       );
-      new SendMessage({
+      void new SendMessage({
         message: new SendTextMessage(
           `已${isEnable ? '开启' : '关闭'}所有功能模块`
         ),
@@ -88,12 +90,12 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
     } else {
       const feature = features.find((f) => f.name === target);
       if (!feature) {
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage(`未找到功能模块 ${target}`),
         }).reply(message);
       } else {
         await setFeatureEnabled(groupId, feature.name, isEnable);
-        new SendMessage({
+        void new SendMessage({
           message: new SendTextMessage(
             `已${isEnable ? '开启' : '关闭'}功能模块 ${feature.name}`
           ),
@@ -104,7 +106,7 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
   }
 
   // 兜底回复帮助信息
-  new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
+  void new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
     message
   );
 }
@@ -131,9 +133,9 @@ export async function init() {
     // 3. 校验指令前缀 (必须是 /bot feat ...)
     // 假设 parseCommandLineArgs 返回的第一个元素是 "/bot" 或类似指令名
     if (args.length < 2 || args[1] !== 'feat') {
-      new SendMessage({ message: new SendTextMessage(HELP_CONTENT) }).reply(
-        message
-      );
+      void new SendMessage({
+        message: new SendTextMessage(HELP_CONTENT),
+      }).reply(message);
       return;
     }
 

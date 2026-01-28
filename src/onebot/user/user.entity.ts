@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '..';
 
 export class User {
   public id: number;

@@ -1,13 +1,8 @@
-import { OneBotClient } from './onebot/onebot.client';
 import { initDb } from './service/db';
 import { config } from './config/index';
+import logger from './config/logger';
 import { init as initFeatures } from './features/index';
-
-export const onebot = new OneBotClient(
-  config.onebot.httpUrl,
-  config.onebot.wsUrl,
-  config.onebot.token
-);
+import { onebot } from './onebot';
 
 async function main(): Promise<void> {
   await initDb();
@@ -15,4 +10,7 @@ async function main(): Promise<void> {
   await onebot.run();
 }
 
-main();
+main().catch((e) => {
+  logger.error('[main] Fatal error during startup: %s', e);
+  process.exit(1);
+});

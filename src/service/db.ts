@@ -81,8 +81,8 @@ export async function initDb() {
 
 export async function checkFeatureEnabled(groupId: number, feature: string) {
   const query = `
-    SELECT is_enabled 
-    FROM group_features 
+    SELECT is_enabled
+    FROM group_features
     WHERE group_id = $1 AND feature_name = $2
   `;
   const result = await pool.query(query, [groupId, feature]);
@@ -105,8 +105,8 @@ export async function setFeatureEnabled(
 
 export async function getGameState(groupId: number, gameType: string) {
   const query = `
-    SELECT answer_data, start_time 
-    FROM amia_game_state 
+    SELECT answer_data, start_time
+    FROM amia_game_state
     WHERE group_id = $1 AND game_type = $2
   `;
   const result = await pool.query(query, [groupId, gameType]);
@@ -129,7 +129,7 @@ export async function setGameState(
 
 export async function deleteGameState(groupId: number, gameType: string) {
   const query = `
-    DELETE FROM amia_game_state 
+    DELETE FROM amia_game_state
     WHERE group_id = $1 AND game_type = $2
   `;
   await pool.query(query, [groupId, gameType]);

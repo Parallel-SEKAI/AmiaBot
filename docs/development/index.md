@@ -26,12 +26,12 @@ src/
 
 一个功能模块本质上是一个实现了 `FeatureModule` 接口的对象，它包含以下属性：
 
--   `name` (string): 功能的唯一标识符，用于内部管理和数据库记录。
--   `description` (string): 功能的简短描述。
--   `init` (() => `Promise<void>`): 功能的初始化函数。所有事件监听和启动逻辑都应在此函数中完成。
--   `needEnable` (boolean): 指示该功能是否需要由管理员在群内手动开启。
-    -   `true`: 功能默认关闭，需要使用 `/bot feat on <功能名>` 开启后才能使用。
-    -   `false`: 功能默认全局开启，无法通过指令关闭。
+- `name` (string): 功能的唯一标识符，用于内部管理和数据库记录。
+- `description` (string): 功能的简短描述。
+- `init` (() => `Promise<void>`): 功能的初始化函数。所有事件监听和启动逻辑都应在此函数中完成。
+- `needEnable` (boolean): 指示该功能是否需要由管理员在群内手动开启。
+  - `true`: 功能默认关闭，需要使用 `/bot feat on <功能名>` 开启后才能使用。
+  - `false`: 功能默认全局开启，无法通过指令关闭。
 
 ## 创建一个新的功能模块
 
@@ -91,7 +91,7 @@ export async function init() {
 
   // 你也可以监听其他类型的事件，例如群消息
   onebot.on('message.group', async (data) => {
-      // ...你的逻辑...
+    // ...你的逻辑...
   });
 }
 ```

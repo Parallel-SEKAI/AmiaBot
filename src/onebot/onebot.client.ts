@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import WebSocket from 'ws';
 import { RecvMessage } from './message/recv.entity';
 import logger from '../config/logger';
 import { config } from '../config';
@@ -284,8 +285,9 @@ export class OneBotClient extends EventEmitter {
 
     this.ws.onmessage = (event) => {
       // console.debug('Received message:', event.data);
-      logger.debug('[onebot] Received message: %s', event.data);
-      const eventData = JSON.parse(event.data) as Record<string, any>;
+      const dataStr = event.data.toString();
+      logger.debug('[onebot] Received message: %s', dataStr);
+      const eventData = JSON.parse(dataStr) as Record<string, any>;
       if (
         eventData.post_type === 'message' &&
         eventData.message_type === 'private'
@@ -295,37 +297,58 @@ export class OneBotClient extends EventEmitter {
       this.emit('all', eventData);
       this.emit(eventData.post_type, eventData);
       this.emit(`${eventData.post_type}.${eventData.sub_type}`, eventData);
-      if (eventData.post_type == 'message') {
+      if (eventData.post_type === 'message') {
         this.emit(`message.${eventData.message_type}`, eventData);
         const message = RecvMessage.fromMap(eventData);
         const text = message.content;
 
         let stripped = text;
+        let hasPrefix = config.prefixes.length === 0;
         for (const prefix of config.prefixes) {
           if (text.startsWith(prefix)) {
-            stripped = text.slice(prefix.length);
+            stripped = text.slice(prefix.length).trim();
+            hasPrefix = true;
             break;
           }
         }
 
         // 尝试匹配注册的指令
         let matched = false;
-        for (const cmd of this.registeredCommands) {
+        // 按照模式长度降序排序，确保长指令优先匹配
+        const sortedCommands = [...this.registeredCommands].sort((a, b) => {
+          const lenA = typeof a.pattern === 'string' ? a.pattern.length : 0;
+          const lenB = typeof b.pattern === 'string' ? b.pattern.length : 0;
+          return lenB - lenA;
+        });
+
+        for (const cmd of sortedCommands) {
           if (typeof cmd.pattern === 'string') {
-            if (stripped.toLowerCase().startsWith(cmd.pattern.toLowerCase())) {
-              matched = true;
-              cmd.handler(eventData, cmd.pattern).catch((err) => {
-                logger.error(
-                  '[onebot.command] Error executing command handler for %s:',
-                  cmd.pattern,
-                  err
+            const pattern = cmd.pattern.toLowerCase();
+            const lowerStripped = stripped.toLowerCase();
+
+            // 检查是否以 pattern 开头
+            if (lowerStripped.startsWith(pattern)) {
+              // 确保匹配的是完整单词或后跟空格，防止 "test" 匹配 "testing"
+              const nextChar = lowerStripped.charAt(pattern.length);
+              if (nextChar === '' || nextChar === ' ') {
+                matched = true;
+                logger.debug(
+                  '[onebot.command] Matched command: %s',
+                  cmd.pattern
                 );
-              });
-              break;
+                cmd.handler(eventData, cmd.pattern).catch((err) => {
+                  logger.error(
+                    '[onebot.command] Error executing command handler for %s:',
+                    cmd.pattern,
+                    err
+                  );
+                });
+                break;
+              }
             }
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(stripped);
-            if (match) {
+            if (hasPrefix && match) {
               matched = true;
               cmd.handler(eventData, match).catch((err) => {
                 logger.error(
@@ -346,7 +369,7 @@ export class OneBotClient extends EventEmitter {
             this.emit(`message.command.${command}`, eventData);
           }
         }
-      } else if (eventData.post_type == 'notice') {
+      } else if (eventData.post_type === 'notice') {
         this.emit(`notice.${eventData.notice_type}`, eventData);
       }
     };
@@ -358,12 +381,27 @@ export class OneBotClient extends EventEmitter {
         event.reason
       );
       this.ws = null;
-      this.reconnect();
+      if (config.exitWhenError) {
+        logger.error(
+          '[onebot] WebSocket disconnected and config.exitWhenError is true, exiting...'
+        );
+        process.exit(1);
+      } else {
+        this.reconnect();
+      }
     };
 
     this.ws.onerror = (error) => {
       logger.error('[onebot] WebSocket error:', error);
       this.ws = null;
+      if (config.exitWhenError) {
+        logger.error(
+          '[onebot] WebSocket error and config.exitWhenError is true, exiting...'
+        );
+        process.exit(1);
+      } else {
+        this.reconnect();
+      }
     };
   }
 

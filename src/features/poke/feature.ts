@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { checkFeatureEnabled } from '../../service/db';
 import logger from '../../config/logger';
 import { functions } from './functions';

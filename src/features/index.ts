@@ -1,4 +1,5 @@
-import { FeatureManager } from './feature-manager';
+import { featureManager } from './feature-manager';
+import logger from '../config/logger';
 
 // 导入所有功能模块
 import { chatFeature } from './chat';
@@ -18,9 +19,6 @@ import { autoRecallFeature } from './auto-recall';
 import { controllerFeature } from './controller';
 import { helpFeature } from './help';
 
-export const featureManager = FeatureManager.getInstance();
-
-// 功能模块列表
 const FEATURES = [
   chatFeature,
   comicFeature,
@@ -41,11 +39,16 @@ const FEATURES = [
 ];
 
 export async function init() {
-  // 统一注册功能模块
-  for (const feature of FEATURES) {
+  logger.info('[feature] Registering %d features...', FEATURES.length);
+
+  for (let i = 0; i < FEATURES.length; i++) {
+    const feature = FEATURES[i];
+    if (!feature) {
+      logger.error('[feature] Found undefined feature at index %d', i);
+      continue;
+    }
     featureManager.registerFeature(feature);
   }
 
-  // 初始化所有已注册的功能
   await featureManager.initializeAllFeatures();
 }

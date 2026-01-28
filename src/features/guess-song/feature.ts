@@ -1,5 +1,5 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import {
   SendImageMessage,
@@ -9,11 +9,13 @@ import {
 } from '../../onebot/message/send.entity';
 import { FeatureModule } from '../feature-manager';
 import { safeUnlink } from '../../utils';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const ffmpeg = require('fluent-ffmpeg');
+
+import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import http from 'http';
+import https from 'https';
 import { getGameState, setGameState, deleteGameState } from '../../service/db';
 
 const difficulty = {
@@ -85,10 +87,10 @@ function levenshtein_similarity(s1: string, s2: string): number {
  */
 async function downloadFile(url: string, filePath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const http = require(url.startsWith('https') ? 'https' : 'http');
+    const client = url.startsWith('https') ? https : http;
     const fileStream = fs.createWriteStream(filePath);
 
-    http
+    client
       .get(url, (response: any) => {
         if (response.statusCode !== 200) {
           reject(new Error(`下载失败，状态码: ${response.statusCode}`));
@@ -441,16 +443,18 @@ async function guessSong(data: Record<string, any>) {
     await setGameState(groupId, 'guess-song', answer);
 
     // 定时timeout后检查记录，如果还在且状态一致就发送答案并删除记录
-    setTimeout(async () => {
-      const gameState = await getGameState(groupId, 'guess-song');
-      if (
-        gameState &&
-        gameState.answer_data.musicId === answer.musicId &&
-        gameState.answer_data.title === answer.title
-      ) {
-        await sendAnswer(message, musicInfo, true);
-        await deleteGameState(groupId, 'guess-song');
-      }
+    setTimeout(() => {
+      void (async () => {
+        const gameState = await getGameState(groupId, 'guess-song');
+        if (
+          gameState &&
+          gameState.answer_data.musicId === answer.musicId &&
+          gameState.answer_data.title === answer.title
+        ) {
+          await sendAnswer(message, musicInfo, true);
+          await deleteGameState(groupId, 'guess-song');
+        }
+      })();
     }, timeout * 1000);
   } catch (error: any) {
     logger.error('[feature.guess-song] Failed to process music:', error);

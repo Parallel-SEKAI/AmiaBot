@@ -3,6 +3,5 @@ import { init as initUser } from './user';
 import { FeatureModule } from '../feature-manager';
 
 export async function init() {
-  initGroup();
-  initUser();
+  await Promise.all([initGroup(), initUser()]);
 }

@@ -1,5 +1,5 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import { checkFeatureEnabled } from '../../service/db';
 import { getRepoInfo } from './repo';

@@ -1,4 +1,4 @@
-import { onebot } from '../../main';
+import { onebot } from '..';
 import { User } from '../user/user.entity';
 import { RecvMessage } from '../message/recv.entity';
 

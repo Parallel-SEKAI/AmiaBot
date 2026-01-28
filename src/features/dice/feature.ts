@@ -1,5 +1,5 @@
 import logger from '../../config/logger';
-import { onebot } from '../../main';
+import { onebot } from '../../onebot';
 import { RecvMessage } from '../../onebot/message/recv.entity';
 import { SendMessage, SendTextMessage } from '../../onebot/message/send.entity';
 import { FeatureModule } from '../feature-manager';
@@ -39,7 +39,7 @@ export async function init() {
       for (let i = 0; i < count; i++) {
         results.push(Math.floor(Math.random() * sides) + 1);
       }
-      new SendMessage({
+      void new SendMessage({
         message: new SendTextMessage(`You rolled: ${results.join(', ')}`),
       }).reply(message);
     },
