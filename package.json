@@ -10,7 +10,8 @@
     "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
     "dev:css": "tailwindcss -i ./src/styles/globals.css -o ./assets/styles.css --watch",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
+    "test:run": "vitest run",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -44,7 +45,8 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

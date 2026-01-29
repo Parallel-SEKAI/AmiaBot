@@ -75,3 +75,20 @@ CREATE TABLE IF NOT EXISTS user_daily_interactions (
 
 -- 索引优化每日查询
 CREATE INDEX IF NOT EXISTS idx_user_daily_query ON user_daily_interactions (group_id, user_id, interaction_type, record_date);
+
+---
+
+-- 睡眠追踪统计表
+CREATE TABLE IF NOT EXISTS user_sleep_stats (
+    user_id BIGINT NOT NULL,
+    group_id BIGINT NOT NULL,
+    wake_count INT DEFAULT 0,
+    sleep_count INT DEFAULT 0,
+    last_wake_time TIMESTAMP,
+    last_sleep_time TIMESTAMP,
+    PRIMARY KEY (user_id, group_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_user ON user_sleep_stats(group_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_wake_count ON user_sleep_stats(wake_count);
+CREATE INDEX IF NOT EXISTS idx_sleep_count ON user_sleep_stats(sleep_count);
