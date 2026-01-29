@@ -3,11 +3,6 @@ name: Push to Main
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - '.github/workflows/push-main.yml'
-      - 'package*.json'
-      - 'Dockerfile'
 
 jobs:
   build-and-check:
