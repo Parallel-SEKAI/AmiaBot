@@ -4,9 +4,30 @@
       "value": "/^mzk$/i"
     },
     "responses": [
-      [{ "type": "text", "data": { "text": "诶？是有人叫我吗" } }],
-      [{ "type": "text", "data": { "text": "Amia 在此" } }],
-      [{ "type": "text", "data": { "text": "Amia 不在呢~" } }]
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "诶？是有人叫我吗"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "Amia 在此"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "Amia 不在呢~"
+          }
+        }
+      ]
     ]
   },
   {
@@ -14,8 +35,22 @@
       "value": "/^[\\?？]$/i"
     },
     "responses": [
-      [{ "type": "text", "data": { "text": "?" } }],
-      [{ "type": "text", "data": { "text": "!" } }]
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "?"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "!"
+          }
+        }
+      ]
     ]
   },
   {
@@ -27,7 +62,242 @@
         {
           "type": "image",
           "data": {
-            "text": "https://raw.githubusercontent.com/Parallel-SEKAI/AmiaBot/master/assets/auto-reply/wakaranai.png"
+            "file": "https://raw.githubusercontent.com/Parallel-SEKAI/AmiaBot/master/assets/auto-reply/wakaranai.png"
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^(中午好|午安|午好|早中好)[呀啊呢 ]*$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "中午好！今天午饭打算吃什么呢？"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "午安~ 记得吃饱了休息一下，效率会更高哦。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "是中午了吗？Amia 摸鱼时间到了（小声）。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "中午好呀，愿你有愉快的午间时光。"
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^(下午好|下好)[呀啊呢 ]*$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "下午好~ 困了吗？要不要起来活动一下？"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "下午好呀！阳光正好的话，心情也会变好呢。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "下午好！忙碌中也要记得多喝水。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "下午好，加油，距离下班/放学又近了一步！"
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^([草艹wWw]|kusa|大草|生草)+[ !！?？。.．]*$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "草"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "www"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "在中南海种了一片草（？"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "生 草 不 可 避"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "？怎么就开始生草了"
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^([哈hH][哈hH]|233+|xswl|笑死|huhu)[哈hH !！]*$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "哈 哈哈 哈哈 哈 （由于笑得太大声被邻居投诉）"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "真的有这么好笑吗？那我也：哈哈哈哈！"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "笑死，根本笑不死。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "（递上氧气瓶）别笑断气了。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "233333333"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "虽然不知道在笑什么，但 Amia 也觉得很开心~"
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^(喵|nyan?|ニャン|にゃん)+[ !！?？。.．]*$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "喵~？（歪头看着你）"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "喵呜——！"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "（摸摸头）怎么啦，是饿了吗？"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "虽然 Amia 听不懂猫语，但感觉你现在很开心呢。"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "喵喵喵喵喵喵喵！"
+          }
+        }
+      ],
+      [
+        {
+          "type": "text",
+          "data": {
+            "text": "不可以随地喵喵叫哦（捏住嘴巴）。"
           }
         }
       ]
