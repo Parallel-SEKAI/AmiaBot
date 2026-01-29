@@ -19,6 +19,7 @@ import { autoRecallFeature } from './auto-recall/index.js';
 import { controllerFeature } from './controller/index.js';
 import { helpFeature } from './help/index.js';
 import { socialFeature } from './social/index.js';
+import { pingFeature } from './ping/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -38,6 +39,7 @@ const FEATURES = [
   controllerFeature,
   helpFeature,
   socialFeature,
+  pingFeature,
 ];
 
 export async function init() {
