@@ -20,6 +20,10 @@ export function parseDiceCommand(
   return null;
 }
 
+/**
+ * 初始化掷骰子功能模块
+ * 注册正则指令（如 r1d100），实现多面骰子随机数值生成
+ */
 export async function init() {
   logger.info('[feature] Init dice feature');
   onebot.registerCommand(

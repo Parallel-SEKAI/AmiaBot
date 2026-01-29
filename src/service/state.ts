@@ -9,7 +9,8 @@ export interface MessageHistoryItem {
 }
 
 /**
- * 全局状态服务，管理内存中的缓存和状态
+ * 全局状态服务，管理内存中的缓存和临时状态
+ * 包含消息关联追踪（用于自动撤回）和撤回状态管理
  */
 export class StateService {
   private static instance: StateService;
@@ -23,6 +24,9 @@ export class StateService {
     this.startCleanupTask();
   }
 
+  /**
+   * 获取 StateService 单例
+   */
   public static getInstance(): StateService {
     if (!StateService.instance) {
       StateService.instance = new StateService();
@@ -31,7 +35,9 @@ export class StateService {
   }
 
   /**
-   * 记录消息关联
+   * 记录原始消息与机器人回复消息之间的关联
+   * @param originalMsgId 原始消息 ID
+   * @param relatedMsgId 机器人回复的消息 ID
    */
   public addMessageRelation(originalMsgId: number, relatedMsgId: string) {
     let history = this.messageHistory.get(originalMsgId);

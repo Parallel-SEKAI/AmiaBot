@@ -8,6 +8,10 @@ export interface UserRelationship {
   tags: string[];
 }
 
+/**
+ * 社交系统服务类
+ * 负责管理用户间的好感度、关系标签、每日匹配（娶群友）以及礼物互动逻辑
+ */
 export class SocialService {
   /**
    * 强制 A < B 排序以保证唯一性
@@ -17,7 +21,7 @@ export class SocialService {
   }
 
   /**
-   * 获取或创建用户关系
+   * 获取或创建两个用户之间的关系记录
    */
   private static async getOrCreateRelationship(
     groupId: number,
@@ -76,7 +80,11 @@ export class SocialService {
   }
 
   /**
-   * 娶群友逻辑
+   * 执行“娶群友”逻辑
+   * 包含幂等性检查、权重随机抽取以及好感度变动逻辑
+   * @param groupId 群组 QQ 号
+   * @param userId 发起指令的用户 QQ 号
+   * @returns 匹配结果，包含目标 ID、是否新匹配以及好感度变动信息
    */
   public static async marry(groupId: number, userId: number) {
     // 1. 检查今日是否已匹配 (幂等性)

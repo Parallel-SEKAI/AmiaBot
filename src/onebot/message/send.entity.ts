@@ -15,6 +15,10 @@ interface SendMessageSendArgs {
   groupId?: number | string;
 }
 
+/**
+ * 待发送消息的包装类
+ * 提供发送、回复以及处理 Buffer 类型文件的流式上报逻辑
+ */
 export class SendMessage {
   public messages: SendBaseMessage[];
   public userId: number | string | null;
@@ -26,6 +30,12 @@ export class SendMessage {
     this.groupId = args.groupId || null;
   }
 
+  /**
+   * 发送消息
+   * 自动检测私聊/群聊目标，并在发送前处理 Buffer 数据的流式上传
+   * @param args 发送参数，可指定接收到的消息对象以自动推导目标
+   * @returns 发送成功后的消息实体
+   */
   public async send(args: SendMessageSendArgs = {}): Promise<RecvMessage> {
     assert(
       this.userId ||
@@ -102,6 +112,12 @@ export class SendMessage {
     return message;
   }
 
+  /**
+   * 回复指定的消息
+   * 会在消息序列前自动插入回复节点
+   * @param recvMessage 要回复的目标消息对象
+   * @returns 发送成功后的消息实体
+   */
   public async reply(recvMessage: RecvMessage): Promise<RecvMessage> {
     // 检查原消息是否已被撤回
     if (stateService.isRecalled(recvMessage.messageId)) {

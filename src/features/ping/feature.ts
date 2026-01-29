@@ -6,6 +6,10 @@ import {
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
 
+/**
+ * 初始化 Ping 功能模块
+ * 注册 'ping' 指令，用于基础的连接与响应测试
+ */
 export async function init() {
   onebot.registerCommand('ping', 'ping', '測試指令', 'ping', async (data) => {
     const message = RecvMessage.fromMap(data);

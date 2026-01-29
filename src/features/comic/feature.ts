@@ -8,6 +8,10 @@ import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import logger from '../../config/logger.js';
 import { getRandomComic } from './api.js';
 
+/**
+ * 初始化漫画查询功能模块
+ * 注册 '查漫画' 指令，获取并回复随机漫画图片
+ */
 export async function init() {
   logger.info('[feature] Init comic feature');
   onebot.registerCommand(

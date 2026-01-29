@@ -372,6 +372,10 @@ async function guessEvent(data: Record<string, any>) {
 }
 
 // 初始化猜活动功能
+/**
+ * 初始化“猜活动”功能模块
+ * 注册 '猜活动' 指令，截取 PJSK 活动背景图让用户通过活动名称进行竞猜
+ */
 export async function init() {
   logger.info('[feature] Init guess-event feature');
   onebot.registerCommand(

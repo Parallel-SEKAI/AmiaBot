@@ -16,6 +16,10 @@ import {
   networkImageToBase64DataURL,
 } from '../../utils/index.js';
 
+/**
+ * 初始化 Gemini AI 对话功能
+ * 注册 'aichat' 指令，支持多模态输入（文本+图片）
+ */
 export async function init() {
   logger.info('[feature] Init gemini feature');
   onebot.registerCommand(

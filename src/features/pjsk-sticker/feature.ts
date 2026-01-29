@@ -43,6 +43,10 @@ const CHARACTERS = [
   'mzk',
 ];
 
+/**
+ * 初始化 Project SEKAI 贴纸生成功能
+ * 注册 'pjsk' 指令，调用外部 API 生成自定义文本的 PJSK 风格贴纸
+ */
 export async function init() {
   logger.info('[feature] init pjsk-sticker feature');
   onebot.registerCommand(

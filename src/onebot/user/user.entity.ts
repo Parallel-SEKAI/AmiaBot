@@ -1,5 +1,9 @@
 import { onebot } from '../index.js';
 
+/**
+ * 用户实体类
+ * 封装了用户的基础信息（昵称、性别、等级等）以及在特定群聊中的成员属性
+ */
 export class User {
   public id: number;
   public groupId: number | null = null; // 所在群ID
@@ -28,10 +32,17 @@ export class User {
   public role: 'owner' | 'admin' | 'member' | null = null; // 群角色
   public title: string | null = null; // 群头衔
 
+  /**
+   * 获取用户显示名称
+   * 优先显示群名片，其次是昵称，最后是 QQ 号
+   */
   public get fullName(): string {
     return this.card || this.nickname || this.id.toString();
   }
 
+  /**
+   * 获取用户高清头像 URL
+   */
   public get avatarUrl(): string {
     return `https://q1.qlogo.cn/g?b=qq&nk=${this.id}&s=0`;
   }
@@ -41,6 +52,10 @@ export class User {
     this.groupId = groupId;
   }
 
+  /**
+   * 初始化用户信息
+   * 自动获取陌生人详细信息，若提供了 groupId 则额外获取该用户在群内的成员信息
+   */
   public async init() {
     const info = await onebot.action('get_stranger_info', {
       user_id: this.id,

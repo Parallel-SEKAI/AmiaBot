@@ -117,6 +117,10 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
   );
 }
 
+/**
+ * 初始化控制器功能模块
+ * 注册 'bot' 指令，用于群内管理员管理各个功能模块的开关状态
+ */
 export async function init() {
   logger.info('[feature] Init controller feature');
 

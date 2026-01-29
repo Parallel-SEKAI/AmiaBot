@@ -1,3 +1,7 @@
+/**
+ * 全局常量定义
+ * 包含 UI 渲染所需的主题色板（Material Design 3 风格）及功能名称定义
+ */
 export const FEATURES = [
   'poke',
   'comic',

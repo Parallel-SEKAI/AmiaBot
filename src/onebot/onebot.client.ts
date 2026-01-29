@@ -25,6 +25,10 @@ export interface RegisteredCommand {
 
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
 
+/**
+ * OneBot 客户端类，负责与 OneBot 实现端（如 NapCat）进行通信
+ * 支持 HTTP API 调用、WebSocket 事件监听以及流式文件上传
+ */
 export class OneBotClient extends EventEmitter {
   public qq: number = 0;
   public nickname: string = '';
@@ -55,11 +59,11 @@ export class OneBotClient extends EventEmitter {
 
   /**
    * 注册一个新的指令
-   * @param featureName 功能模块名称，会自动检查该功能是否开启
-   * @param pattern 字符串或正则表达式
-   * @param description 指令功能介绍
+   * @param featureName 功能模块名称，会自动检查该功能是否在群聊中开启
+   * @param pattern 触发指令的字符串或正则表达式
+   * @param description 指令功能简述
    * @param example 指令使用示例
-   * @param handler 触发后的回调函数
+   * @param handler 触发后的异步回调函数
    */
   public registerCommand(
     featureName: string | undefined,
@@ -108,6 +112,12 @@ export class OneBotClient extends EventEmitter {
     );
   }
 
+  /**
+   * 执行 OneBot HTTP API 动作
+   * @param action 动作名称（如 'send_group_msg'）
+   * @param params 动作参数
+   * @returns 响应数据对象
+   */
   public async action(
     action: string,
     params: Record<string, any> = {}
@@ -475,6 +485,10 @@ export class OneBotClient extends EventEmitter {
     }, delay);
   }
 
+  /**
+   * 启动客户端
+   * 排序已注册指令、获取登录信息并建立 WebSocket 连接
+   */
   public async run(): Promise<void> {
     // 按照模式长度降序排序，确保长指令优先匹配
     this.registeredCommands.sort((a, b) => {

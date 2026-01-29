@@ -12,6 +12,10 @@ import { ReactRenderer } from '../../service/render/react.js';
 import { HelpCard, CommandInfo } from '../../components/ui/HelpCard.js';
 import { featureManager } from '../feature-manager.js';
 
+/**
+ * 初始化帮助功能模块
+ * 注册 'help' 指令，通过 React 渲染生成精美的指令列表图片
+ */
 export async function init() {
   logger.info('[feature] Init help feature');
   onebot.registerCommand(

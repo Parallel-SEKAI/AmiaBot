@@ -30,6 +30,10 @@ const difficulty = {
 
 const timeout = 40.0; // 40s
 
+/**
+ * 初始化“猜卡面”功能模块
+ * 注册 '猜卡面' 指令，从 PJSK 资源中选取随机卡面进行裁剪并让用户竞猜
+ */
 export async function init() {
   logger.info('[feature] Init guess-card feature');
   onebot.registerCommand(

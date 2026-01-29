@@ -2,6 +2,10 @@ import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { stateService } from '../../service/state.js';
 
+/**
+ * 初始化自动撤回功能模块
+ * 监听群聊撤回通知，并自动撤回机器人所有关联的回复消息，实现“连带撤回”
+ */
 export async function init() {
   logger.info('[feature] Init auto-recall feature');
   onebot.on('notice.group_recall', async (data) => {

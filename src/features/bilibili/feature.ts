@@ -18,6 +18,10 @@ import fetch from 'node-fetch';
 import { downloadBilibiliVideo } from './download.js';
 import { safeUnlink } from '../../utils/index.js';
 
+/**
+ * 初始化 Bilibili 功能模块
+ * 监听群聊消息，自动识别 AV/BV 号及短链接，并回复视频预览图及下载视频
+ */
 export async function init() {
   logger.info('[feature] Init bilibili feature');
   onebot.on('message.group', async (data) => {
