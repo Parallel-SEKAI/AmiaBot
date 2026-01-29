@@ -90,9 +90,6 @@ export function getDayStart(date: Date): Date {
 
   const hour = parseInt(shanghaiHour, 10);
 
-  // Create a new date and adjust based on Shanghai hour
-  const start = new Date(date);
-
   // Calculate the Shanghai date components
   const shanghaiDate = new Date(
     date.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })
