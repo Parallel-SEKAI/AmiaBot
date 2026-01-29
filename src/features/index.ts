@@ -16,6 +16,7 @@ import { guessEventFeature } from './guess-event/index.js';
 import { neteaseFeature } from './netease/index.js';
 import { messageStatisticsFeature } from './message-statistics/index.js';
 import { autoRecallFeature } from './auto-recall/index.js';
+import { autoReplyFeature } from './auto-reply/index.js';
 import { controllerFeature } from './controller/index.js';
 import { helpFeature } from './help/index.js';
 import { socialFeature } from './social/index.js';
@@ -36,6 +37,7 @@ const FEATURES = [
   neteaseFeature,
   messageStatisticsFeature,
   autoRecallFeature,
+  autoReplyFeature,
   controllerFeature,
   helpFeature,
   socialFeature,
