@@ -82,7 +82,7 @@ export class SocialService {
   public static async marry(groupId: number, userId: number) {
     // 1. 检查今日是否已匹配 (幂等性)
     const checkQuery = `
-      SELECT interaction.*, rel.favorability 
+      SELECT interaction.*, rel.favorability
       FROM user_daily_interactions interaction
       LEFT JOIN user_relationships rel ON (
         (rel.user_id_a = interaction.user_id AND rel.user_id_b = interaction.target_id) OR
