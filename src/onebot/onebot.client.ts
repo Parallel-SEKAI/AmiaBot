@@ -74,6 +74,7 @@ export class OneBotClient extends EventEmitter {
     };
 
     this.registeredCommands.push({ pattern, handler: wrappedHandler });
+
     logger.info(
       '[onebot.command] Registered command: %s%s',
       pattern instanceof RegExp ? pattern.toString() : pattern,
@@ -312,19 +313,25 @@ export class OneBotClient extends EventEmitter {
           }
         }
 
+        // logger.debug(
+        //   '[onebot.command] Processing message: "%s", stripped: "%s", hasPrefix: %s',
+        //   text,
+        //   stripped,
+        //   hasPrefix
+        // );
+
         // 尝试匹配注册的指令
         let matched = false;
-        // 按照模式长度降序排序，确保长指令优先匹配
-        const sortedCommands = [...this.registeredCommands].sort((a, b) => {
-          const lenA = typeof a.pattern === 'string' ? a.pattern.length : 0;
-          const lenB = typeof b.pattern === 'string' ? b.pattern.length : 0;
-          return lenB - lenA;
-        });
-
-        for (const cmd of sortedCommands) {
+        for (const cmd of this.registeredCommands) {
           if (typeof cmd.pattern === 'string') {
             const pattern = cmd.pattern.toLowerCase();
             const lowerStripped = stripped.toLowerCase();
+
+            // logger.debug(
+            //   '[onebot.command] Checking command pattern: %s against message: %s',
+            //   pattern,
+            //   lowerStripped
+            // );
 
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
@@ -348,8 +355,9 @@ export class OneBotClient extends EventEmitter {
             }
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(stripped);
-            if (hasPrefix && match) {
+            if (match) {
               matched = true;
+              logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
               cmd.handler(eventData, match).catch((err) => {
                 logger.error(
                   '[onebot.command] Error executing command handler for %s:',
@@ -442,6 +450,13 @@ export class OneBotClient extends EventEmitter {
   }
 
   public async run(): Promise<void> {
+    // 按照模式长度降序排序，确保长指令优先匹配
+    this.registeredCommands.sort((a, b) => {
+      const lenA = typeof a.pattern === 'string' ? a.pattern.length : 0;
+      const lenB = typeof b.pattern === 'string' ? b.pattern.length : 0;
+      return lenB - lenA;
+    });
+
     const loginInfo = (await this.action('get_login_info')).data as Record<
       string,
       any

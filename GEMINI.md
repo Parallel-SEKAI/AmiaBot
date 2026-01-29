@@ -106,7 +106,7 @@ There are no pre-configured tests for this project.
 
 ## Current Project Status (Dynamically Updated)
 
-- **Current Task**: Completed migration to React SSR rendering engine with Tailwind CSS (M3 Design).
+- **Current Task**: Completed design for bidirectional Favorability & Social System (DESIGN.md).
 - **Environment**: CachyOS | TypeScript | Node.js (ESM).
-- **Latest CI Status**: Build passing (pnpm build). All TypeScript and ESM import issues resolved.
-- **Next Steps**: Continue to expand React component library for new features; maintain high test coverage for rendering logic.
+- **Latest CI Status**: Build passing (pnpm build).
+- **Next Steps**: Implement `user_relationships` and `user_daily_marry` database schemas; develop the Social feature module.

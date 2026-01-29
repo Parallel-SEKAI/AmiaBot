@@ -18,6 +18,7 @@ import { messageStatisticsFeature } from './message-statistics/index.js';
 import { autoRecallFeature } from './auto-recall/index.js';
 import { controllerFeature } from './controller/index.js';
 import { helpFeature } from './help/index.js';
+import { socialFeature } from './social/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -36,6 +37,7 @@ const FEATURES = [
   autoRecallFeature,
   controllerFeature,
   helpFeature,
+  socialFeature,
 ];
 
 export async function init() {
