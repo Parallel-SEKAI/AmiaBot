@@ -8,7 +8,10 @@ export async function init() {
 
   // 处理 /emojilyric 命令
   onebot.registerCommand(
+    'netease',
     'emojilyric',
+    '生成歌曲的 Emoji 歌词',
+    'emojilyric [关键词]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -18,13 +21,15 @@ export async function init() {
         message.rawMessage
       );
       await emojilyric(message);
-    },
-    'netease'
+    }
   );
 
   // 处理 /search 命令
   onebot.registerCommand(
+    'netease',
     'search',
+    '搜索网易云音乐歌曲',
+    'search [关键词]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -34,13 +39,15 @@ export async function init() {
         message.rawMessage
       );
       await search(message);
-    },
-    'netease'
+    }
   );
 
   // 处理 /play 命令
   onebot.registerCommand(
+    'netease',
     'play',
+    '点歌并发送音频文件',
+    'play [关键词]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -50,13 +57,15 @@ export async function init() {
         message.rawMessage
       );
       await play(message);
-    },
-    'netease'
+    }
   );
 
   // 处理 /download 命令
   onebot.registerCommand(
+    'netease',
     'download',
+    '下载歌曲文件',
+    'download [关键词]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -66,7 +75,6 @@ export async function init() {
         message.rawMessage
       );
       await download(message);
-    },
-    'netease'
+    }
   );
 }

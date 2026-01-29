@@ -3,11 +3,25 @@ import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
 import { HelpCircle, Terminal, Book, Lightbulb } from 'lucide-react';
 
-interface HelpCardProps {
-  helpText: string;
+export interface CommandInfo {
+  pattern: string | RegExp;
+  description?: string;
+  example?: string;
 }
 
-export const HelpCard: React.FC<HelpCardProps> = ({ helpText }) => {
+export interface GroupedCommands {
+  [featureName: string]: CommandInfo[];
+}
+
+interface HelpCardProps {
+  helpText: string;
+  groupedCommands?: GroupedCommands;
+}
+
+export const HelpCard: React.FC<HelpCardProps> = ({
+  helpText,
+  groupedCommands,
+}) => {
   return (
     <AppShell>
       <div className="space-y-6">
@@ -25,21 +39,56 @@ export const HelpCard: React.FC<HelpCardProps> = ({ helpText }) => {
           </div>
         </div>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Terminal size={18} />
-            <span className="font-bold uppercase tracking-widest text-sm">
-              指令说明
-            </span>
-          </div>
-
+        {helpText && (
           <Container
             variant="outline"
-            className="bg-surface-container-low text-sm leading-relaxed whitespace-pre-wrap"
+            className="bg-surface-container-low text-sm leading-relaxed whitespace-pre-wrap p-4"
           >
             {helpText}
           </Container>
-        </section>
+        )}
+
+        {groupedCommands && Object.keys(groupedCommands).length > 0 && (
+          <div className="space-y-6">
+            {Object.entries(groupedCommands).map(([featureName, cmds]) => (
+              <section key={featureName} className="space-y-3">
+                <div className="flex items-center gap-2 text-primary border-l-4 border-primary pl-2">
+                  <Terminal size={18} />
+                  <span className="font-bold uppercase tracking-widest text-sm">
+                    {featureName}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {cmds.map((cmd, idx) => (
+                    <Container
+                      key={idx}
+                      variant="outline"
+                      className="bg-surface-container-low p-3"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <code className="px-1.5 py-0.5 bg-primary-container text-on-primary-container rounded text-xs font-bold">
+                            {cmd.pattern instanceof RegExp
+                              ? cmd.pattern.toString()
+                              : cmd.pattern}
+                          </code>
+                          <span className="text-xs font-medium text-on-surface">
+                            {cmd.description}
+                          </span>
+                        </div>
+                        {cmd.example && (
+                          <div className="text-[10px] text-on-surface-variant opacity-80 italic">
+                            示例: {cmd.example}
+                          </div>
+                        )}
+                      </div>
+                    </Container>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-outline-variant/30">
           <div className="flex items-start gap-3 p-3 bg-secondary-container text-on-secondary-container rounded-lg">

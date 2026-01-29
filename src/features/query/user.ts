@@ -18,6 +18,9 @@ export async function init() {
   logger.info('[feature] Init query.user feature');
   onebot.registerCommand(
     'query',
+    'query',
+    '查询用户信息',
+    'query [at]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -27,8 +30,7 @@ export async function init() {
         message.rawMessage
       );
       await sendUserInfo(message);
-    },
-    'query'
+    }
   );
 }
 

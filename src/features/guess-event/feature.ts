@@ -375,11 +375,13 @@ async function guessEvent(data: Record<string, any>) {
 export async function init() {
   logger.info('[feature] Init guess-event feature');
   onebot.registerCommand(
+    'guess-event',
     '猜活动',
+    '开始一轮 PJSK 猜活动背景游戏',
+    '猜活动 [难度:ez/no/hd/ex/ma/apd] [server:cn/jp]',
     async (data) => {
       await guessEvent(data);
-    },
-    'guess-event'
+    }
   );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);

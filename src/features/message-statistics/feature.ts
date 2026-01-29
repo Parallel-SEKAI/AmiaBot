@@ -124,12 +124,14 @@ async function generateStatisticsImage(
 export async function init() {
   logger.info('[feature] Init message-statistics feature');
   onebot.registerCommand(
+    'message-statistics',
     '消息统计',
-    async (data) => {
+    '统计群组或个人的消息数据',
+    '群统计',
+    async (data, match) => {
       const message = RecvMessage.fromMap(data);
       await handleMessageStatistics(message);
-    },
-    'message-statistics'
+    }
   );
 }
 

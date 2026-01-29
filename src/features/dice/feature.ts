@@ -23,7 +23,10 @@ export function parseDiceCommand(
 export async function init() {
   logger.info('[feature] Init dice feature');
   onebot.registerCommand(
+    'dice',
     pattern,
+    '掷骰子',
+    'r1d100',
     async (data, match) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -44,7 +47,6 @@ export async function init() {
       void new SendMessage({
         message: new SendTextMessage(`You rolled: ${results.join(', ')}`),
       }).reply(message);
-    },
-    'dice'
+    }
   );
 }
