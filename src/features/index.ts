@@ -21,6 +21,7 @@ import { controllerFeature } from './controller/index.js';
 import { helpFeature } from './help/index.js';
 import { socialFeature } from './social/index.js';
 import { pingFeature } from './ping/index.js';
+import { jokeFeature } from './joke/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -42,6 +43,7 @@ const FEATURES = [
   helpFeature,
   socialFeature,
   pingFeature,
+  jokeFeature,
 ];
 
 /**
