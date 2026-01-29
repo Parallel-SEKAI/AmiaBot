@@ -14,6 +14,9 @@ import { QueryGroupCard } from '../../components/query/QueryGroupCard.js';
 export async function init() {
   logger.info('[feature] Init query.group feature');
   onebot.registerCommand(
+    'query',
+    'group',
+    '查询群组信息',
     'group',
     async (data) => {
       const message = RecvMessage.fromMap(data);
@@ -24,8 +27,7 @@ export async function init() {
         message.rawMessage
       );
       await sendGroupInfo(message.groupId!, message);
-    },
-    'query'
+    }
   );
 }
 

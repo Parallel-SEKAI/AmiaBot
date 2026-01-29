@@ -24,6 +24,9 @@ export async function init() {
 
   // 娶群友
   onebot.registerCommand(
+    'social',
+    '娶群友',
+    '随机抽取一名群友作为今日伴侣',
     '娶群友',
     async (data: Record<string, any>) => {
       const message = RecvMessage.fromMap(data);
@@ -76,13 +79,15 @@ export async function init() {
           })
         );
       }
-    },
-    'social'
+    }
   );
 
   // 送礼物
   onebot.registerCommand(
+    'social',
     '送礼物',
+    '给你的伴侣或指定群友送礼物增加好感度',
+    '送礼物 [at] [礼物名称]',
     async (data: Record<string, any>) => {
       const message = RecvMessage.fromMap(data);
       if (!message.groupId) return;
@@ -185,8 +190,7 @@ export async function init() {
           })
         );
       }
-    },
-    'social'
+    }
   );
 
   const divorceHandler = async (data: any) => {
@@ -238,10 +242,25 @@ export async function init() {
     }
   };
 
-  onebot.registerCommand('闹离婚', divorceHandler, 'social');
-  onebot.registerCommand('分手', divorceHandler, 'social');
+  onebot.registerCommand(
+    'social',
+    '闹离婚',
+    '与当前伴侣离婚',
+    '闹离婚',
+    divorceHandler
+  );
+  onebot.registerCommand(
+    'social',
+    '分手',
+    '与当前伴侣分手',
+    '分手',
+    divorceHandler
+  );
 
   onebot.registerCommand(
+    'social',
+    '好感度列表',
+    '查看本群好感度排行榜',
     '好感度列表',
     async (data: Record<string, any>) => {
       const message = RecvMessage.fromMap(data);
@@ -287,8 +306,7 @@ export async function init() {
           })
         );
       }
-    },
-    'social'
+    }
   );
 }
 

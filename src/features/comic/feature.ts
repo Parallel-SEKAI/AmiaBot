@@ -12,6 +12,9 @@ export async function init() {
   logger.info('[feature] Init comic feature');
   onebot.registerCommand(
     'comic',
+    '查漫画',
+    '通过图片查询漫画来源',
+    '查漫画 [图片]',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -35,7 +38,6 @@ export async function init() {
           message: new SendTextMessage('获取漫画失败，请稍后重试'),
         }).reply(message);
       }
-    },
-    'comic'
+    }
   );
 }

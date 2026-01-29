@@ -120,32 +120,39 @@ async function handleFeatCommand(message: RecvMessage, args: string[]) {
 export async function init() {
   logger.info('[feature] Init controller feature');
 
-  onebot.registerCommand('bot', async (data) => {
-    const message = RecvMessage.fromMap(data);
+  // 状态查询
+  onebot.registerCommand(
+    'controller',
+    'bot',
+    '查询机器人运行状态',
+    'bot',
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
 
-    // 1. 基础校验：必须艾特机器人
-    if (!isAtBot(message)) return;
+      // 1. 基础校验：必须艾特机器人
+      if (!isAtBot(message)) return;
 
-    // 2. 解析参数并记录日志
-    const [args] = parseCommandLineArgs(message.content);
-    logger.info(
-      '[feature.controller][Group: %d][User: %d] %s',
-      message.groupId,
-      message.userId,
-      message.rawMessage
-    );
-    logger.debug('[feature.controller] Args: %j', args);
+      // 2. 解析参数并记录日志
+      const [args] = parseCommandLineArgs(message.content);
+      logger.info(
+        '[feature.controller][Group: %d][User: %d] %s',
+        message.groupId,
+        message.userId,
+        message.rawMessage
+      );
+      logger.debug('[feature.controller] Args: %j', args);
 
-    // 3. 校验指令前缀 (必须是 /bot feat ...)
-    // 假设 parseCommandLineArgs 返回的第一个元素是 "/bot" 或类似指令名
-    if (args.length < 2 || args[1] !== 'feat') {
-      void new SendMessage({
-        message: new SendTextMessage(HELP_CONTENT),
-      }).reply(message);
-      return;
+      // 3. 校验指令前缀 (必须是 /bot feat ...)
+      // 假设 parseCommandLineArgs 返回的第一个元素是 "/bot" 或类似指令名
+      if (args.length < 2 || args[1] !== 'feat') {
+        void new SendMessage({
+          message: new SendTextMessage(HELP_CONTENT),
+        }).reply(message);
+        return;
+      }
+
+      // 4. 进入具体业务逻辑
+      await handleFeatCommand(message, args);
     }
-
-    // 4. 进入具体业务逻辑
-    await handleFeatCommand(message, args);
-  });
+  );
 }

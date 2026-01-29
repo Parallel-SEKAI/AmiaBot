@@ -44,11 +44,13 @@ const ChatResponseSchema = z.object({
 export async function init() {
   logger.info('[feature] Init chat feature');
   onebot.registerCommand(
+    'chat',
     'amia',
+    '与Amia进行对话',
+    'Amia 你好',
     async (data) => {
       await chat(data);
-    },
-    'chat'
+    }
   );
 }
 
@@ -191,9 +193,13 @@ VIP等级: ${user.vipLevel}
     if (responseText) {
       try {
         // 解析JSON响应
-        const cleanedResponse = responseText
-          .trim()
-          .replace(/^```json\s*\n|\n```$/g, '');
+        let cleanedResponse = responseText.trim();
+        if (cleanedResponse.startsWith('```')) {
+          cleanedResponse = cleanedResponse
+            .replace(/^```(?:json)?\s*|```$/g, '')
+            .trim();
+        }
+
         const parsedResponse = JSON.parse(cleanedResponse);
 
         // 使用Zod schema验证响应

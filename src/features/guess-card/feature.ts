@@ -33,11 +33,13 @@ const timeout = 40.0; // 40s
 export async function init() {
   logger.info('[feature] Init guess-card feature');
   onebot.registerCommand(
+    'guess-card',
     '猜卡面',
+    '开始一轮 PJSK 猜卡面游戏',
+    '猜卡面 [难度:ez/no/hd/ex/ma/apd]',
     async (data) => {
       await guessCard(data);
-    },
-    'guess-card'
+    }
   );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);

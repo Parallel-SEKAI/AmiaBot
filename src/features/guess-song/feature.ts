@@ -480,11 +480,13 @@ async function guessSong(data: Record<string, any>) {
 export async function init() {
   logger.info('[feature] Init guess-song feature');
   onebot.registerCommand(
+    'guess-song',
     '听歌识曲',
+    '开始一轮 PJSK 听歌识曲游戏',
+    '听歌识曲 [难度:ez/no/hd/ex/ma/apd]',
     async (data) => {
       await guessSong(data);
-    },
-    'guess-song'
+    }
   );
   onebot.on('message.group', async (data) => {
     const message = RecvMessage.fromMap(data);

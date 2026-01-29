@@ -46,7 +46,10 @@ const CHARACTERS = [
 export async function init() {
   logger.info('[feature] init pjsk-sticker feature');
   onebot.registerCommand(
+    'pjsk-sticker',
     'pjsk',
+    '生成 Project SEKAI 风格的贴纸',
+    'pjsk miku 你好',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -92,8 +95,7 @@ export async function init() {
           ),
         }).reply(message);
       }
-    },
-    'pjsk-sticker'
+    }
   );
 }
 

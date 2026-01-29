@@ -20,6 +20,9 @@ export async function init() {
   logger.info('[feature] Init gemini feature');
   onebot.registerCommand(
     'gemini',
+    'aichat',
+    '与 Google Gemini AI 进行对话',
+    'aichat 你好',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(
@@ -139,7 +142,6 @@ export async function init() {
           message: new SendTextMessage('AI 好像开小差了，请稍后再试喵~'),
         }).send({ recvMessage: message });
       }
-    },
-    'gemini'
+    }
   );
 }

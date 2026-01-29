@@ -15,8 +15,11 @@ export type CommandHandler = (
   match: string | RegExpExecArray
 ) => Promise<void>;
 
-interface RegisteredCommand {
+export interface RegisteredCommand {
+  featureName?: string;
   pattern: string | RegExp;
+  description?: string;
+  example?: string;
   handler: CommandHandler;
 }
 
@@ -36,6 +39,13 @@ export class OneBotClient extends EventEmitter {
   // 存储注册的指令
   private registeredCommands: RegisteredCommand[] = [];
 
+  /**
+   * 获取所有已注册的指令（只读）
+   */
+  public get commands(): ReadonlyArray<RegisteredCommand> {
+    return this.registeredCommands;
+  }
+
   constructor(httpUrl: string, wsUrl: string, token: string) {
     super();
     this.httpUrl = httpUrl;
@@ -45,14 +55,18 @@ export class OneBotClient extends EventEmitter {
 
   /**
    * 注册一个新的指令
+   * @param featureName 功能模块名称，会自动检查该功能是否开启
    * @param pattern 字符串或正则表达式
+   * @param description 指令功能介绍
+   * @param example 指令使用示例
    * @param handler 触发后的回调函数
-   * @param featureName 可选，功能模块名称，如果提供则会自动检查该功能是否开启
    */
   public registerCommand(
+    featureName: string | undefined,
     pattern: string | RegExp,
-    handler: CommandHandler,
-    featureName?: string
+    description: string | undefined,
+    example: string | undefined,
+    handler: CommandHandler
   ) {
     const wrappedHandler = async (
       data: Record<string, any>,
@@ -73,7 +87,19 @@ export class OneBotClient extends EventEmitter {
       await handler(data, match);
     };
 
-    this.registeredCommands.push({ pattern, handler: wrappedHandler });
+    this.registeredCommands.push({
+      pattern,
+      handler: wrappedHandler,
+      featureName,
+      description,
+      example,
+    });
+
+    logger.debug(
+      '[onebot.command] Details: %s - %s',
+      description || 'No description',
+      example || 'No example'
+    );
 
     logger.info(
       '[onebot.command] Registered command: %s%s',
