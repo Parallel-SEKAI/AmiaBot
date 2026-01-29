@@ -1,7 +1,6 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
-import { Container } from '../ui/Container.js';
-import { Trophy, ArrowRight, User } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 
 interface LeaderboardItem {
   userId: number;

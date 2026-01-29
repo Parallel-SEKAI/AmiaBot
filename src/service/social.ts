@@ -1,6 +1,5 @@
 import pool from './db.js';
 import { onebot } from '../onebot/index.js';
-import logger from '../config/logger.js';
 
 export interface UserRelationship {
   userId: number;
@@ -238,7 +237,9 @@ export class SocialService {
 
     const record = findRes.rows[0];
     const targetId =
-      record.user_id === userId ? record.target_id : record.user_id;
+      Number(record.user_id) === userId
+        ? Number(record.target_id)
+        : Number(record.user_id);
 
     // 2. 删除记录并扣减好感
     await pool.query(`DELETE FROM user_daily_interactions WHERE id = $1`, [

@@ -81,106 +81,74 @@ export async function init() {
   );
 
   // 送礼物
-  onebot.registerCommand(
-    '送礼物',
-    async (data: Record<string, any>) => {
-      const message = RecvMessage.fromMap(data);
-      if (!message.groupId) return;
+  onebot.registerCommand('送礼物', async (data: Record<string, any>) => {
+    const message = RecvMessage.fromMap(data);
+    if (!message.groupId) return;
 
-      // 提取被提到的用户
-      const atMsg = message.message.find((m) => m instanceof RecvAtMessage) as
-        | RecvAtMessage
-        | undefined;
-      let targetId: number | null = null;
+    // 提取被提到的用户
+    const atMsg = message.message.find(m => m instanceof RecvAtMessage) as RecvAtMessage | undefined;
+    let targetId: number | null = null;
 
-      if (atMsg) {
-        targetId = parseInt(atMsg.qq);
-      } else {
-        // 如果没有艾特，尝试获取今日娶的对象
-        targetId = await SocialService.getTodayPartner(
-          message.groupId,
-          message.userId
-        );
-      }
+    if (atMsg) {
+      targetId = parseInt(atMsg.qq);
+    } else {
+      // 如果没有艾特，尝试获取今日娶的对象
+      targetId = await SocialService.getTodayPartner(message.groupId, message.userId);
+    }
 
-      if (!targetId) {
-        await message.reply(
-          new SendMessage({
-            message: new SendTextMessage(
-              '请艾特你要送礼物的对象，或者先通过「娶群友」脱单后再直接送礼物哦~'
-            ),
-          })
-        );
-        return;
-      }
+    if (!targetId) {
+       await message.reply(new SendMessage({ message: new SendTextMessage('请艾特你要送礼物的对象，或者先通过「娶群友」脱单后再直接送礼物哦~') }));
+       return;
+    }
 
-      if (targetId === message.userId) {
-        await message.reply(
-          new SendMessage({
-            message: new SendTextMessage('不能送礼物给自己哦~'),
-          })
-        );
-        return;
-      }
-      if (targetId === onebot.qq) {
-        await message.reply(
-          new SendMessage({
-            message: new SendTextMessage(
-              '哎呀，谢谢你的心意，不过这些礼物你还是留给更重要的人吧~'
-            ),
-          })
-        );
-        return;
-      }
+    if (targetId === message.userId) {
+       await message.reply(new SendMessage({ message: new SendTextMessage('不能送礼物给自己哦~') }));
+       return;
+    }
+    if (targetId === onebot.qq) {
+       await message.reply(new SendMessage({ message: new SendTextMessage('哎呀，谢谢你的心意，不过这些礼物你还是留给更重要的人吧~') }));
+       return;
+    }
 
-      // 提取礼物名称
-      let giftText = message.content.replace('送礼物', '').trim();
-      if (!giftText) giftText = '神秘礼物';
+    // 提取礼物名称
+    let giftText = message.content.replace('送礼物', '').trim();
+    if (!giftText) giftText = '神秘礼物';
 
-      try {
-        const result = await SocialService.gift(
-          message.groupId,
-          message.userId,
-          targetId
-        );
-        if (!result.success) {
-          if (result.reason === 'COOLDOWN') {
-            await message.reply(
-              new SendMessage({
-                message: new SendTextMessage(
-                  '送得太频繁啦，休息一下吧（每小时限送3次）。'
-                ),
-              })
-            );
-          }
-          return;
+    try {
+      const result = await SocialService.gift(message.groupId, message.userId, targetId);
+      if (!result.success) {
+        if (result.reason === 'COOLDOWN') {
+          await message.reply(new SendMessage({ message: new SendTextMessage('送得太频繁啦，休息一下吧（每小时限送3次）。') }));
         }
-
-        const targetUser = new User(targetId, message.groupId);
-        const currentUser = new User(message.userId, message.groupId);
-        await Promise.all([targetUser.init(), currentUser.init()]);
-
-        const image = await renderSocialCard({
-          type: 'GIFT',
-          userNick: currentUser.fullName,
-          userAvatar: currentUser.avatarUrl,
-          targetNick: targetUser.fullName,
-          targetAvatar: targetUser.avatarUrl,
-          favorability: result.newFavor!,
-          changeAmount: result.bonus,
-          isSurprise: result.isSurprise,
-          message: `送出了礼物：${giftText}`,
-        });
-
-        await message.reply(
-          new SendMessage({ message: new SendImageMessage(image) })
-        );
-      } catch (err) {
-        logger.error('[feature.social.gift] Error:', err);
+        return;
       }
-    },
-    'social'
-  );
+
+      const targetUser = new User(targetId, message.groupId);
+      const currentUser = new User(message.userId, message.groupId);
+      await Promise.all([targetUser.init(), currentUser.init()]);
+
+      const image = await renderSocialCard({
+        type: 'GIFT',
+        userNick: currentUser.fullName,
+        userAvatar: currentUser.avatarUrl,
+        targetNick: targetUser.fullName,
+        targetAvatar: targetUser.avatarUrl,
+        favorability: result.newFavor ?? 0,
+        changeAmount: result.bonus,
+        isSurprise: result.isSurprise,
+        message: `送出了礼物：${giftText}`,
+      });
+
+      await message.reply(new SendMessage({ message: new SendImageMessage(image) }));
+    } catch (err) {
+      logger.error('[feature.social.gift] Error:', err);
+      await message.reply(
+        new SendMessage({
+          message: new SendTextMessage('送礼物时发生了一点意外，请稍后再试～'),
+        })
+      );
+    }
+  }, 'social');
 
   const divorceHandler = async (data: any) => {
     const message = RecvMessage.fromMap(data);
@@ -221,6 +189,13 @@ export async function init() {
       );
     } catch (err) {
       logger.error('[feature.social.divorce] Error:', err);
+      await message.reply(
+        new SendMessage({
+          message: new SendTextMessage(
+            '离婚失败了，看来你们缘分未尽？（请稍后再试～）'
+          ),
+        })
+      );
     }
   };
 
@@ -267,6 +242,11 @@ export async function init() {
         );
       } catch (err) {
         logger.error('[feature.social.leaderboard] Error:', err);
+        await message.reply(
+          new SendMessage({
+            message: new SendTextMessage('获取好感度列表失败，请稍后再试～'),
+          })
+        );
       }
     },
     'social'

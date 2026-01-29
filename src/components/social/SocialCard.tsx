@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppShell } from '../ui/AppShell.js';
 import { Container } from '../ui/Container.js';
-import { Heart, HeartCrack, Gift, User, Star } from 'lucide-react';
+import { Heart, HeartCrack, Gift, Star } from 'lucide-react';
 
 export type InteractionType = 'MARRY' | 'GIFT' | 'DIVORCE';
 
