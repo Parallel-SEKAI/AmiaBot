@@ -17,6 +17,7 @@ import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const.js';
 import fetch from 'node-fetch';
 import { downloadBilibiliVideo } from './download.js';
 import { safeUnlink } from '../../utils/index.js';
+import { stateService } from '../../service/state.js';
 
 /**
  * 初始化 Bilibili 功能模块
@@ -93,6 +94,27 @@ export async function init() {
       }
 
       if (avId || bvId) {
+        // 确保群ID存在
+        if (!message.groupId) {
+          logger.warn(
+            '[feature.bilibili] Cannot process bilibili video without group ID'
+          );
+          return;
+        }
+
+        // 确定视频ID用于缓存检查
+        const videoId = bvId || `av${avId}`;
+
+        // 检查是否已在同群聊中5分钟内解析过该视频
+        if (stateService.hasBilibiliParsedInGroup(message.groupId, videoId)) {
+          logger.info(
+            '[feature.bilibili][Group: %d] Video %s already parsed in last 5 minutes, skipping',
+            message.groupId,
+            videoId
+          );
+          return; // 如果已解析过则直接返回，不进行重复解析
+        }
+
         const params: AvBvParams = {};
         if (avId) params.av = avId;
         if (bvId) params.bv = bvId;
@@ -131,6 +153,9 @@ export async function init() {
             'Get Video Info'
           );
 
+          // 记录已解析的视频ID到缓存中
+          stateService.addBilibiliParseRecord(message.groupId, videoId);
+
           const sendInfoPromise = retry(
             async () => {
               const infoImage = await generateVideoInfoImage(info);
@@ -146,9 +171,9 @@ export async function init() {
               '[feature.bilibili] Failed to send info image after retries:',
               e
             );
-            await new SendMessage({
-              message: new SendTextMessage('生成视频预览图失败了喵~'),
-            }).send({ recvMessage: message });
+            // await new SendMessage({
+            //   message: new SendTextMessage('生成视频预览图失败了喵~'),
+            // }).send({ recvMessage: message });
           });
 
           const downloadVideoPromise = retry(
@@ -182,9 +207,9 @@ export async function init() {
               '[feature.bilibili] Failed to download/send video after retries:',
               e
             );
-            await new SendMessage({
-              message: new SendTextMessage('视频下载失败了喵~'),
-            }).send({ recvMessage: message });
+            // await new SendMessage({
+            //   message: new SendTextMessage('视频下载失败了喵~'),
+            // }).send({ recvMessage: message });
           });
 
           await Promise.all([sendInfoPromise, downloadVideoPromise]);
@@ -193,9 +218,9 @@ export async function init() {
             '[feature.bilibili] Failed to get video info after retries:',
             error
           );
-          await new SendMessage({
-            message: new SendTextMessage('获取视频信息失败了喵，请稍后再试喵~'),
-          }).send({ recvMessage: message });
+          // await new SendMessage({
+          //   message: new SendTextMessage('获取视频信息失败了喵，请稍后再试喵~'),
+          // }).send({ recvMessage: message });
         }
         return;
       }
