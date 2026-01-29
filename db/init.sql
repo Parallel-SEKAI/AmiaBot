@@ -39,3 +39,39 @@ CREATE TABLE IF NOT EXISTS amia_game_state (
     start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (group_id, game_type)
 );
+
+---
+
+-- 社交与好感度系统 (SFS)
+
+-- 用户关系表 (双向好感度)
+CREATE TABLE IF NOT EXISTS user_relationships (
+    id SERIAL PRIMARY KEY,
+    user_id_a BIGINT NOT NULL,
+    user_id_b BIGINT NOT NULL,
+    group_id BIGINT NOT NULL,
+    favorability INT DEFAULT 0,
+    tags JSONB DEFAULT '[]',
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CHECK (user_id_a < user_id_b)
+);
+
+-- 唯一性约束：确保每对用户在每个群组只有一条记录，且强制 A < B
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_rel_unique ON user_relationships (user_id_a, user_id_b, group_id);
+-- 索引优化查询特定用户的所有关系
+CREATE INDEX IF NOT EXISTS idx_user_rel_a ON user_relationships (user_id_a, group_id);
+CREATE INDEX IF NOT EXISTS idx_user_rel_b ON user_relationships (user_id_b, group_id);
+
+-- 每日互动状态表
+CREATE TABLE IF NOT EXISTS user_daily_interactions (
+    id SERIAL PRIMARY KEY,
+    group_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    interaction_type VARCHAR(20) NOT NULL,
+    target_id BIGINT,
+    record_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 索引优化每日查询
+CREATE INDEX IF NOT EXISTS idx_user_daily_query ON user_daily_interactions (group_id, user_id, interaction_type, record_date);
