@@ -1,0 +1,36 @@
+[
+  {
+    "trigger": {
+      "value": "/^mzk$/i"
+    },
+    "responses": [
+      [{ "type": "text", "data": { "text": "诶？是有人叫我吗" } }],
+      [{ "type": "text", "data": { "text": "Amia 在此" } }],
+      [{ "type": "text", "data": { "text": "Amia 不在呢~" } }]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^[\\?？]$/i"
+    },
+    "responses": [
+      [{ "type": "text", "data": { "text": "?" } }],
+      [{ "type": "text", "data": { "text": "!" } }]
+    ]
+  },
+  {
+    "trigger": {
+      "value": "/^我?不知道$/i"
+    },
+    "responses": [
+      [
+        {
+          "type": "image",
+          "data": {
+            "text": "https://raw.githubusercontent.com/Parallel-SEKAI/AmiaBot/master/assets/auto-reply/wakaranai.png"
+          }
+        }
+      ]
+    ]
+  }
+]
