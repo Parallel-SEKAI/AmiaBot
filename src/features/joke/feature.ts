@@ -13,7 +13,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const jokePatterns = [/joke/i, /笑话/, /讲个笑话/];
+const jokePatterns = ['joke', '笑话', '讲个笑话'];
 
 // 从文件中读取笑话
 const jokes = fs
