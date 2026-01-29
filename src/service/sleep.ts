@@ -42,16 +42,38 @@ const CONSTANTS = {
  * This ensures consistent timezone handling across different server configurations
  */
 export function toDatabaseTimestamp(date: Date): string {
-  // Ensure date is treated as Asia/Shanghai time by properly formatting it
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  // Use Intl.DateTimeFormat to explicitly format the date in Asia/Shanghai timezone
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  // Format the date using the formatter
+  const parts = formatter.formatToParts(date);
+  const partMap = parts.reduce(
+    (acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  // Extract the individual components
+  const year = partMap.year;
+  const month = partMap.month;
+  const day = partMap.day;
+  const hour = partMap.hour;
+  const minute = partMap.minute;
+  const second = partMap.second;
 
   // Format as 'YYYY-MM-DD HH:MM:SS' and append +08:00 for Asia/Shanghai
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}+08:00`;
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}+08:00`;
 }
 
 /**
@@ -236,11 +258,11 @@ export class SleepService {
         // Upsert with timezone-aware timestamp and proper timezone handling in SQL
         const upsertQuery = `
           INSERT INTO user_sleep_stats (user_id, group_id, wake_count, last_wake_time)
-          VALUES ($1, $2, 1, $3 AT TIME ZONE 'Asia/Shanghai')
+          VALUES ($1, $2, 1, $3::timestamptz)
           ON CONFLICT (user_id, group_id)
           DO UPDATE SET
             wake_count = user_sleep_stats.wake_count + 1,
-            last_wake_time = $3 AT TIME ZONE 'Asia/Shanghai'
+            last_wake_time = $3::timestamptz
         `;
         await client.query(upsertQuery, [
           userId,
@@ -317,11 +339,11 @@ export class SleepService {
 
         const upsertQuery = `
           INSERT INTO user_sleep_stats (user_id, group_id, sleep_count, last_sleep_time)
-          VALUES ($1, $2, 1, $3 AT TIME ZONE 'Asia/Shanghai')
+          VALUES ($1, $2, 1, $3::timestamptz)
           ON CONFLICT (user_id, group_id)
           DO UPDATE SET
             sleep_count = user_sleep_stats.sleep_count + 1,
-            last_sleep_time = $3 AT TIME ZONE 'Asia/Shanghai'
+            last_sleep_time = $3::timestamptz
         `;
         await client.query(upsertQuery, [
           userId,

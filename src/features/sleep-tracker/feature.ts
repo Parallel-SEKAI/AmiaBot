@@ -5,7 +5,7 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
-import { SleepService, TimeStatus } from '../../service/sleep.js';
+import { SleepService } from '../../service/sleep.js';
 
 const WAKE_KEYWORDS =
   /^(早|早安|早上好|早啊|good\s*morning|ohayou|ohayo|おはよう|早安安)$/i;
