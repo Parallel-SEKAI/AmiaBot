@@ -81,20 +81,53 @@ export function toDatabaseTimestamp(date: Date): string {
  * This handles the business logic where the day starts at 4 AM
  */
 export function getDayStart(date: Date): Date {
+  // Get the hour in Asia/Shanghai timezone
+  const shanghaiHour = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    hour: 'numeric',
+    hour12: false,
+  }).format(date);
+
+  const hour = parseInt(shanghaiHour, 10);
+
+  // Create a new date and adjust based on Shanghai hour
   const start = new Date(date);
-  if (start.getHours() < CONSTANTS.DAY_START_HOUR) {
-    start.setDate(start.getDate() - 1);
+
+  // Calculate the Shanghai date components
+  const shanghaiDate = new Date(
+    date.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })
+  );
+
+  if (hour < CONSTANTS.DAY_START_HOUR) {
+    // If Shanghai hour is less than DAY_START_HOUR, we need to go back one day in Shanghai time
+    shanghaiDate.setDate(shanghaiDate.getDate() - 1);
   }
-  start.setHours(CONSTANTS.DAY_START_HOUR, 0, 0, 0);
-  return start;
+
+  // Set the time to the start of the business day in Shanghai timezone
+  shanghaiDate.setHours(CONSTANTS.DAY_START_HOUR, 0, 0, 0);
+
+  // Convert back to a regular Date object in UTC
+  const result = new Date(
+    shanghaiDate.toLocaleString('en-US', { timeZone: 'UTC' })
+  );
+
+  return result;
 }
 
 /**
  * Normalize hour for comparison (0-3 becomes 24-27 relative to previous day)
  */
 export function getAdjustedHour(date: Date): number {
-  const hour = date.getHours();
-  return hour < CONSTANTS.DAY_START_HOUR ? hour + 24 : hour;
+  const hour = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    hour: 'numeric',
+    hour12: false,
+  }).format(date);
+
+  const shanghaiHour = parseInt(hour, 10);
+  return shanghaiHour < CONSTANTS.DAY_START_HOUR
+    ? shanghaiHour + 24
+    : shanghaiHour;
 }
 
 /**
@@ -327,6 +360,14 @@ export class SleepService {
 
       if (alreadySleptToday) {
         effectiveTime = lastSleep!;
+        // Calculate wake duration (time spent awake since last wake time) for consistency
+        wakeDuration = calculateDuration(
+          effectiveTime,
+          userRecord?.last_wake_time
+            ? new Date(userRecord.last_wake_time)
+            : null,
+          dayStart
+        );
       } else {
         // Calculate wake duration (time spent awake since last wake time)
         wakeDuration = calculateDuration(
