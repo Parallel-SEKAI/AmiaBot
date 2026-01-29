@@ -7,10 +7,10 @@ import { getUserInfo } from './user.js';
 import { getIssueInfo } from './issue.js';
 import { getPRInfo } from './pr.js';
 
-const repoRegex = /github.com\/([^/]+)\/([^/]+)/g;
-const userRegex = /github.com\/([^/]+)/g;
-const issueRegex = /github.com\/([^/]+)\/([^/]+)\/issues\/([0-9]+)/g;
-const prRegex = /github.com\/([^/]+)\/([^/]+)\/pull\/([0-9]+)/g;
+const repoRegex = /github.com\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)/g;
+const userRegex = /github.com\/([A-Za-z0-9_-]+)/g;
+const issueRegex = /github.com\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/issues\/([0-9]+)/g;
+const prRegex = /github.com\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/pull\/([0-9]+)/g;
 
 /**
  * 初始化 GitHub 功能模块
