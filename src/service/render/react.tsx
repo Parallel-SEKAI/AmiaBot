@@ -5,6 +5,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { browserService } from '../browser.js';
 import logger from '../../config/logger.js';
+import { retry, RetryOptions } from '../../utils/retry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,10 +39,12 @@ export class ReactRenderer {
    * 将 React 组件渲染为图片 Buffer
    * @param component React 组件实例
    * @param selector 截图目标选择器，默认截图 #app 容器
+   * @param retryOptions 重试配置
    */
   public static async renderToImage(
     component: React.ReactElement,
-    selector: string = '#screenshot-wrapper'
+    selector: string = '#screenshot-wrapper',
+    retryOptions?: RetryOptions
   ): Promise<Buffer> {
     const contentHtml = renderToString(component);
     const styles = await this.getStyles();
@@ -66,6 +69,13 @@ export class ReactRenderer {
       </html>
     `;
 
-    return await browserService.render(fullHtml, selector);
+    const operation = () => browserService.render(fullHtml, selector);
+    const defaultOptions: RetryOptions = {
+      maxAttempts: 3,
+      delay: 1000,
+      backoff: 'exponential',
+    };
+
+    return await retry(operation, retryOptions || defaultOptions);
   }
 }
