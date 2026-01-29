@@ -3,6 +3,11 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
+/**
+ * 配置管理模块
+ * 负责从环境变量（.env）加载配置、使用 Zod 进行模式校验并导出全局配置对象
+ */
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

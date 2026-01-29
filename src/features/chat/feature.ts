@@ -41,6 +41,10 @@ const ChatResponseSchema = z.object({
   memory: z.string().describe('对用户的记忆'),
 });
 
+/**
+ * 初始化聊天功能模块
+ * 注册 'amia' 指令，用于与 AI 角色进行情境对话
+ */
 export async function init() {
   logger.info('[feature] Init chat feature');
   onebot.registerCommand(
@@ -54,6 +58,11 @@ export async function init() {
   );
 }
 
+/**
+ * 核心聊天处理函数
+ * 负责收集上下文（用户信息、好感度、群聊历史）、调用 AI 并更新状态
+ * @param data 原始消息数据
+ */
 async function chat(data: Record<string, any>) {
   const message = RecvMessage.fromMap(data);
   logger.info(

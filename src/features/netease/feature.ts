@@ -3,6 +3,10 @@ import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import { emojilyric, search, play, download } from './commands.js';
 
+/**
+ * 初始化网易云音乐功能模块
+ * 注册 'search'、'play'、'download' 及 'emojilyric' 指令
+ */
 export async function init() {
   logger.info('[feature] Init netease feature');
 

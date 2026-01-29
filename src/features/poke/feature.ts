@@ -3,6 +3,10 @@ import { checkFeatureEnabled } from '../../service/db.js';
 import logger from '../../config/logger.js';
 import { functions } from './functions.js';
 
+/**
+ * 初始化戳一戳互动功能模块
+ * 监听群内“戳一戳”通知，当机器人被戳时触发随机趣味响应逻辑
+ */
 export async function init() {
   logger.info('[feature] Init poke feature');
   onebot.on('notice.poke', async (data) => {

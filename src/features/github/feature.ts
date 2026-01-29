@@ -12,6 +12,10 @@ const userRegex = /github.com\/([^/]+)/g;
 const issueRegex = /github.com\/([^/]+)\/([^/]+)\/issues\/([0-9]+)/g;
 const prRegex = /github.com\/([^/]+)\/([^/]+)\/pull\/([0-9]+)/g;
 
+/**
+ * 初始化 GitHub 功能模块
+ * 监听群聊消息，自动识别 GitHub 仓库、Issue、PR 以及用户链接，并回复摘要信息卡片
+ */
 export async function init() {
   logger.info('[feature] Init github feature');
   onebot.on('message.group', async (data) => {

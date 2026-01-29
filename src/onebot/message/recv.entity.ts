@@ -372,6 +372,10 @@ export class RecvXmlMessage extends RecvBaseMessage {
   }
 }
 
+/**
+ * 接收到的消息包装类
+ * 包含消息的元数据，并提供初始化获取详细信息、回复、撤回等快捷操作
+ */
 export class RecvMessage {
   private static _instances = new Map<
     number,
@@ -400,6 +404,9 @@ export class RecvMessage {
     RecvMessage.ensureCleanupTask();
   }
 
+  /**
+   * 确保清理任务已启动，用于定期清理内存中的消息实例缓存
+   */
   private static ensureCleanupTask() {
     if (this._cleanupStarted) return;
     this._cleanupStarted = true;
@@ -414,6 +421,10 @@ export class RecvMessage {
     }, 600000); // 10 minutes
   }
 
+  /**
+   * 标准化原始消息格式
+   * @param rawMsg 原始消息数据（字符串或数组）
+   */
   private static normalizeRawMessage(rawMsg: any): any[] {
     if (typeof rawMsg === 'string') {
       return [{ type: 'text', data: { text: rawMsg } }];
@@ -424,6 +435,9 @@ export class RecvMessage {
     return rawMsg;
   }
 
+  /**
+   * 从 OneBot API 获取完整的消息详细信息并填充当前对象
+   */
   public async init() {
     const data = await onebot.action('get_msg', { message_id: this.messageId });
     if (data.status !== 'ok') {

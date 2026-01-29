@@ -121,6 +121,10 @@ async function generateStatisticsImage(
   );
 }
 
+/**
+ * 初始化消息统计功能模块
+ * 注册 '消息统计' 指令，获取群聊历史记录并利用 AI 分析热门话题、成员称号及金句
+ */
 export async function init() {
   logger.info('[feature] Init message-statistics feature');
   onebot.registerCommand(

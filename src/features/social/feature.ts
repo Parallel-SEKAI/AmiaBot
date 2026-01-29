@@ -19,6 +19,10 @@ import {
 } from '../../components/social/SocialCard.js';
 import { SocialLeaderboard } from '../../components/social/SocialLeaderboard.js';
 
+/**
+ * 初始化社交系统功能模块
+ * 注册 '娶群友'、'送礼物'、'闹离婚' 及 '好感度列表' 指令
+ */
 export async function init() {
   logger.info('[feature] Init social feature');
 
@@ -310,6 +314,11 @@ export async function init() {
   );
 }
 
+/**
+ * 渲染社交关系卡片（如结婚、送礼）
+ * @param props 包含用户头像、昵称、好感度变动等属性
+ * @returns 渲染后的图片 Buffer
+ */
 async function renderSocialCard(props: {
   type: InteractionType;
   userNick: string;

@@ -42,6 +42,10 @@ const FEATURES = [
   pingFeature,
 ];
 
+/**
+ * 初始化所有功能模块
+ * 注册定义好的功能对象并调用管理器的初始化方法
+ */
 export async function init() {
   logger.info('[feature] Registering %d features...', FEATURES.length);
 

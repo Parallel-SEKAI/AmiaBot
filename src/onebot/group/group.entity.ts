@@ -2,6 +2,10 @@ import { onebot } from '../index.js';
 import { User } from '../user/user.entity.js';
 import { RecvMessage } from '../message/recv.entity.js';
 
+/**
+ * 群聊实体类
+ * 封装了群聊的基础信息、成员管理以及消息历史获取功能
+ */
 export class Group {
   /**
    * 群聊ID
@@ -71,7 +75,7 @@ export class Group {
   private members: User[] = [];
 
   /**
-   * Generates the URL for the group's avatar.
+   * 获取群头像 URL
    */
   public get avatarUrl(): string {
     return `https://p.qlogo.cn/gh/${this.id}/${this.id}/0`;
@@ -82,7 +86,8 @@ export class Group {
   }
 
   /**
-   * Initializes the group's properties by fetching its detailed information.
+   * 初始化群信息
+   * 通过 API 获取群组详细资料并填充当前对象
    */
   public async init() {
     const info = await onebot.action('get_group_detail_info', {

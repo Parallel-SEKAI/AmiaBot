@@ -1,18 +1,32 @@
 import logger from '../config/logger.js';
 
+/**
+ * 功能模块接口定义
+ */
 export interface FeatureModule {
+  /** 模块唯一名称 */
   name: string;
+  /** 模块功能描述 */
   description: string;
+  /** 初始化逻辑 */
   init: () => Promise<void>;
+  /** 是否需要手动开启（针对群聊） */
   needEnable: boolean;
 }
 
+/**
+ * 功能管理器，负责管理所有功能模块的注册与初始化
+ * 采用单例模式
+ */
 export class FeatureManager {
   private static instance: FeatureManager;
   private features: Map<string, FeatureModule> = new Map();
 
   private constructor() {}
 
+  /**
+   * 获取 FeatureManager 单例
+   */
   public static getInstance(): FeatureManager {
     if (!FeatureManager.instance) {
       FeatureManager.instance = new FeatureManager();
@@ -20,6 +34,10 @@ export class FeatureManager {
     return FeatureManager.instance;
   }
 
+  /**
+   * 注册一个新的功能模块
+   * @param feature 符合 FeatureModule 接口的对象
+   */
   public registerFeature(feature: FeatureModule): void {
     this.features.set(feature.name, feature);
     logger.info(
@@ -29,6 +47,9 @@ export class FeatureManager {
     );
   }
 
+  /**
+   * 并行初始化所有已注册的功能模块
+   */
   public async initializeAllFeatures(): Promise<void> {
     logger.info(
       '[feature.manager] Initializing %d features...',

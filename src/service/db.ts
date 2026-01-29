@@ -79,12 +79,22 @@ pool.on('connect', () => {
 
 export default pool;
 
+/**
+ * 初始化数据库
+ * 读取并执行 db/init.sql 脚本以建立基础表结构
+ */
 export async function initDb() {
   const initSqlPath = path.resolve(__dirname, '../../db/init.sql');
   const initSql = await fs.readFile(initSqlPath, 'utf8');
   await pool.query(initSql);
 }
 
+/**
+ * 检查特定功能在指定群组中是否开启
+ * @param groupId 群组 QQ 号
+ * @param feature 功能模块名称
+ * @returns 是否开启（若无记录则遵循默认配置）
+ */
 export async function checkFeatureEnabled(groupId: number, feature: string) {
   const query = `
     SELECT is_enabled
@@ -95,6 +105,12 @@ export async function checkFeatureEnabled(groupId: number, feature: string) {
   return result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
 }
 
+/**
+ * 设置群组中功能模块的开关状态
+ * @param groupId 群组 QQ 号
+ * @param feature 功能模块名称
+ * @param enabled 目标状态
+ */
 export async function setFeatureEnabled(
   groupId: number,
   feature: string,

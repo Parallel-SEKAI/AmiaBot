@@ -3,6 +3,11 @@ import { extname } from 'path';
 import logger from '../config/logger.js';
 
 /**
+ * 通用工具函数库
+ * 包含文件操作、命令行解析、图像转换、模板渲染等实用功能
+ */
+
+/**
  * 安全地删除文件，如果失败则记录日志但不抛出异常
  */
 export async function safeUnlink(filePath: string): Promise<void> {
@@ -19,6 +24,12 @@ export async function safeUnlink(filePath: string): Promise<void> {
   }
 }
 
+/**
+ * 解析类命令行参数字符串
+ * 支持 key=value 格式的命名参数以及普通位置参数
+ * @param cmd 待解析的指令字符串
+ * @returns [位置参数数组, 命名参数对象]
+ */
 export function parseCommandLineArgs(
   cmd: string
 ): [string[], Record<string, string>] {
@@ -156,6 +167,12 @@ export function renderTemplate(
   });
 }
 
+/**
+ * 不区分大小写地提取匹配字符串之后的内容
+ * @param source 源字符串
+ * @param searchString 要匹配的子串
+ * @returns 匹配点之后的内容，若未匹配则返回原串
+ */
 export function extractAfterCaseInsensitive(
   source: string,
   searchString: string

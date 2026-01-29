@@ -477,6 +477,10 @@ async function guessSong(data: Record<string, any>) {
 /**
  * 初始化猜歌功能
  */
+/**
+ * 初始化“听歌识曲”功能模块
+ * 注册 '听歌识曲' 指令，随机截取 PJSK 歌曲片段并让用户竞猜歌名
+ */
 export async function init() {
   logger.info('[feature] Init guess-song feature');
   onebot.registerCommand(
