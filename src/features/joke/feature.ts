@@ -7,12 +7,17 @@ import {
 } from '../../onebot/message/send.entity.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const jokePatterns = [/joke/i, /笑话/, /讲个笑话/];
 
 // 从文件中读取笑话
 const jokes = fs
-  .readFileSync(path.join(__dirname, '../../assets/joke/jokes.txt'), 'utf-8')
+  .readFileSync(path.join(__dirname, '../../../assets/joke/jokes.txt'), 'utf-8')
   .split('\n')
   .filter((joke) => joke.trim() !== '');
 
