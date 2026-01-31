@@ -340,11 +340,9 @@ export class OneBotClient extends EventEmitter {
         const text = message.content;
 
         let stripped = text;
-        let hasPrefix = config.prefixes.length === 0;
         for (const prefix of config.prefixes) {
           if (text.startsWith(prefix)) {
             stripped = text.slice(prefix.length).trim();
-            hasPrefix = true;
             break;
           }
         }
@@ -371,29 +369,28 @@ export class OneBotClient extends EventEmitter {
 
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
-              // 确保匹配的是完整单词或后跟空格，防止 "test" 匹配 "testing"
-              const nextChar = lowerStripped.charAt(pattern.length);
-              if (nextChar === '' || nextChar === ' ') {
-                matched = true;
-                logger.debug(
-                  '[onebot.command] Matched command: %s',
-                  cmd.pattern
-                );
-                cmd.handler(eventData, cmd.pattern).catch((err) => {
-                  logger.error(
-                    '[onebot.command] Error executing command handler for %s:',
-                    cmd.pattern,
-                    err
-                  );
-                });
-                break;
+              matched = true;
+              logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
+              if (config.messageMatchLikeFaceId) {
+                void message.like(config.messageMatchLikeFaceId.toString());
               }
+              cmd.handler(eventData, cmd.pattern).catch((err) => {
+                logger.error(
+                  '[onebot.command] Error executing command handler for %s:',
+                  cmd.pattern,
+                  err
+                );
+              });
+              break;
             }
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(stripped);
             if (match) {
               matched = true;
               logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
+              if (config.messageMatchLikeFaceId) {
+                void message.like(config.messageMatchLikeFaceId.toString());
+              }
               cmd.handler(eventData, match).catch((err) => {
                 logger.error(
                   '[onebot.command] Error executing command handler for %s:',
