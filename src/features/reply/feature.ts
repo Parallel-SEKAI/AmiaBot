@@ -15,9 +15,9 @@ import {
   removeReplyFace,
   clearUserReplyFaces,
   getUserReplyFaces,
-  hasReplyFaces,
   getUserReplyFaceIds,
 } from './db.js';
+
 
 /**
  * 初始化 回应 功能模块
