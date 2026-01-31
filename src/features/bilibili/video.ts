@@ -4,7 +4,8 @@ import {
   VideoInfo,
   VideoSection,
   VideoEpisode,
-  VideoStat,
+  UgcSeason,
+  VideoEpisodeStat,
 } from './typing.js';
 
 const data = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf';
@@ -39,29 +40,65 @@ function bv2av(bvid: string): number {
   return Number((tmp & MASK_CODE) ^ XOR_CODE);
 }
 
+interface BilibiliEpisode {
+  season_id: number;
+  section_id: number;
+  id: number;
+  aid: number | string;
+  cid: number;
+  title: string;
+  attribute?: number;
+  arc?: {
+    duration: number;
+    stat: {
+      view: number;
+      like: number;
+      fav: number;
+      coin: number;
+      danmaku: number;
+      reply: number;
+      share: number;
+    };
+  };
+}
+
+interface BilibiliSection {
+  title: string;
+  season_id: number;
+  id: number;
+  type: number;
+  episodes?: Array<BilibiliEpisode>;
+}
+
+interface BilibiliUgcSeason {
+  id: number;
+  title: string;
+  cover: string;
+  mid: number;
+  intro: string;
+  sign_state: number;
+  attribute: number;
+  sections: Array<BilibiliSection>;
+  stat: {
+    season_id: number;
+    view: number;
+    danmaku: number;
+    reply: number;
+    fav: number;
+    coin: number;
+    share: number;
+    now_rank: number;
+    his_rank: number;
+    like: number;
+  };
+  ep_count: number;
+  season_type: number;
+  is_pay_season: boolean;
+}
+
 interface BilibiliViewResponse {
   data?: {
-    ugc_season?: {
-      sections: Array<{
-        title: string;
-        episodes: Array<{
-          title: string;
-          bvid: string;
-          arc?: {
-            duration: number;
-            stat: {
-              view: number;
-              like: number;
-              fav: number;
-              coin: number;
-              danmaku: number;
-              reply: number;
-              share: number;
-            };
-          };
-        }>;
-      }>;
-    };
+    ugc_season?: BilibiliUgcSeason;
   };
 }
 
@@ -94,27 +131,7 @@ interface BilibiliResourceInfo {
     duration: number;
   }>;
   intro?: string;
-  ugc_season?: {
-    sections: Array<{
-      title: string;
-      episodes: Array<{
-        title: string;
-        bvid: string;
-        arc?: {
-          duration: number;
-          stat: {
-            view: number;
-            like: number;
-            fav: number;
-            coin: number;
-            danmaku: number;
-            reply: number;
-            share: number;
-          };
-        };
-      }>;
-    }>;
-  };
+  ugc_season?: BilibiliUgcSeason;
 }
 
 interface BilibiliResourceResponse {
@@ -214,42 +231,57 @@ export async function getBilibiliVideoInfo(
     }
   }
 
-  let mappedUgcSeason: { sections: VideoSection[] } | undefined;
+  let mappedUgcSeason: UgcSeason | undefined;
   const rawUgcSeason = resourceInfo.ugc_season || ugc_season;
 
-  if (rawUgcSeason?.sections) {
+  if (rawUgcSeason) {
     mappedUgcSeason = {
+      id: rawUgcSeason.id,
+      title: rawUgcSeason.title,
+      cover: rawUgcSeason.cover,
+      mid: rawUgcSeason.mid,
+      intro: rawUgcSeason.intro,
+      sign_state: rawUgcSeason.sign_state,
+      attribute: rawUgcSeason.attribute,
       sections: rawUgcSeason.sections.map((section) => ({
         title: section.title,
-        episodes: section.episodes.map((episode) => {
+        season_id: section.season_id,
+        id: section.id,
+        type: section.type,
+        episodes: section.episodes?.map((episode) => {
           const arc = episode.arc;
           const stat = arc?.stat;
 
-          const videoStat: VideoStat = {
+          const videoEpisodeStat: VideoEpisodeStat = {
+            view: stat?.view || 0,
+            like: stat?.like || 0,
+            fav: stat?.fav || 0,
             coin: stat?.coin || 0,
-            collect: 0, // Not available in ugc_season.episodes
             danmaku: stat?.danmaku || 0,
-            play: stat?.view || 0,
-            play_switch: 0,
             reply: stat?.reply || 0,
             share: stat?.share || 0,
-            thumb_down: 0,
-            thumb_up: stat?.like || 0,
-            view_text_1: '',
-            vt: 0,
           };
 
           const videoEpisode: VideoEpisode = {
+            season_id: episode.season_id,
+            section_id: episode.section_id,
+            id: episode.id,
+            aid: episode.aid,
+            cid: episode.cid,
             title: episode.title,
-            bvid: episode.bvid,
+            attribute: episode.attribute,
             arc: {
               duration: arc?.duration || 0,
-              stat: videoStat,
+              stat: videoEpisodeStat,
             },
           };
           return videoEpisode;
         }),
       })),
+      stat: rawUgcSeason.stat,
+      ep_count: rawUgcSeason.ep_count,
+      season_type: rawUgcSeason.season_type,
+      is_pay_season: rawUgcSeason.is_pay_season,
     };
   }
 

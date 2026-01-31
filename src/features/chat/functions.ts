@@ -74,7 +74,9 @@ export async function searchMusic(
   query: string
 ): Promise<Array<Record<string, any>>> {
   const response = await fetch(
-    `https://music.163.com/api/cloudsearch/pc?s=${query}&type=1`
+    `https://music.163.com/api/cloudsearch/pc?s=${encodeURIComponent(
+      query
+    )}&type=1`
   );
 
   if (!response.ok) {

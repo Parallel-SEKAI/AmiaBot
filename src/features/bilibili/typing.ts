@@ -17,18 +17,64 @@ export interface VideoStat {
   vt: number;
 }
 
+export interface VideoEpisodeStat {
+  view: number;
+  like: number;
+  fav: number;
+  coin: number;
+  danmaku: number;
+  reply: number;
+  share: number;
+}
+
 export interface VideoEpisode {
+  season_id: number;
+  section_id: number;
+  id: number;
+  aid: number | string;
+  cid: number;
   title: string;
-  bvid: string;
-  arc: {
+  attribute?: number;
+  arc?: {
     duration: number;
-    stat: VideoStat;
+    stat: VideoEpisodeStat;
   };
 }
 
 export interface VideoSection {
   title: string;
-  episodes: VideoEpisode[];
+  season_id: number;
+  id: number;
+  type: number;
+  episodes?: VideoEpisode[];
+}
+
+export interface UgcSeasonStat {
+  season_id: number;
+  view: number;
+  danmaku: number;
+  reply: number;
+  fav: number;
+  coin: number;
+  share: number;
+  now_rank: number;
+  his_rank: number;
+  like: number;
+}
+
+export interface UgcSeason {
+  id: number;
+  title: string;
+  cover: string;
+  mid: number;
+  intro: string;
+  sign_state: number;
+  attribute: number;
+  sections: VideoSection[];
+  stat: UgcSeasonStat;
+  ep_count: number;
+  season_type: number;
+  is_pay_season: boolean;
 }
 
 export interface VideoPage {
@@ -52,9 +98,7 @@ export interface VideoInfo {
   cnt_info: VideoStat;
   pages: VideoPage[];
   intro: string;
-  ugc_season?: {
-    sections: VideoSection[];
-  };
+  ugc_season?: UgcSeason;
   // 合集统计数据
   total_episodes?: number;
   total_duration?: number;
