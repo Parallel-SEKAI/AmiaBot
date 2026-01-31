@@ -243,7 +243,7 @@ export async function getBilibiliVideoInfo(
       intro: effectiveUgcSeason.intro,
       sign_state: effectiveUgcSeason.sign_state,
       attribute: effectiveUgcSeason.attribute,
-      sections: effectiveUgcSeason.sections.map((section) => {
+      sections: (effectiveUgcSeason.sections ?? []).map((section) => {
         const videoSection: VideoSection = {
           title: section.title,
           season_id: section.season_id,
