@@ -50,8 +50,8 @@ interface BilibiliEpisode {
   title: string;
   attribute?: number;
   arc?: {
-    duration: number;
-    stat: {
+    duration?: number;
+    stat?: {
       view: number;
       like: number;
       fav: number;
@@ -220,6 +220,7 @@ export async function getBilibiliVideoInfo(
         const arc = episode.arc;
         if (!arc) continue;
         const stat = arc.stat;
+        if (!stat) continue;
         total_duration += arc.duration || 0;
         total_view += stat.view || 0;
         total_like += stat.like || 0;
