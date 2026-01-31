@@ -138,7 +138,7 @@ export async function getGameState(groupId: number, gameType: string) {
 export async function setGameState(
   groupId: number,
   gameType: string,
-  answerData: any
+  answerData: unknown
 ) {
   const query = `
     INSERT INTO amia_game_state (group_id, game_type, answer_data)

@@ -32,17 +32,18 @@ export async function retry<T>(
     try {
       logger.debug(`[retry] Attempt ${attempt}/${maxAttempts}`);
       return await operation();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = lastError.message;
 
-      if (attempt === maxAttempts || !shouldRetry(error)) {
-        logger.error(`[retry] All attempts failed: ${error.message}`);
-        throw error;
+      if (attempt === maxAttempts || !shouldRetry(lastError)) {
+        logger.error(`[retry] All attempts failed: ${errorMessage}`);
+        throw lastError;
       }
 
       const currentDelay = calculateDelay(attempt, delay, maxDelay, backoff);
       logger.warn(
-        `[retry] Attempt ${attempt} failed: ${error.message}. Retrying in ${currentDelay}ms...`
+        `[retry] Attempt ${attempt} failed: ${errorMessage}. Retrying in ${currentDelay}ms...`
       );
 
       await new Promise((resolve) => setTimeout(resolve, currentDelay));

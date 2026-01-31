@@ -15,10 +15,10 @@ import { getRandomComic } from './api.js';
 export async function init() {
   logger.info('[feature] Init comic feature');
   onebot.registerCommand(
-    'comic',
     '查漫画',
-    '通过图片查询漫画来源',
-    '查漫画 [图片]',
+    'comic',
+    '随机 Project Sekai 漫画图片',
+    'comic',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(

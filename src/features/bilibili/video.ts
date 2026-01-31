@@ -1,5 +1,13 @@
 import assert from 'assert';
-import { AvBvParams, VideoInfo } from './typing.js';
+import {
+  AvBvParams,
+  VideoInfo,
+  VideoEpisode,
+  UgcSeason,
+  VideoEpisodeStat,
+  VideoSection,
+  UgcSeasonStat,
+} from './typing.js';
 
 const data = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf';
 const BASE = 58n;
@@ -33,6 +41,104 @@ function bv2av(bvid: string): number {
   return Number((tmp & MASK_CODE) ^ XOR_CODE);
 }
 
+interface BilibiliEpisode {
+  season_id: number;
+  section_id: number;
+  id: number;
+  aid: number | string;
+  cid: number;
+  title: string;
+  attribute?: number;
+  arc?: {
+    duration?: number;
+    stat?: {
+      view: number;
+      like: number;
+      fav: number;
+      coin: number;
+      danmaku: number;
+      reply: number;
+      share: number;
+    };
+  };
+}
+
+interface BilibiliSection {
+  title: string;
+  season_id: number;
+  id: number;
+  type: number;
+  episodes?: Array<BilibiliEpisode>;
+}
+
+interface BilibiliUgcSeason {
+  id: number;
+  title: string;
+  cover: string;
+  mid: number;
+  intro: string;
+  sign_state: number;
+  attribute: number;
+  sections: Array<BilibiliSection>;
+  stat: {
+    season_id: number;
+    view: number;
+    danmaku: number;
+    reply: number;
+    fav: number;
+    coin: number;
+    share: number;
+    now_rank: number;
+    his_rank: number;
+    like: number;
+  };
+  ep_count: number;
+  season_type: number;
+  is_pay_season: boolean;
+}
+
+interface BilibiliViewResponse {
+  data?: {
+    ugc_season?: BilibiliUgcSeason;
+  };
+}
+
+interface BilibiliResourceInfo {
+  av?: number;
+  bv?: string;
+  title?: string;
+  cover?: string;
+  upper?: {
+    mid: number;
+    name: string;
+    face: string;
+  };
+  cnt_info?: {
+    coin: number;
+    collect: number;
+    danmaku: number;
+    play: number;
+    play_switch: number;
+    reply: number;
+    share: number;
+    thumb_down: number;
+    thumb_up: number;
+    view_text_1: string;
+    vt: number;
+  };
+  pages?: Array<{
+    page: number;
+    title: string;
+    duration: number;
+  }>;
+  intro?: string;
+  ugc_season?: BilibiliUgcSeason;
+}
+
+interface BilibiliResourceResponse {
+  data?: Array<BilibiliResourceInfo>;
+}
+
 export async function getBilibiliVideoInfo(
   params: AvBvParams
 ): Promise<VideoInfo> {
@@ -55,7 +161,12 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
-  const viewData = (await viewResponse.json()) as any;
+
+  if (!viewResponse.ok) {
+    throw new Error(`Failed to fetch view info: ${viewResponse.statusText}`);
+  }
+
+  const viewData = (await viewResponse.json()) as BilibiliViewResponse;
 
   // 调用第二个API获取资源详情
   const resourceUrl = new URL(
@@ -69,11 +180,25 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
-  const resourceData = (await resourceResponse.json()) as any;
+
+  if (!resourceResponse.ok) {
+    throw new Error(
+      `Failed to fetch resource info: ${resourceResponse.statusText}`
+    );
+  }
+
+  const resourceData =
+    (await resourceResponse.json()) as BilibiliResourceResponse;
 
   // 处理数据，转换为VideoInfo类型
   const info1 = viewData.data || {};
-  const info2 = resourceData.data?.[0] || {};
+  const resourceInfo = resourceData.data?.[0];
+
+  if (!resourceInfo) {
+    throw new Error(
+      'Failed to get video info from resource API: data is missing or empty'
+    );
+  }
 
   // 计算合集统计数据
   let total_episodes = 0;
@@ -87,13 +212,15 @@ export async function getBilibiliVideoInfo(
   let total_share = 0;
 
   // 处理合集信息
-  const ugc_season = info1.ugc_season;
-  if (ugc_season?.sections) {
-    for (const section of ugc_season.sections) {
+  const effectiveUgcSeason = resourceInfo.ugc_season || info1.ugc_season;
+  if (effectiveUgcSeason?.sections) {
+    for (const section of effectiveUgcSeason.sections) {
       for (const episode of section.episodes || []) {
         total_episodes++;
-        const arc = episode.arc || {};
-        const stat = arc.stat || {};
+        const arc = episode.arc;
+        if (!arc) continue;
+        const stat = arc.stat;
+        if (!stat) continue;
         total_duration += arc.duration || 0;
         total_view += stat.view || 0;
         total_like += stat.like || 0;
@@ -106,14 +233,70 @@ export async function getBilibiliVideoInfo(
     }
   }
 
+  let mappedUgcSeason: UgcSeason | undefined;
+
+  if (effectiveUgcSeason) {
+    mappedUgcSeason = {
+      id: effectiveUgcSeason.id,
+      title: effectiveUgcSeason.title,
+      cover: effectiveUgcSeason.cover,
+      mid: effectiveUgcSeason.mid,
+      intro: effectiveUgcSeason.intro,
+      sign_state: effectiveUgcSeason.sign_state,
+      attribute: effectiveUgcSeason.attribute,
+      sections: (effectiveUgcSeason.sections ?? []).map((section) => {
+        const videoSection: VideoSection = {
+          title: section.title,
+          season_id: section.season_id,
+          id: section.id,
+          type: section.type,
+          episodes: (section.episodes ?? []).map((episode) => {
+            const arc = episode.arc;
+            const stat = arc?.stat;
+
+            const videoEpisodeStat: VideoEpisodeStat = {
+              view: stat?.view || 0,
+              like: stat?.like || 0,
+              fav: stat?.fav || 0,
+              coin: stat?.coin || 0,
+              danmaku: stat?.danmaku || 0,
+              reply: stat?.reply || 0,
+              share: stat?.share || 0,
+            };
+
+            const videoEpisode: VideoEpisode = {
+              season_id: episode.season_id,
+              section_id: episode.section_id,
+              id: episode.id,
+              aid: episode.aid,
+              cid: episode.cid,
+              title: episode.title,
+              attribute: episode.attribute,
+              arc: {
+                duration: arc?.duration || 0,
+                stat: videoEpisodeStat,
+              },
+            };
+            return videoEpisode;
+          }),
+        };
+        return videoSection;
+      }),
+      stat: effectiveUgcSeason.stat as UgcSeasonStat,
+      ep_count: effectiveUgcSeason.ep_count,
+      season_type: effectiveUgcSeason.season_type,
+      is_pay_season: effectiveUgcSeason.is_pay_season,
+    };
+  }
+
   // 构建VideoInfo对象
   const videoInfo: VideoInfo = {
-    av: av || bv2av(bv!),
-    bv: bv || av2bv(av!),
-    title: info2.title || info2.pages?.[0]?.title || '',
-    cover: info2.cover || '',
-    upper: info2.upper || { mid: 0, name: '', face: '' },
-    cnt_info: info2.cnt_info || {
+    av: resourceInfo.av || av || bv2av(bv!),
+    bv: resourceInfo.bv || bv || av2bv(av!),
+    title: resourceInfo.title || '',
+    cover: resourceInfo.cover || '',
+    upper: resourceInfo.upper || { mid: 0, name: '', face: '' },
+    cnt_info: resourceInfo.cnt_info || {
       coin: 0,
       collect: 0,
       danmaku: 0,
@@ -126,9 +309,9 @@ export async function getBilibiliVideoInfo(
       view_text_1: '',
       vt: 0,
     },
-    pages: info2.pages || [],
-    intro: info2.intro || '',
-    ugc_season,
+    pages: Array.isArray(resourceInfo.pages) ? resourceInfo.pages : [],
+    intro: resourceInfo.intro || '',
+    ugc_season: mappedUgcSeason,
     total_episodes,
     total_duration,
     total_view,

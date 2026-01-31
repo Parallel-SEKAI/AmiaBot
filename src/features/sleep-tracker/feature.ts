@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';

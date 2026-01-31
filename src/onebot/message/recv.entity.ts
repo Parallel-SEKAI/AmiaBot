@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { onebot } from '../index.js';
 import { SendMessage } from './send.entity.js';
+
+export interface OneBotMessageSegment {
+  type: string;
+  data: Record<string, any>;
+}
 
 export class RecvBaseMessage {
   public type: string;
@@ -10,10 +16,7 @@ export class RecvBaseMessage {
     this.data = data;
   }
 
-  public static fromMap(data: {
-    type: string;
-    data: Record<string, any>;
-  }): RecvBaseMessage {
+  public static fromMap(data: OneBotMessageSegment): RecvBaseMessage {
     const type = data.type;
     switch (type) {
       case 'text':
@@ -304,7 +307,7 @@ export class RecvNodeMessage extends RecvBaseMessage {
     this.userId = data.user_id ? String(data.user_id) : undefined;
     this.nickname = data.nickname;
     if (Array.isArray(data.content)) {
-      this.content = data.content.map((item: any) =>
+      this.content = data.content.map((item: OneBotMessageSegment) =>
         RecvBaseMessage.fromMap(item)
       );
     } else {
@@ -425,7 +428,7 @@ export class RecvMessage {
    * 标准化原始消息格式
    * @param rawMsg 原始消息数据（字符串或数组）
    */
-  private static normalizeRawMessage(rawMsg: any): any[] {
+  private static normalizeRawMessage(rawMsg: any): OneBotMessageSegment[] {
     if (typeof rawMsg === 'string') {
       return [{ type: 'text', data: { text: rawMsg } }];
     }
@@ -457,7 +460,7 @@ export class RecvMessage {
     this.groupName = msgData.group_name ?? null;
 
     this.message = RecvMessage.normalizeRawMessage(msgData.message).map(
-      (item: any) => RecvBaseMessage.fromMap(item)
+      (item) => RecvBaseMessage.fromMap(item)
     );
     this._initialized = true;
   }
@@ -491,8 +494,8 @@ export class RecvMessage {
     msg.groupId = data.group_id ?? null;
     msg.groupName = data.group_name ?? null;
 
-    msg.message = RecvMessage.normalizeRawMessage(data.message).map(
-      (item: any) => RecvBaseMessage.fromMap(item)
+    msg.message = RecvMessage.normalizeRawMessage(data.message).map((item) =>
+      RecvBaseMessage.fromMap(item)
     );
     msg._initialized = true;
 

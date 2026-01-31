@@ -13,12 +13,19 @@ import logger from '../config/logger.js';
 export async function safeUnlink(filePath: string): Promise<void> {
   try {
     await fs.unlink(filePath);
-  } catch (error: any) {
-    if (error.code !== 'ENOENT') {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code: string }).code !== 'ENOENT'
+    ) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.warn(
         '[utils.safeUnlink] Failed to delete file %s: %s',
         filePath,
-        error.message
+        errorMessage
       );
     }
   }
@@ -143,7 +150,7 @@ export function hexToRgba(hex: string): [number, number, number, number] {
  */
 export function renderTemplate(
   templateString: string,
-  data: { [key: string]: any }
+  data: Record<string, string | number | null | undefined>
 ): string {
   // 正则表达式匹配 {{key}} 或 {{ key }} 格式的占位符
   // \s* 允许 key 的前后有任意空格
@@ -158,7 +165,7 @@ export function renderTemplate(
     // 它可以避免 data 对象原型链上的属性干扰
     if (Object.prototype.hasOwnProperty.call(data, key)) {
       // 如果在 data 对象中找到了 key，则返回值
-      return data[key.trim()];
+      return String(data[key.trim()]);
     }
 
     // 如果没有找到对应的 key，则返回原始占位符
@@ -185,4 +192,50 @@ export function extractAfterCaseInsensitive(
   }
   const endIndex = startIndex + searchString.length;
   return source.substring(endIndex);
+}
+
+/**
+ * Levenshtein Distance Algorithm
+ * Calculate the similarity between two strings
+ * @param s1 String 1
+ * @param s2 String 2
+ * @returns Similarity (0-1)
+ */
+export function levenshtein_similarity(s1: string, s2: string): number {
+  if (!s1 && !s2) {
+    return 1.0; // Both are empty strings
+  }
+  if (!s1 || !s2) {
+    return 0.0; // One is empty
+  }
+
+  // Ensure s1 is the longer string
+  if (s1.length < s2.length) {
+    return levenshtein_similarity(s2, s1);
+  }
+
+  // Initialize previous row
+  const prevRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
+
+  for (let i = 1; i <= s1.length; i++) {
+    const currRow = [i];
+    for (let j = 1; j <= s2.length; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      currRow[j] = Math.min(
+        prevRow[j] + 1, // deletion
+        currRow[j - 1] + 1, // insertion
+        prevRow[j - 1] + cost // substitution
+      );
+    }
+    prevRow.splice(0, prevRow.length, ...currRow);
+  }
+
+  // Edit distance
+  const editDistance = prevRow[prevRow.length - 1];
+
+  // Normalize to [0, 1]
+  const maxLen = Math.max(s1.length, s2.length);
+  const similarity = 1.0 - editDistance / maxLen;
+
+  return similarity;
 }

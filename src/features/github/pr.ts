@@ -23,7 +23,7 @@ export async function getPRInfo(
       repo,
       pull_number: prNumber,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(
       '[feature.github.pr][PR: %s/%s#%d]',
       owner,

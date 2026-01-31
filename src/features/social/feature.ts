@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';

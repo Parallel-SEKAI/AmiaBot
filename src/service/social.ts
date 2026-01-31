@@ -113,8 +113,8 @@ export class SocialService {
     const membersRes = await onebot.action('get_group_member_list', {
       group_id: groupId,
     });
-    let members = membersRes.data
-      .map((m: any) => m.user_id)
+    let members = (membersRes.data as Array<{ user_id: number }>)
+      .map((m) => m.user_id)
       .filter((id: number) => id !== userId && id !== onebot.qq);
 
     if (members.length === 0) return null;

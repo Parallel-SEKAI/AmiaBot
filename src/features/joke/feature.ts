@@ -35,7 +35,7 @@ export async function init() {
       pattern,
       '随机发送笑话',
       'joke',
-      async (data, match) => {
+      async (data, _match) => {
         const message = RecvMessage.fromMap(data);
         logger.info(
           '[feature.joke][Group: %d][User: %d] %s',

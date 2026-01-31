@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
@@ -12,6 +13,7 @@ import {
   setGameState,
   deleteGameState,
 } from '../../service/db.js';
+import { levenshtein_similarity } from '../../utils/index.js';
 
 // 难度映射表
 const difficulty = {
@@ -26,6 +28,12 @@ const difficulty = {
 const timeout = 60.0; // 60秒超时
 const targetSimilarity = 0.5; // 相似度阈值
 
+interface PjskEvent {
+  id: number;
+  name: string;
+  assetbundleName: string;
+}
+
 interface EventInfo {
   imageUrl: string; // 活动背景图URL
   eventId: number; // 活动ID
@@ -33,56 +41,20 @@ interface EventInfo {
   answers: string[]; // 活动名称和别名
   assetbundleName: string; // 活动资源包名称
   server: string; // 服务器（cn/jp）
-  event: Record<string, any>; // 完整活动数据
-}
-
-// 实现Levenshtein相似度算法
-function levenshtein_similarity(s1: string, s2: string): number {
-  if (!s1 && !s2) {
-    return 1.0; // 两个都为空字符串
-  }
-  if (!s1 || !s2) {
-    return 0.0; // 其中一个为空
-  }
-
-  // 确保 s1 是较长的字符串
-  if (s1.length < s2.length) {
-    return levenshtein_similarity(s2, s1);
-  }
-
-  // 初始化上一行
-  const prevRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
-
-  for (let i = 1; i <= s1.length; i++) {
-    const currRow = [i];
-    for (let j = 1; j <= s2.length; j++) {
-      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
-      currRow[j] = Math.min(
-        prevRow[j] + 1, // 删除
-        currRow[j - 1] + 1, // 插入
-        prevRow[j - 1] + cost // 替换
-      );
-    }
-    prevRow.splice(0, prevRow.length, ...currRow);
-  }
-
-  // 编辑距离
-  const editDistance = prevRow[prevRow.length - 1];
-
-  // 归一化到 [0, 1]
-  const maxLen = Math.max(s1.length, s2.length);
-  const similarity = 1.0 - editDistance / maxLen;
-
-  return similarity;
+  event: PjskEvent; // 完整活动数据
 }
 
 // 获取随机活动
 async function getRandomEvent(server: string = 'cn'): Promise<EventInfo> {
   // 从API获取活动数据
   const eventsUrl = `https://sekai-world.github.io/sekai-master-db-${server}-diff/events.json`;
-  const events = (await fetch(eventsUrl).then((res) => res.json())) as Array<
-    Record<string, any>
-  >;
+  const events = (await fetch(eventsUrl).then((res) =>
+    res.json()
+  )) as Array<PjskEvent>;
+
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new Error('Failed to fetch events or events list is empty');
+  }
 
   // 随机选择一个活动
   const event = events[Math.floor(Math.random() * events.length)];
@@ -106,12 +78,16 @@ async function getEventInfoById(
 ): Promise<EventInfo> {
   // 从API获取活动数据
   const eventsUrl = `https://sekai-world.github.io/sekai-master-db-${server}-diff/events.json`;
-  const events = (await fetch(eventsUrl).then((res) => res.json())) as Array<
-    Record<string, any>
-  >;
+  const events = (await fetch(eventsUrl).then((res) =>
+    res.json()
+  )) as Array<PjskEvent>;
+
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new Error('Failed to fetch events or events list is empty');
+  }
 
   // 找到对应的活动
-  const event = events.find((e: any) => e.id === eventId);
+  const event = events.find((e) => e.id === eventId);
   if (!event) {
     throw new Error(`未找到活动ID: ${eventId}`);
   }

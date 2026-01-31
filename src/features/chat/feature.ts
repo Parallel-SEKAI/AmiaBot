@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import {
@@ -105,8 +106,14 @@ async function chat(data: Record<string, any>) {
       })
       .join('\n');
 
+    type ContentPart =
+      | { type: 'text'; text: string }
+      | { type: 'image_url'; image_url: { url: string } };
+
     // 构建内容数组，包含文本和图片
-    const content: Array<any> = [{ type: 'text', text: message.toString() }];
+    const content: Array<ContentPart> = [
+      { type: 'text', text: message.toString() },
+    ];
 
     // 处理消息中的图片
     for (const msg of message.message) {

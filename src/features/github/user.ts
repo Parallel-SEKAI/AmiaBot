@@ -19,7 +19,7 @@ export async function getUserInfo(
     response = await octokit.rest.users.getByUsername({
       username,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[feature.github.user][User: %s]', username, error);
     return false;
   }

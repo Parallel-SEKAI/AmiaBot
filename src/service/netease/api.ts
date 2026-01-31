@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { config } from '../../config/index.js';
 import fetch from 'node-fetch';
 import { createCipheriv, createHash } from 'crypto';
@@ -23,6 +24,52 @@ function pkcs7Pad(data: Buffer, blockSize: number): Buffer {
   const padLength = blockSize - (data.length % blockSize);
   const pad = Buffer.alloc(padLength, padLength);
   return Buffer.concat([data, pad]);
+}
+
+export interface NeteasePlaylist {
+  name: string;
+  cover: string;
+  creator: string;
+  songs: number[];
+}
+
+export interface NeteaseSongDetail {
+  id: number;
+  name: string;
+  artist: string[];
+  album: string;
+  duration: number;
+  cover: string;
+}
+
+export interface NeteaseLyric {
+  lyric: string;
+  translate: string;
+  romac: string;
+  lyricWords: string;
+}
+
+export interface NeteaseErrorResponse {
+  error: string;
+  details?: string;
+  response_text?: string;
+}
+
+export interface NeteaseSearchResult {
+  id: number;
+  name: string;
+  ar: Array<{ id: number; name: string }>;
+  al: { id: number; name: string; picUrl: string };
+  dt: number; // duration
+  [key: string]: any;
+}
+
+export interface NeteaseSearchResponse {
+  result?: {
+    songs?: NeteaseSearchResult[];
+    songCount?: number;
+  };
+  code: number;
 }
 
 export class NeteaseApi {
@@ -54,7 +101,9 @@ export class NeteaseApi {
    * @param playlist_id 播放列表ID
    * @returns 播放列表信息
    */
-  async getPlaylist(playlist_id: number): Promise<any> {
+  async getPlaylist(
+    playlist_id: number
+  ): Promise<NeteasePlaylist | NeteaseErrorResponse> {
     const url = 'https://music.163.com/api/v6/playlist/detail';
     const data = new URLSearchParams({ id: playlist_id.toString() });
 
@@ -76,16 +125,16 @@ export class NeteaseApi {
       });
 
       text = await response.text();
-      const result: any = JSON.parse(text);
-      const playlist: any = result.playlist || {};
+      const result = JSON.parse(text);
+      const playlist = result.playlist || {};
 
       return {
         name: playlist.name || '',
         cover: playlist.coverImgUrl || '',
         creator: playlist.creator?.nickname || '',
-        songs: (playlist.trackIds || []).map((i: any) => i.id || 0),
+        songs: (playlist.trackIds || []).map((i: { id: number }) => i.id || 0),
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof SyntaxError) {
         return {
           error: '解析播放列表JSON失败',
@@ -95,7 +144,7 @@ export class NeteaseApi {
       } else {
         return {
           error: '获取播放列表失败',
-          details: e.message,
+          details: (e as Error).message,
         };
       }
     }
@@ -106,7 +155,9 @@ export class NeteaseApi {
    * @param song_id 歌曲ID
    * @returns 歌曲详情
    */
-  async getSongDetail(song_id: number): Promise<any> {
+  async getSongDetail(
+    song_id: number
+  ): Promise<NeteaseSongDetail | NeteaseErrorResponse> {
     const url = 'https://interface3.music.163.com/api/v3/song/detail';
     const requestData = new URLSearchParams({
       c: JSON.stringify([{ id: song_id, v: 0 }]),
@@ -127,17 +178,17 @@ export class NeteaseApi {
 
       text = await response.text();
       const response_data = JSON.parse(text);
-      const songData: any = response_data.songs?.[0] || {};
+      const songData = response_data.songs?.[0] || {};
 
       return {
         id: songData.id || 0,
         name: songData.name || '',
-        artist: (songData.ar || []).map((i: any) => i.name || ''),
+        artist: (songData.ar || []).map((i: { name: string }) => i.name || ''),
         album: songData.al?.name || '',
         duration: songData.dt || 0,
         cover: songData.al?.picUrl || '',
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof SyntaxError) {
         return {
           error: '解析歌曲详情JSON失败',
@@ -147,7 +198,7 @@ export class NeteaseApi {
       } else {
         return {
           error: '获取歌曲详情失败',
-          details: e.message,
+          details: (e as Error).message,
         };
       }
     }
@@ -163,7 +214,7 @@ export class NeteaseApi {
       const data = await this.url_v1(song_id, 'hires');
       logger.info('[service.netease] Got song URL data: %j', data);
       return data.data?.[0]?.url || null;
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('[service.netease] Failed to get song URL:', e);
       return null;
     }
@@ -183,7 +234,7 @@ export class NeteaseApi {
         url: data.data?.[0]?.url || '',
         md5: data.data?.[0]?.md5 || '',
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('[service.netease] Failed to get song URL and MD5:', e);
       return null;
     }
@@ -194,7 +245,9 @@ export class NeteaseApi {
    * @param song_id 歌曲ID
    * @returns 歌词数据
    */
-  async getLyric(song_id: number): Promise<any> {
+  async getLyric(
+    song_id: number
+  ): Promise<NeteaseLyric | NeteaseErrorResponse> {
     const url = 'https://interface3.music.163.com/api/song/lyric';
     const requestData = new URLSearchParams({
       id: song_id.toString(),
@@ -230,7 +283,7 @@ export class NeteaseApi {
         romac: lyricData.romalrc?.lyric || '',
         lyricWords: lyricData.yrc?.lyric || '',
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof SyntaxError) {
         return {
           error: '解析歌词JSON失败',
@@ -240,7 +293,7 @@ export class NeteaseApi {
       } else {
         return {
           error: '获取歌词失败',
-          details: e.message,
+          details: (e as Error).message,
         };
       }
     }
@@ -251,7 +304,9 @@ export class NeteaseApi {
    * @param keywords 搜索关键词
    * @returns 搜索结果
    */
-  async search(keywords: string): Promise<any> {
+  async search(
+    keywords: string
+  ): Promise<NeteaseSearchResponse | NeteaseErrorResponse> {
     const url = 'https://music.163.com/api/cloudsearch/pc';
     const params = new URLSearchParams({
       s: keywords,
@@ -272,7 +327,7 @@ export class NeteaseApi {
 
       text = await response.text();
       return JSON.parse(text);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof SyntaxError) {
         return {
           error: '解析搜索结果JSON失败',
@@ -282,7 +337,7 @@ export class NeteaseApi {
       } else {
         return {
           error: '搜索失败',
-          details: e.message,
+          details: (e as Error).message,
         };
       }
     }
@@ -299,7 +354,7 @@ export class NeteaseApi {
       'https://interface3.music.163.com/eapi/song/enhance/player/url/v1';
     const AES_KEY = Buffer.from('e82ckenh8dichen8');
 
-    const config = {
+    const eapiConfig = {
       os: 'pc',
       appver: '',
       osver: '',
@@ -307,15 +362,15 @@ export class NeteaseApi {
       requestId: Math.floor(Math.random() * 10000000 + 20000000).toString(),
     };
 
-    const payload = {
+    const payload: Record<string, any> = {
       ids: [id],
       level: level,
       encodeType: 'flac',
-      header: JSON.stringify(config),
+      header: JSON.stringify(eapiConfig),
     };
 
     if (level === 'sky') {
-      (payload as any).immerseType = 'c51';
+      payload.immerseType = 'c51';
     }
 
     // 获取URL路径部分，而不是整个URL
@@ -340,7 +395,7 @@ export class NeteaseApi {
       const response = await this.post(url, params);
       responseText = response;
       return JSON.parse(responseText);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof SyntaxError) {
         return {
           error: '解析歌曲URL JSON失败',
@@ -350,7 +405,7 @@ export class NeteaseApi {
       } else {
         return {
           error: '获取歌曲URL数据失败',
-          details: e.message,
+          details: (e as Error).message,
         };
       }
     }

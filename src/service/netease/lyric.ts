@@ -14,10 +14,10 @@ export class Lyric {
    */
   async getLyric(): Promise<void> {
     const data = await this.api.getLyric(this.songId);
-    if (data.lyric) {
+    if ('lyric' in data) {
       this.original_lyric = data.lyric;
     }
-    if (data.translate) {
+    if ('translate' in data) {
       this.original_translate = data.translate;
     }
   }
