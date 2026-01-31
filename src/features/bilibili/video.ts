@@ -2,7 +2,6 @@ import assert from 'assert';
 import {
   AvBvParams,
   VideoInfo,
-  VideoSection,
   VideoEpisode,
   UgcSeason,
   VideoEpisodeStat,
