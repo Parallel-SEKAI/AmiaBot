@@ -18,6 +18,7 @@ const envVarsSchema = z
     PREFIXES: z.string().optional().default(''),
     HELP_TEXT: z.string().optional().default(''),
     FEATURES_DEFAULT_ENABLED: z.string().optional().default('true'),
+    MESSAGE_MATCH_LIKE_FACE_ID: z.coerce.number().optional().default(0),
     EXIT_WHEN_ERROR: z.string().optional().default('true'),
     ONEBOT_HTTP_URL: z.string().optional().default(''),
     ONEBOT_WS_URL: z.string().optional().default(''),
@@ -45,6 +46,7 @@ export interface IConfig {
   prefixes: string[];
   helpText: string;
   featuresDefaultEnabled: boolean;
+  messageMatchLikeFaceId: number;
   exitWhenError: boolean;
   onebot: {
     httpUrl: string;
@@ -84,6 +86,7 @@ export const config: IConfig = {
   helpText: envVars.HELP_TEXT || '',
   featuresDefaultEnabled:
     envVars.FEATURES_DEFAULT_ENABLED.toLowerCase() === 'true',
+  messageMatchLikeFaceId: envVars.MESSAGE_MATCH_LIKE_FACE_ID || 0,
   exitWhenError: envVars.EXIT_WHEN_ERROR.toLowerCase() === 'true',
   onebot: {
     httpUrl: envVars.ONEBOT_HTTP_URL || '',
