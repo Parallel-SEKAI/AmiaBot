@@ -250,7 +250,7 @@ export async function getBilibiliVideoInfo(
           season_id: section.season_id,
           id: section.id,
           type: section.type,
-          episodes: section.episodes?.map((episode) => {
+          episodes: (section.episodes ?? []).map((episode) => {
             const arc = episode.arc;
             const stat = arc?.stat;
 
