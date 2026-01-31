@@ -1,0 +1,11 @@
+dist/
+node_modules/
+.env
+.trae
+temp/
+docs/.vitepress/dist
+docs/.vitepress/cache
+assets/styles.css
+
+.git
+.pnpm-debug.log
