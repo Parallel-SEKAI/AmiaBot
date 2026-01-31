@@ -7,7 +7,13 @@ import {
   SendRecordMessage,
   SendForwardMessage,
 } from '../../onebot/message/send.entity.js';
-import { NeteaseApi, Song, Lyric } from '../../service/netease/index.js';
+import {
+  NeteaseApi,
+  Song,
+  Lyric,
+  NeteaseSearchResult,
+  NeteaseSearchResponse,
+} from '../../service/netease/index.js';
 import { ReactRenderer } from '../../service/render/react.js';
 import { SearchCard } from '../../components/netease/SearchCard.js';
 import { parseCommandLineArgs } from '../../utils/index.js';
@@ -82,7 +88,7 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
 
       // 搜索歌曲
       const searchData = await api.search(keywords);
-      const result = searchData.result?.songs || [];
+      const result = (searchData as NeteaseSearchResponse).result?.songs || [];
       if (result.length === 0) {
         await message.reply(
           new SendMessage({
@@ -251,7 +257,7 @@ export async function search(message: RecvMessage): Promise<void> {
     const keywords = parts[1];
 
     // 搜索歌曲
-    const searchData = await api.search(keywords);
+    const searchData = (await api.search(keywords)) as NeteaseSearchResponse;
     const result = searchData.result?.songs || [];
     if (result.length === 0) {
       await message.reply(
@@ -266,7 +272,7 @@ export async function search(message: RecvMessage): Promise<void> {
     // 创建歌曲对象列表
     const songs = result
       .slice(0, 10)
-      .map((song: { id: number }) => new Song(song.id, api));
+      .map((song: NeteaseSearchResult) => new Song(song.id, api));
 
     // 并发获取所有歌曲的详情
     await Promise.all(songs.map((song: Song) => song.getDetail()));

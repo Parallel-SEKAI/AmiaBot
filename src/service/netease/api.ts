@@ -55,6 +55,23 @@ export interface NeteaseErrorResponse {
   response_text?: string;
 }
 
+export interface NeteaseSearchResult {
+  id: number;
+  name: string;
+  ar: Array<{ id: number; name: string }>;
+  al: { id: number; name: string; picUrl: string };
+  dt: number; // duration
+  [key: string]: any;
+}
+
+export interface NeteaseSearchResponse {
+  result?: {
+    songs?: NeteaseSearchResult[];
+    songCount?: number;
+  };
+  code: number;
+}
+
 export class NeteaseApi {
   private cookies: Record<string, string> = {};
   private cache: boolean;
@@ -287,7 +304,9 @@ export class NeteaseApi {
    * @param keywords 搜索关键词
    * @returns 搜索结果
    */
-  async search(keywords: string): Promise<any> {
+  async search(
+    keywords: string
+  ): Promise<NeteaseSearchResponse | NeteaseErrorResponse> {
     const url = 'https://music.163.com/api/cloudsearch/pc';
     const params = new URLSearchParams({
       s: keywords,

@@ -41,12 +41,16 @@ export async function init() {
         'gemini'
       ).trim();
 
-      type ContentPart =
+      // OpenAI SDK uses 'ChatCompletionContentPart' but we can define a compatible type or use the SDK's type if available.
+      // Since we don't have the SDK types imported here, we'll define a strictly typed union that matches.
+      type ChatContentPart =
         | { type: 'text'; text: string }
-        | { type: 'image_url'; image_url: { url: string } };
+        | { type: 'image_url'; image_url: { url: string; detail?: 'auto' } };
 
       // 构建 OpenAI 消息格式
-      const content: Array<ContentPart> = [{ type: 'text', text: question }];
+      const content: Array<ChatContentPart> = [
+        { type: 'text', text: question },
+      ];
 
       for (const msg of message.message) {
         if (msg instanceof RecvImageMessage && msg.url) {
@@ -64,7 +68,7 @@ export async function init() {
           model: config.openai.model,
           messages: [
             { role: 'system', content: '请使用中文回答' },
-            { role: 'user', content: content as any },
+            { role: 'user', content: content },
           ],
           ...(config.openai.maxToken > 0
             ? { max_tokens: config.openai.maxToken }

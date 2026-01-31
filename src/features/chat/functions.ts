@@ -43,11 +43,30 @@ interface CharacterScenarioResponse {
 export async function getCharactersSelfIntroduction(
   scenarioId: string
 ): Promise<string> {
-  const response = await fetch(
-    `https://storage.sekai.best/sekai-cn-assets/scenario/profile/${scenarioId}.asset`
-  );
-  const data = (await response.json()) as CharacterScenarioResponse;
-  return data.TalkData.map((item) => item.Body).join('\n');
+  try {
+    const response = await fetch(
+      `https://storage.sekai.best/sekai-cn-assets/scenario/profile/${scenarioId}.asset`
+    );
+
+    if (!response.ok) {
+      return '';
+    }
+
+    const data = (await response.json()) as CharacterScenarioResponse;
+
+    if (!data || !Array.isArray(data.TalkData)) {
+      return '';
+    }
+
+    return data.TalkData.map((item) => item.Body).join('\n');
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(
+        `Failed to fetch character introduction: ${error.message}`
+      );
+    }
+    throw error;
+  }
 }
 
 interface NeteaseSearchResponse {

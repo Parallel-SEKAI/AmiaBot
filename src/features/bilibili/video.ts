@@ -60,8 +60,60 @@ interface BilibiliViewResponse {
   };
 }
 
+interface BilibiliResourceInfo {
+  av: number;
+  bv: string;
+  title: string;
+  cover: string;
+  upper: {
+    mid: number;
+    name: string;
+    face: string;
+  };
+  cnt_info: {
+    coin: number;
+    collect: number;
+    danmaku: number;
+    play: number;
+    play_switch: number;
+    reply: number;
+    share: number;
+    thumb_down: number;
+    thumb_up: number;
+    view_text_1: string;
+    vt: number;
+  };
+  pages: Array<{
+    page: number;
+    title: string;
+    duration: number;
+  }>;
+  intro: string;
+  ugc_season?: {
+    sections: Array<{
+      title: string;
+      episodes: Array<{
+        title: string;
+        bvid: string;
+        arc: {
+          duration: number;
+          stat: {
+            view: number;
+            like: number;
+            fav: number;
+            coin: number;
+            danmaku: number;
+            reply: number;
+            share: number;
+          };
+        };
+      }>;
+    }>;
+  };
+}
+
 interface BilibiliResourceResponse {
-  data?: Array<VideoInfo>;
+  data?: Array<BilibiliResourceInfo>;
 }
 
 export async function getBilibiliVideoInfo(
@@ -105,10 +157,12 @@ export async function getBilibiliVideoInfo(
 
   // 处理数据，转换为VideoInfo类型
   const info1 = viewData.data || {};
-  const info2 = resourceData.data?.[0];
+  const resourceInfo = resourceData.data?.[0];
 
-  if (!info2) {
-    throw new Error('Failed to get video info from resource API');
+  if (!resourceInfo) {
+    throw new Error(
+      'Failed to get video info from resource API: data is missing or empty'
+    );
   }
 
   // 计算合集统计数据
@@ -144,10 +198,15 @@ export async function getBilibiliVideoInfo(
 
   // 构建VideoInfo对象
   const videoInfo: VideoInfo = {
-    ...info2,
-    av: av || bv2av(bv!),
-    bv: bv || av2bv(av!),
-    ugc_season: ugc_season as any, // VideoInfo in typing.ts has slightly different structure for ugc_season
+    av: resourceInfo.av || av || bv2av(bv!),
+    bv: resourceInfo.bv || bv || av2bv(av!),
+    title: resourceInfo.title,
+    cover: resourceInfo.cover,
+    upper: resourceInfo.upper,
+    cnt_info: resourceInfo.cnt_info,
+    pages: resourceInfo.pages,
+    intro: resourceInfo.intro,
+    ugc_season: (resourceInfo.ugc_season || ugc_season) as any, // VideoInfo in typing.ts has slightly different structure for ugc_season
     total_episodes,
     total_duration,
     total_view,

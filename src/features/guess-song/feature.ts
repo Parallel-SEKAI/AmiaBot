@@ -207,7 +207,13 @@ async function cutMusic(musicUrl: string, duration: number): Promise<Buffer> {
       );
     });
   } catch (error: unknown) {
-    throw new Error(`处理音频失败: ${(error as Error).message}`);
+    let msg: string;
+    if (error instanceof Error) {
+      msg = error.message;
+    } else {
+      msg = String(error);
+    }
+    throw new Error(`处理音频失败: ${msg}`);
   } finally {
     // 6. 清理临时文件
     await safeUnlink(tempFilePath);

@@ -13,7 +13,7 @@ import { checkFeatureEnabled } from '../service/db.js';
  */
 export type CommandHandler = (
   data: Record<string, any>,
-  match: string | RegExpExecArray | unknown
+  match?: string | RegExpExecArray
 ) => Promise<void>;
 
 export interface RegisteredCommand {
@@ -75,7 +75,7 @@ export class OneBotClient extends EventEmitter {
   ) {
     const wrappedHandler = async (
       data: Record<string, any>,
-      match: string | RegExpExecArray | unknown
+      match?: string | RegExpExecArray
     ) => {
       if (featureName && data.group_id) {
         const enabled = await checkFeatureEnabled(data.group_id, featureName);
