@@ -16,6 +16,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../../config/index.js';
 import logger from '../../config/logger.js';
+import { openai } from '../../service/openai.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -263,7 +264,9 @@ export async function search(message: RecvMessage): Promise<void> {
     }
 
     // 创建歌曲对象列表
-    const songs = result.slice(0, 10).map((song) => new Song(song.id, api));
+    const songs = result
+      .slice(0, 10)
+      .map((song: { id: number }) => new Song(song.id, api));
 
     // 并发获取所有歌曲的详情
     await Promise.all(songs.map((song: Song) => song.getDetail()));

@@ -40,7 +40,7 @@ export class Song {
    */
   async getDetail(): Promise<void> {
     const data = await this.api.getSongDetail(this.id);
-    if (data.id) {
+    if ('id' in data) {
       this.id = data.id;
       this.name = data.name;
       this.artists = data.artist;

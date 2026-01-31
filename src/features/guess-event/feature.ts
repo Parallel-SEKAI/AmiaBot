@@ -13,6 +13,7 @@ import {
   setGameState,
   deleteGameState,
 } from '../../service/db.js';
+import { levenshtein_similarity } from '../../utils/index.js';
 
 // 难度映射表
 const difficulty = {
@@ -41,46 +42,6 @@ interface EventInfo {
   assetbundleName: string; // 活动资源包名称
   server: string; // 服务器（cn/jp）
   event: PjskEvent; // 完整活动数据
-}
-
-// 实现Levenshtein相似度算法
-function levenshtein_similarity(s1: string, s2: string): number {
-  if (!s1 && !s2) {
-    return 1.0; // 两个都为空字符串
-  }
-  if (!s1 || !s2) {
-    return 0.0; // 其中一个为空
-  }
-
-  // 确保 s1 是较长的字符串
-  if (s1.length < s2.length) {
-    return levenshtein_similarity(s2, s1);
-  }
-
-  // 初始化上一行
-  const prevRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
-
-  for (let i = 1; i <= s1.length; i++) {
-    const currRow = [i];
-    for (let j = 1; j <= s2.length; j++) {
-      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
-      currRow[j] = Math.min(
-        prevRow[j] + 1, // 删除
-        currRow[j - 1] + 1, // 插入
-        prevRow[j - 1] + cost // 替换
-      );
-    }
-    prevRow.splice(0, prevRow.length, ...currRow);
-  }
-
-  // 编辑距离
-  const editDistance = prevRow[prevRow.length - 1];
-
-  // 归一化到 [0, 1]
-  const maxLen = Math.max(s1.length, s2.length);
-  const similarity = 1.0 - editDistance / maxLen;
-
-  return similarity;
 }
 
 // 获取随机活动

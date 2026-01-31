@@ -106,7 +106,7 @@ export class SendMessage {
     if (args.recvMessage && data.data && data.data.message_id) {
       stateService.addMessageRelation(
         args.recvMessage.messageId,
-        Number(data.data.message_id)
+        String(data.data.message_id)
       );
     }
 
@@ -166,7 +166,7 @@ export class SendMessage {
     if (recvMessage && data.data && data.data.message_id) {
       stateService.addMessageRelation(
         recvMessage.messageId,
-        Number(data.data.message_id)
+        String(data.data.message_id)
       );
     }
 

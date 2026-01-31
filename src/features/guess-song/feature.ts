@@ -8,7 +8,7 @@ import {
   SendRecordMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
-import { safeUnlink } from '../../utils/index.js';
+import { safeUnlink, levenshtein_similarity } from '../../utils/index.js';
 
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';

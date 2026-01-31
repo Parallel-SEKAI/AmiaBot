@@ -18,12 +18,14 @@ export async function safeUnlink(filePath: string): Promise<void> {
       error &&
       typeof error === 'object' &&
       'code' in error &&
-      error.code !== 'ENOENT'
+      (error as { code: string }).code !== 'ENOENT'
     ) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.warn(
         '[utils.safeUnlink] Failed to delete file %s: %s',
         filePath,
-        (error as Error).message
+        errorMessage
       );
     }
   }
@@ -190,4 +192,50 @@ export function extractAfterCaseInsensitive(
   }
   const endIndex = startIndex + searchString.length;
   return source.substring(endIndex);
+}
+
+/**
+ * Levenshtein Distance Algorithm
+ * Calculate the similarity between two strings
+ * @param s1 String 1
+ * @param s2 String 2
+ * @returns Similarity (0-1)
+ */
+export function levenshtein_similarity(s1: string, s2: string): number {
+  if (!s1 && !s2) {
+    return 1.0; // Both are empty strings
+  }
+  if (!s1 || !s2) {
+    return 0.0; // One is empty
+  }
+
+  // Ensure s1 is the longer string
+  if (s1.length < s2.length) {
+    return levenshtein_similarity(s2, s1);
+  }
+
+  // Initialize previous row
+  const prevRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
+
+  for (let i = 1; i <= s1.length; i++) {
+    const currRow = [i];
+    for (let j = 1; j <= s2.length; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      currRow[j] = Math.min(
+        prevRow[j] + 1, // deletion
+        currRow[j - 1] + 1, // insertion
+        prevRow[j - 1] + cost // substitution
+      );
+    }
+    prevRow.splice(0, prevRow.length, ...currRow);
+  }
+
+  // Edit distance
+  const editDistance = prevRow[prevRow.length - 1];
+
+  // Normalize to [0, 1]
+  const maxLen = Math.max(s1.length, s2.length);
+  const similarity = 1.0 - editDistance / maxLen;
+
+  return similarity;
 }
