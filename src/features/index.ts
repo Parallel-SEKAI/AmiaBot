@@ -23,6 +23,7 @@ import { socialFeature } from './social/index.js';
 import { pingFeature } from './ping/index.js';
 import { jokeFeature } from './joke/index.js';
 import { sleepTracker } from './sleep-tracker/index.js';
+import { replyFeature } from './reply/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -46,6 +47,7 @@ const FEATURES = [
   pingFeature,
   jokeFeature,
   sleepTracker,
+  replyFeature,
 ];
 
 /**

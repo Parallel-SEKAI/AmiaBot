@@ -529,4 +529,26 @@ export class RecvMessage {
   public toString(): string {
     return `(${this.nickname}/${this.userId})[${this.time.toLocaleString()}]${JSON.stringify(this.rawMessage)}`;
   }
+
+  public async like(emoji_id: string): Promise<boolean> {
+    return (
+      (
+        await onebot.action('set_msg_emoji_like', {
+          message_id: this.messageId,
+          emoji_id,
+        })
+      ).retcode === 0
+    );
+  }
+
+  public async unlike(emoji_id: string): Promise<boolean> {
+    return (
+      (
+        await onebot.action('unset_msg_emoji_like', {
+          message_id: this.messageId,
+          emoji_id,
+        })
+      ).retcode === 0
+    );
+  }
 }
