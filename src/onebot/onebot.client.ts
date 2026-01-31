@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import { RecvMessage } from './message/recv.entity.js';
@@ -12,7 +13,7 @@ import { checkFeatureEnabled } from '../service/db.js';
  */
 export type CommandHandler = (
   data: Record<string, any>,
-  match: string | RegExpExecArray
+  match: string | RegExpExecArray | unknown
 ) => Promise<void>;
 
 export interface RegisteredCommand {
@@ -74,7 +75,7 @@ export class OneBotClient extends EventEmitter {
   ) {
     const wrappedHandler = async (
       data: Record<string, any>,
-      match: string | RegExpExecArray
+      match: string | RegExpExecArray | unknown
     ) => {
       if (featureName && data.group_id) {
         const enabled = await checkFeatureEnabled(data.group_id, featureName);
@@ -153,7 +154,7 @@ export class OneBotClient extends EventEmitter {
       }
       logger.debug('[onebot.action.%s] Recv: %s', action, JSON.stringify(data));
       return data;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[onebot.action.%s] Failed: %s', action, error);
       throw error;
     }
@@ -183,7 +184,7 @@ export class OneBotClient extends EventEmitter {
     const hash = createHash('sha256');
     const hashStream = createReadStream(filePath);
     for await (const chunk of hashStream) {
-      hash.update(chunk);
+      hash.update(chunk as Buffer);
     }
     const expectedSha256 = hash.digest('hex');
 
@@ -201,9 +202,9 @@ export class OneBotClient extends EventEmitter {
 
     // 1. 发送所有数据分片
     for await (const chunk of stream) {
-      const params: Record<string, any> = {
+      const params: Record<string, string | number> = {
         stream_id: streamId,
-        chunk_data: chunk.toString('base64'),
+        chunk_data: (chunk as Buffer).toString('base64'),
         chunk_index: chunkIndex,
         total_chunks: totalChunks,
       };
@@ -270,7 +271,7 @@ export class OneBotClient extends EventEmitter {
       const end = Math.min(start + DEFAULT_CHUNK_SIZE, fileSize);
       const chunk = buffer.subarray(start, end);
 
-      const params: Record<string, any> = {
+      const params: Record<string, string | number> = {
         stream_id: streamId,
         chunk_data: chunk.toString('base64'),
         chunk_index: chunkIndex,

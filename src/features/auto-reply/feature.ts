@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs/promises';
 import path from 'path';
 import logger from '../../config/logger.js';
@@ -11,11 +12,16 @@ import {
 
 const CONFIG_PATH = path.resolve(process.cwd(), 'assets/auto-reply/reply.json');
 
+interface ResponseSegment {
+  type: string;
+  data: Record<string, unknown>;
+}
+
 interface AutoReplyRule {
   trigger: {
     value: string;
   };
-  responses: any[][];
+  responses: ResponseSegment[][];
 }
 
 let rules: AutoReplyRule[] = [];
@@ -39,8 +45,13 @@ async function loadConfig() {
     const data = await fs.readFile(CONFIG_PATH, 'utf-8');
     rules = JSON.parse(data);
     logger.info('[feature.auto-reply] Loaded %d rules', rules.length);
-  } catch (error) {
-    if ((error as any).code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
       logger.warn(
         '[feature.auto-reply] Config file not found, initializing empty rules'
       );
@@ -58,7 +69,7 @@ export async function init() {
   await loadConfig();
 
   // 監聽所有消息事件
-  onebot.on('message', async (data: Record<string, any>) => {
+  onebot.on('message', async (data: Record<string, unknown>) => {
     if (data.user_id === onebot.qq) return;
 
     const message = RecvMessage.fromMap(data);
@@ -71,7 +82,7 @@ export async function init() {
       try {
         const regex = parseRegex(rule.trigger.value);
         matched = regex.test(content);
-      } catch (e) {
+      } catch (e: unknown) {
         logger.error(
           '[feature.auto-reply] Invalid regex "%s": %s',
           rule.trigger.value,
@@ -87,12 +98,13 @@ export async function init() {
 
         try {
           const messages = responseSegments.map(
-            (seg: any) => new SendBaseMessage(seg.type, seg.data)
+            (seg) =>
+              new SendBaseMessage(seg.type, seg.data as Record<string, any>)
           );
           await new SendMessage({
             message: messages,
           }).send({ recvMessage: message });
-        } catch (e) {
+        } catch (e: unknown) {
           logger.error('[feature.auto-reply] Failed to send reply: %s', e);
         }
 

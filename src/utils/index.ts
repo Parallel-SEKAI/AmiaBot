@@ -13,12 +13,17 @@ import logger from '../config/logger.js';
 export async function safeUnlink(filePath: string): Promise<void> {
   try {
     await fs.unlink(filePath);
-  } catch (error: any) {
-    if (error.code !== 'ENOENT') {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code !== 'ENOENT'
+    ) {
       logger.warn(
         '[utils.safeUnlink] Failed to delete file %s: %s',
         filePath,
-        error.message
+        (error as Error).message
       );
     }
   }
@@ -143,7 +148,7 @@ export function hexToRgba(hex: string): [number, number, number, number] {
  */
 export function renderTemplate(
   templateString: string,
-  data: { [key: string]: any }
+  data: Record<string, string | number | null | undefined>
 ): string {
   // 正则表达式匹配 {{key}} 或 {{ key }} 格式的占位符
   // \s* 允许 key 的前后有任意空格
@@ -158,7 +163,7 @@ export function renderTemplate(
     // 它可以避免 data 对象原型链上的属性干扰
     if (Object.prototype.hasOwnProperty.call(data, key)) {
       // 如果在 data 对象中找到了 key，则返回值
-      return data[key.trim()];
+      return String(data[key.trim()]);
     }
 
     // 如果没有找到对应的 key，则返回原始占位符

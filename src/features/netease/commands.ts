@@ -6,35 +6,19 @@ import {
   SendImageMessage,
   SendRecordMessage,
   SendForwardMessage,
-  SendFileMessage,
-  ForwardMessageNode,
 } from '../../onebot/message/send.entity.js';
 import { NeteaseApi, Song, Lyric } from '../../service/netease/index.js';
 import { ReactRenderer } from '../../service/render/react.js';
 import { SearchCard } from '../../components/netease/SearchCard.js';
 import { parseCommandLineArgs } from '../../utils/index.js';
-import { readFileSync, promises as fs } from 'fs';
+import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import fetch from 'node-fetch';
-import { openai } from '../../service/openai.js';
 import { config } from '../../config/index.js';
 import logger from '../../config/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// 实现downloadFile函数
-async function downloadFile(url: string, filePath: string): Promise<void> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to download file: ${response.status} ${response.statusText}`
-    );
-  }
-  const buffer = await response.buffer();
-  await fs.writeFile(filePath, buffer);
-}
 
 // 初始化网易云API
 const api: NeteaseApi = new NeteaseApi();
@@ -74,7 +58,7 @@ const prompt = readFileSync(promptPath, 'utf-8');
  */
 export async function emojilyric(message: RecvMessage): Promise<void> {
   try {
-    const [args, kwargs] = parseCommandLineArgs(message.content);
+    const [, kwargs] = parseCommandLineArgs(message.content);
     let songId: number;
 
     // 获取歌曲ID，支持两种方式: 通过参数指定ID或通过关键词搜索
@@ -279,9 +263,7 @@ export async function search(message: RecvMessage): Promise<void> {
     }
 
     // 创建歌曲对象列表
-    const songs = result
-      .slice(0, 10)
-      .map((song: any) => new Song(song.id, api));
+    const songs = result.slice(0, 10).map((song) => new Song(song.id, api));
 
     // 并发获取所有歌曲的详情
     await Promise.all(songs.map((song: Song) => song.getDetail()));

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
@@ -26,6 +27,12 @@ const difficulty = {
 const timeout = 60.0; // 60秒超时
 const targetSimilarity = 0.5; // 相似度阈值
 
+interface PjskEvent {
+  id: number;
+  name: string;
+  assetbundleName: string;
+}
+
 interface EventInfo {
   imageUrl: string; // 活动背景图URL
   eventId: number; // 活动ID
@@ -33,7 +40,7 @@ interface EventInfo {
   answers: string[]; // 活动名称和别名
   assetbundleName: string; // 活动资源包名称
   server: string; // 服务器（cn/jp）
-  event: Record<string, any>; // 完整活动数据
+  event: PjskEvent; // 完整活动数据
 }
 
 // 实现Levenshtein相似度算法
@@ -80,9 +87,9 @@ function levenshtein_similarity(s1: string, s2: string): number {
 async function getRandomEvent(server: string = 'cn'): Promise<EventInfo> {
   // 从API获取活动数据
   const eventsUrl = `https://sekai-world.github.io/sekai-master-db-${server}-diff/events.json`;
-  const events = (await fetch(eventsUrl).then((res) => res.json())) as Array<
-    Record<string, any>
-  >;
+  const events = (await fetch(eventsUrl).then((res) =>
+    res.json()
+  )) as Array<PjskEvent>;
 
   // 随机选择一个活动
   const event = events[Math.floor(Math.random() * events.length)];
@@ -106,12 +113,12 @@ async function getEventInfoById(
 ): Promise<EventInfo> {
   // 从API获取活动数据
   const eventsUrl = `https://sekai-world.github.io/sekai-master-db-${server}-diff/events.json`;
-  const events = (await fetch(eventsUrl).then((res) => res.json())) as Array<
-    Record<string, any>
-  >;
+  const events = (await fetch(eventsUrl).then((res) =>
+    res.json()
+  )) as Array<PjskEvent>;
 
   // 找到对应的活动
-  const event = events.find((e: any) => e.id === eventId);
+  const event = events.find((e) => e.id === eventId);
   if (!event) {
     throw new Error(`未找到活动ID: ${eventId}`);
   }

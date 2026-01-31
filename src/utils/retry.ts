@@ -32,7 +32,7 @@ export async function retry<T>(
     try {
       logger.debug(`[retry] Attempt ${attempt}/${maxAttempts}`);
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
 
       if (attempt === maxAttempts || !shouldRetry(error)) {

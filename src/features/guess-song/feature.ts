@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
@@ -33,56 +34,26 @@ const difficulty = {
 const timeout = 60.0; // 60秒超时
 const targetSimilarity = 0.75; // 相似度阈值
 
+interface PjskMusic {
+  id: number;
+  title: string;
+  assetbundleName: string;
+}
+
+interface PjskVocal {
+  id: number;
+  musicId: number;
+  assetbundleName: string;
+}
+
 interface MusicInfo {
   imageUrl: string;
   musicId: number;
   title: string;
   answers: string[];
   assetbundleName: string;
-  vocal: Record<string, any>;
-  music: Record<string, any>;
-}
-
-/**
- * 计算 Levenshtein 相似度（0~1），1 表示完全相同，0 表示无任何相同字符
- */
-function levenshtein_similarity(s1: string, s2: string): number {
-  if (!s1 && !s2) {
-    return 1.0; // 两个都为空字符串
-  }
-  if (!s1 || !s2) {
-    return 0.0; // 其中一个为空
-  }
-
-  // 确保 s1 是较长的字符串
-  if (s1.length < s2.length) {
-    return levenshtein_similarity(s2, s1);
-  }
-
-  // 初始化上一行
-  const prevRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
-
-  for (let i = 1; i <= s1.length; i++) {
-    const currRow = [i];
-    for (let j = 1; j <= s2.length; j++) {
-      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
-      currRow[j] = Math.min(
-        prevRow[j] + 1, // 删除
-        currRow[j - 1] + 1, // 插入
-        prevRow[j - 1] + cost // 替换
-      );
-    }
-    prevRow.splice(0, prevRow.length, ...currRow);
-  }
-
-  // 编辑距离
-  const editDistance = prevRow[prevRow.length - 1];
-
-  // 归一化到 [0, 1]
-  const maxLen = Math.max(s1.length, s2.length);
-  const similarity = 1.0 - editDistance / maxLen;
-
-  return similarity;
+  vocal: PjskVocal;
+  music: PjskMusic;
 }
 
 /**
@@ -94,7 +65,7 @@ async function downloadFile(url: string, filePath: string): Promise<void> {
     const fileStream = fs.createWriteStream(filePath);
 
     client
-      .get(url, (response: any) => {
+      .get(url, (response: import('http').IncomingMessage) => {
         if (response.statusCode !== 200) {
           reject(new Error(`下载失败，状态码: ${response.statusCode}`));
           return;
@@ -107,13 +78,13 @@ async function downloadFile(url: string, filePath: string): Promise<void> {
           resolve();
         });
 
-        fileStream.on('error', async (error: any) => {
+        fileStream.on('error', async (error: Error) => {
           fileStream.close();
           await safeUnlink(filePath); // 删除不完整的文件
           reject(new Error(`写入文件失败: ${error.message}`));
         });
       })
-      .on('error', async (error: any) => {
+      .on('error', async (error: Error) => {
         await safeUnlink(filePath); // 删除不完整的文件
         reject(new Error(`请求失败: ${error.message}`));
       });
@@ -129,23 +100,23 @@ async function getMusicInfoById(musicId: number): Promise<MusicInfo> {
     'https://sekai-world.github.io/sekai-master-db-diff/musicVocals.json';
   const musicVocals = (await fetch(musicVocalsUrl).then((res) =>
     res.json()
-  )) as Array<any>;
+  )) as Array<PjskVocal>;
 
   // 2. 获取音乐详情
   const musicsUrl =
     'https://sekai-world.github.io/sekai-master-db-diff/musics.json';
   const musics = (await fetch(musicsUrl).then((res) =>
     res.json()
-  )) as Array<any>;
+  )) as Array<PjskMusic>;
 
   // 3. 找到对应的音乐
-  const music = musics.find((m: any) => m.id === musicId);
+  const music = musics.find((m) => m.id === musicId);
   if (!music) {
     throw new Error(`未找到音乐ID: ${musicId}`);
   }
 
   // 4. 找到对应的 vocal
-  const vocal = musicVocals.find((v: any) => v.musicId === musicId);
+  const vocal = musicVocals.find((v) => v.musicId === musicId);
   if (!vocal) {
     throw new Error(`未找到音乐ID: ${musicId} 的 vocal 数据`);
   }
@@ -153,15 +124,16 @@ async function getMusicInfoById(musicId: number): Promise<MusicInfo> {
   // 5. 获取音乐别名
   const aliasesUrl = `https://public-api.haruki.seiunx.com/alias/v1/music/${music.id}`;
   const aliasesRes = await fetch(aliasesUrl);
-  const aliasesData =
-    aliasesRes.status === 200 ? await aliasesRes.json() : { aliases: [] };
+  const aliasesData = (
+    aliasesRes.status === 200 ? await aliasesRes.json() : { aliases: [] }
+  ) as { aliases: string[] };
 
   // 6. 构建音乐信息
   return {
     imageUrl: `https://storage.sekai.best/sekai-jp-assets/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`,
     musicId: music.id,
     title: music.title,
-    answers: [music.title, ...(aliasesData as any).aliases],
+    answers: [music.title, ...aliasesData.aliases],
     assetbundleName: vocal.assetbundleName,
     vocal: vocal,
     music: music,
@@ -183,53 +155,59 @@ async function cutMusic(musicUrl: string, duration: number): Promise<Buffer> {
 
     // 2. 获取音频时长并裁剪
     return await new Promise<Buffer>((resolve, reject) => {
-      ffmpeg.ffprobe(tempFilePath, (err: any, metadata: any) => {
-        if (err) {
-          return reject(new Error(`获取音频时长失败: ${err.message}`));
-        }
+      ffmpeg.ffprobe(
+        tempFilePath,
+        (err: Error | null, metadata: ffmpeg.FfprobeData) => {
+          if (err) {
+            return reject(new Error(`获取音频时长失败: ${err.message}`));
+          }
 
-        const audioDuration = metadata.format.duration;
+          const audioDuration = metadata.format.duration;
+          if (audioDuration === undefined) {
+            return reject(new Error('无法获取音频时长'));
+          }
 
-        // 3. 检查音频长度是否足够
-        if (audioDuration <= duration) {
-          void (async () => {
-            try {
-              const buffer = await fs.promises.readFile(tempFilePath);
-              resolve(buffer);
-            } catch (e) {
-              reject(e);
-            }
-          })();
-          return;
-        }
-
-        // 4. 随机生成裁剪起始点
-        const maxStartTime = audioDuration - duration;
-        const startTime = Math.random() * maxStartTime;
-
-        // 5. 使用ffmpeg裁剪音频
-        ffmpeg(tempFilePath)
-          .setStartTime(startTime)
-          .setDuration(duration)
-          .output(croppedFilePath)
-          .on('end', () => {
+          // 3. 检查音频长度是否足够
+          if (audioDuration <= duration) {
             void (async () => {
               try {
-                const buffer = await fs.promises.readFile(croppedFilePath);
+                const buffer = await fs.promises.readFile(tempFilePath);
                 resolve(buffer);
               } catch (e) {
                 reject(e);
               }
             })();
-          })
-          .on('error', (error: any) => {
-            reject(new Error(`裁剪音频失败: ${error.message}`));
-          })
-          .run();
-      });
+            return;
+          }
+
+          // 4. 随机生成裁剪起始点
+          const maxStartTime = audioDuration - duration;
+          const startTime = Math.random() * maxStartTime;
+
+          // 5. 使用ffmpeg裁剪音频
+          ffmpeg(tempFilePath)
+            .setStartTime(startTime)
+            .setDuration(duration)
+            .output(croppedFilePath)
+            .on('end', () => {
+              void (async () => {
+                try {
+                  const buffer = await fs.promises.readFile(croppedFilePath);
+                  resolve(buffer);
+                } catch (e) {
+                  reject(e);
+                }
+              })();
+            })
+            .on('error', (error: Error) => {
+              reject(new Error(`裁剪音频失败: ${error.message}`));
+            })
+            .run();
+        }
+      );
     });
-  } catch (error: any) {
-    throw new Error(`处理音频失败: ${error.message}`);
+  } catch (error: unknown) {
+    throw new Error(`处理音频失败: ${(error as Error).message}`);
   } finally {
     // 6. 清理临时文件
     await safeUnlink(tempFilePath);
@@ -246,19 +224,19 @@ async function getRandomMusic(): Promise<MusicInfo> {
     'https://sekai-world.github.io/sekai-master-db-diff/musicVocals.json';
   const musicVocals = (await fetch(musicVocalsUrl).then((res) =>
     res.json()
-  )) as Array<any>;
+  )) as Array<PjskVocal>;
 
   // 2. 获取音乐详情
   const musicsUrl =
     'https://sekai-world.github.io/sekai-master-db-diff/musics.json';
   const musics = (await fetch(musicsUrl).then((res) =>
     res.json()
-  )) as Array<any>;
+  )) as Array<PjskMusic>;
 
   // 3. 随机选择一首音乐
   const randomVocal =
     musicVocals[Math.floor(Math.random() * musicVocals.length)];
-  const music = musics.find((m: any) => m.id === randomVocal.musicId);
+  const music = musics.find((m) => m.id === randomVocal.musicId);
 
   if (!music) {
     throw new Error(`未找到音乐ID: ${randomVocal.musicId}`);
@@ -267,15 +245,16 @@ async function getRandomMusic(): Promise<MusicInfo> {
   // 4. 获取音乐别名
   const aliasesUrl = `https://public-api.haruki.seiunx.com/alias/v1/music/${music.id}`;
   const aliasesRes = await fetch(aliasesUrl);
-  const aliasesData =
-    aliasesRes.status === 200 ? await aliasesRes.json() : { aliases: [] };
+  const aliasesData = (
+    aliasesRes.status === 200 ? await aliasesRes.json() : { aliases: [] }
+  ) as { aliases: string[] };
 
   // 5. 构建音乐信息
   return {
     imageUrl: `https://storage.sekai.best/sekai-jp-assets/music/jacket/${music.assetbundleName}/${music.assetbundleName}.png`,
     musicId: music.id,
     title: music.title,
-    answers: [music.title, ...(aliasesData as any).aliases],
+    answers: [music.title, ...aliasesData.aliases],
     assetbundleName: randomVocal.assetbundleName,
     vocal: randomVocal,
     music: music,
@@ -464,7 +443,7 @@ async function guessSong(data: Record<string, any>) {
         }
       })();
     }, timeout * 1000);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[feature.guess-song] Failed to process music:', error);
     await new SendMessage({
       message: new SendTextMessage('处理音乐失败，请稍后再试'),

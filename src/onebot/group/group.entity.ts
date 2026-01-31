@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { onebot } from '../index.js';
 import { User } from '../user/user.entity.js';
 import { RecvMessage } from '../message/recv.entity.js';

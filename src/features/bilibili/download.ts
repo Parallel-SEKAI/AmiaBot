@@ -26,6 +26,15 @@ const getMixinKey = (orig: string) =>
     .join('')
     .slice(0, 32);
 
+interface BilibiliNavResponse {
+  data: {
+    wbi_img: {
+      img_url: string;
+      sub_url: string;
+    };
+  };
+}
+
 async function getWbiKeys(): Promise<{ imgKey: string; subKey: string }> {
   const headers = {
     'User-Agent':
@@ -39,7 +48,7 @@ async function getWbiKeys(): Promise<{ imgKey: string; subKey: string }> {
   if (!response.ok) {
     throw new Error(`Failed to get WBI keys: ${response.statusText}`);
   }
-  const json: any = await response.json();
+  const json = (await response.json()) as BilibiliNavResponse;
   const imgUrl: string = json.data.wbi_img.img_url;
   const subUrl: string = json.data.wbi_img.sub_url;
   const imgKey = imgUrl.split('/').pop()!.split('.')[0];
@@ -48,13 +57,16 @@ async function getWbiKeys(): Promise<{ imgKey: string; subKey: string }> {
 }
 
 function encWbi(
-  params: Record<string, any>,
+  params: Record<string, string | number>,
   imgKey: string,
   subKey: string
-): Record<string, any> {
+): Record<string, string | number> {
   const mixinKey = getMixinKey(imgKey + subKey);
   const currTime = Math.round(Date.now() / 1000);
-  const updatedParams: Record<string, any> = { ...params, wts: currTime };
+  const updatedParams: Record<string, string | number> = {
+    ...params,
+    wts: currTime,
+  };
 
   const sortedParams = Object.keys(updatedParams)
     .sort()
@@ -63,7 +75,7 @@ function encWbi(
         obj[key] = updatedParams[key];
         return obj;
       },
-      {} as Record<string, any>
+      {} as Record<string, string | number>
     );
 
   const query = Object.entries(sortedParams)
@@ -110,7 +122,7 @@ async function downloadFile(
     }
 
     const fileStream = createWriteStream(filename);
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       body.pipe(fileStream);
       body.on('error', reject);
       fileStream.on('finish', resolve);
@@ -133,7 +145,7 @@ async function downloadFile(
 
 async function downloadWithRetry(
   url1: string,
-  url2: string,
+  url2: string | undefined,
   filename: string,
   referer: string
 ): Promise<boolean> {
@@ -150,6 +162,19 @@ async function downloadWithRetry(
   return false;
 }
 
+interface BilibiliCidResponse {
+  data: Array<{ cid: number }>;
+}
+
+interface BilibiliPlayUrlResponse {
+  data: {
+    dash: {
+      video: Array<{ base_url: string; backup_url?: string[] }>;
+      audio: Array<{ base_url: string; backup_url?: string[] }>;
+    };
+  };
+}
+
 export async function downloadBilibiliVideo(
   bv: string
 ): Promise<string | null> {
@@ -164,7 +189,7 @@ export async function downloadBilibiliVideo(
       bv
     );
     return finalVideoPath;
-  } catch (e) {
+  } catch {
     // File doesn't exist, proceed with download
   }
 
@@ -182,7 +207,7 @@ export async function downloadBilibiliVideo(
     // 1. Get CID
     const cidApi = `https://api.bilibili.com/x/player/pagelist?bvid=${bv}`;
     const cidResponse = await fetch(cidApi, { headers });
-    const cidData: any = await cidResponse.json();
+    const cidData = (await cidResponse.json()) as BilibiliCidResponse;
     const cid = cidData.data[0].cid;
 
     // 2. Get WBI keys
@@ -192,19 +217,22 @@ export async function downloadBilibiliVideo(
     const params = {
       bvid: bv,
       cid: cid,
-      qn: '80', // 1080p
-      fnver: '0',
-      fnval: '4048',
-      fourk: '1',
+      qn: 80, // 1080p
+      fnver: 0,
+      fnval: 4048,
+      fourk: 1,
     };
     const signedParams = encWbi(params, imgKey, subKey);
     const playUrlApi = new URL('https://api.bilibili.com/x/player/wbi/playurl');
-    playUrlApi.search = new URLSearchParams(signedParams as any).toString();
+    playUrlApi.search = new URLSearchParams(
+      signedParams as Record<string, string>
+    ).toString();
 
     const playUrlResponse = await fetch(playUrlApi.toString(), {
       headers: { ...headers, Referer: `https://www.bilibili.com/video/${bv}/` },
     });
-    const playUrlData: any = await playUrlResponse.json();
+    const playUrlData =
+      (await playUrlResponse.json()) as BilibiliPlayUrlResponse;
 
     const videoUrl = playUrlData.data.dash.video[0].base_url;
     const videoUrl2 = playUrlData.data.dash.video[0].backup_url?.[0];

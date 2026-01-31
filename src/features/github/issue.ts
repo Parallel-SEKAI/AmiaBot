@@ -23,7 +23,7 @@ export async function getIssueInfo(
       repo,
       issue_number: issueNumber,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(
       '[feature.github.issue][Issue: %s/%s#%d]',
       owner,

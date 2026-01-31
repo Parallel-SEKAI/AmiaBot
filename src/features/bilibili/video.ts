@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import assert from 'assert';
 import { AvBvParams, VideoInfo } from './typing.js';
 
@@ -33,6 +34,36 @@ function bv2av(bvid: string): number {
   return Number((tmp & MASK_CODE) ^ XOR_CODE);
 }
 
+interface BilibiliViewResponse {
+  data?: {
+    ugc_season?: {
+      sections: Array<{
+        title: string;
+        episodes: Array<{
+          title: string;
+          bvid: string;
+          arc: {
+            duration: number;
+            stat: {
+              view: number;
+              like: number;
+              fav: number;
+              coin: number;
+              danmaku: number;
+              reply: number;
+              share: number;
+            };
+          };
+        }>;
+      }>;
+    };
+  };
+}
+
+interface BilibiliResourceResponse {
+  data?: Array<VideoInfo>;
+}
+
 export async function getBilibiliVideoInfo(
   params: AvBvParams
 ): Promise<VideoInfo> {
@@ -55,7 +86,7 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
-  const viewData = (await viewResponse.json()) as any;
+  const viewData = (await viewResponse.json()) as BilibiliViewResponse;
 
   // 调用第二个API获取资源详情
   const resourceUrl = new URL(
@@ -69,11 +100,16 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
-  const resourceData = (await resourceResponse.json()) as any;
+  const resourceData =
+    (await resourceResponse.json()) as BilibiliResourceResponse;
 
   // 处理数据，转换为VideoInfo类型
   const info1 = viewData.data || {};
-  const info2 = resourceData.data?.[0] || {};
+  const info2 = resourceData.data?.[0];
+
+  if (!info2) {
+    throw new Error('Failed to get video info from resource API');
+  }
 
   // 计算合集统计数据
   let total_episodes = 0;
@@ -92,8 +128,8 @@ export async function getBilibiliVideoInfo(
     for (const section of ugc_season.sections) {
       for (const episode of section.episodes || []) {
         total_episodes++;
-        const arc = episode.arc || {};
-        const stat = arc.stat || {};
+        const arc = episode.arc;
+        const stat = arc.stat;
         total_duration += arc.duration || 0;
         total_view += stat.view || 0;
         total_like += stat.like || 0;
@@ -108,27 +144,10 @@ export async function getBilibiliVideoInfo(
 
   // 构建VideoInfo对象
   const videoInfo: VideoInfo = {
+    ...info2,
     av: av || bv2av(bv!),
     bv: bv || av2bv(av!),
-    title: info2.title || info2.pages?.[0]?.title || '',
-    cover: info2.cover || '',
-    upper: info2.upper || { mid: 0, name: '', face: '' },
-    cnt_info: info2.cnt_info || {
-      coin: 0,
-      collect: 0,
-      danmaku: 0,
-      play: 0,
-      play_switch: 0,
-      reply: 0,
-      share: 0,
-      thumb_down: 0,
-      thumb_up: 0,
-      view_text_1: '',
-      vt: 0,
-    },
-    pages: info2.pages || [],
-    intro: info2.intro || '',
-    ugc_season,
+    ugc_season: ugc_season as any, // VideoInfo in typing.ts has slightly different structure for ugc_season
     total_episodes,
     total_duration,
     total_view,

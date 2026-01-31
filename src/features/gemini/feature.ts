@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { config } from '../../config/index.js';
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
@@ -40,8 +41,12 @@ export async function init() {
         'gemini'
       ).trim();
 
+      type ContentPart =
+        | { type: 'text'; text: string }
+        | { type: 'image_url'; image_url: { url: string } };
+
       // 构建 OpenAI 消息格式
-      const content: Array<any> = [{ type: 'text', text: question }];
+      const content: Array<ContentPart> = [{ type: 'text', text: question }];
 
       for (const msg of message.message) {
         if (msg instanceof RecvImageMessage && msg.url) {
@@ -59,12 +64,12 @@ export async function init() {
           model: config.openai.model,
           messages: [
             { role: 'system', content: '请使用中文回答' },
-            { role: 'user', content: content },
+            { role: 'user', content: content as any },
           ],
           ...(config.openai.maxToken > 0
             ? { max_tokens: config.openai.maxToken }
             : {}),
-        } as any);
+        });
 
         const usage = response.usage;
         let usageInfo = '';

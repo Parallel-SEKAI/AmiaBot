@@ -21,7 +21,7 @@ export async function getRepoInfo(
       owner,
       repo,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[feature.github.repo][Repo: %s/%s]', owner, repo, error);
     return false;
   }

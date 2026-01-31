@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
@@ -190,6 +191,19 @@ async function sendAnswer(
   }
 }
 
+interface PjskCard {
+  id: number;
+  characterId: number;
+  assetbundleName: string;
+}
+
+interface CardInfo {
+  imageUrl: string;
+  cardId: number;
+  characterId: number;
+  card: PjskCard;
+}
+
 /**
  * 检查用户答案
  * @param message - 接收消息对象
@@ -220,13 +234,10 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
     // 获取完整卡片信息
     const cardsUrl =
       'https://sekai-world.github.io/sekai-master-db-diff/cards.json';
-    const cards = (await fetch(cardsUrl).then((res) => res.json())) as Array<
-      Record<string, any>
-    >;
-    const card = cards.find((c) => c.id === answer.cardId) as Record<
-      string,
-      any
-    >;
+    const cards = (await fetch(cardsUrl).then((res) =>
+      res.json()
+    )) as Array<PjskCard>;
+    const card = cards.find((c) => c.id === answer.cardId);
 
     if (card) {
       const cardImageAfterTrainingUrl = `https://storage.sekai.best/sekai-jp-assets/character/member/${card.assetbundleName}/card_after_training.png`;
@@ -252,25 +263,15 @@ async function checkAnswer(message: RecvMessage): Promise<void> {
   }
 }
 
-interface CardInfo {
-  imageUrl: string;
-  cardId: number;
-  characterId: number;
-  card: Record<string, any>;
-}
-
 async function getRandomCard(): Promise<CardInfo> {
   const cardsUrl =
     'https://sekai-world.github.io/sekai-master-db-diff/cards.json';
-  const cards = (await fetch(cardsUrl).then((res) => res.json())) as Array<
-    Record<string, any>
-  >;
-  const card = cards[Math.floor(Math.random() * cards.length)] as Record<
-    string,
-    any
-  >;
+  const cards = (await fetch(cardsUrl).then((res) =>
+    res.json()
+  )) as Array<PjskCard>;
+  const card = cards[Math.floor(Math.random() * cards.length)];
   const cardImageAfterTrainingUrl = `https://storage.sekai.best/sekai-jp-assets/character/member/${card.assetbundleName}/card_after_training.png`;
-  const cardImageNormalUrl = `https://storage.sekai.best/sekai-jp-assets/character/member/${card.assetbundleName}/card_normal.png`;
+  const cardImageNormalUrl = `https://storage.sekai.best/sekai-cn-assets/character/member/${card.assetbundleName}/card_normal.png`;
   const cardImageChoiceUrl = [cardImageAfterTrainingUrl, cardImageNormalUrl][
     Math.floor(Math.random() * 2)
   ];

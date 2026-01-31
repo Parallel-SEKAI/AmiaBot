@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,7 +24,7 @@ export async function getCharacterAlias(alias: string): Promise<Array<string>> {
   const lowerAlias = alias.toLowerCase();
 
   // 遍历所有角色别名映射
-  for (const [_, aliases] of Object.entries(alias_map)) {
+  for (const aliases of Object.values(alias_map)) {
     // 检查当前角色的别名数组中是否包含输入的别名（不区分大小写）
     if (aliases.some((a: string) => a.toLowerCase() === lowerAlias)) {
       // 如果找到匹配的别名，返回该角色的所有别名
@@ -35,15 +36,24 @@ export async function getCharacterAlias(alias: string): Promise<Array<string>> {
   return [];
 }
 
+interface CharacterScenarioResponse {
+  TalkData: Array<{ Body: string }>;
+}
+
 export async function getCharactersSelfIntroduction(
   scenarioId: string
 ): Promise<string> {
   const response = await fetch(
     `https://storage.sekai.best/sekai-cn-assets/scenario/profile/${scenarioId}.asset`
   );
-  const data = ((await response.json()) as Record<string, any>)
-    .TalkData as Array<Record<string, any>>;
-  return data.map((item: Record<string, any>) => item.Body).join('\n');
+  const data = (await response.json()) as CharacterScenarioResponse;
+  return data.TalkData.map((item) => item.Body).join('\n');
+}
+
+interface NeteaseSearchResponse {
+  result: {
+    songs: Array<Record<string, any>>;
+  };
 }
 
 export async function searchMusic(
@@ -52,20 +62,19 @@ export async function searchMusic(
   const response = await fetch(
     `https://music.163.com/api/cloudsearch/pc?s=${query}&type=1`
   );
-  const data = (
-    ((await response.json()) as Record<string, any>).result as Record<
-      string,
-      any
-    >
-  ).songs as Array<Record<string, any>>;
-  return data;
+  const data = (await response.json()) as NeteaseSearchResponse;
+  return data.result.songs;
+}
+
+interface NeteaseMusicUrlResponse {
+  data: Array<{ url: string }>;
 }
 
 export async function sendMusic(
   message: RecvMessage,
   songId: number
 ): Promise<string> {
-  const data = await new Promise((resolve, reject) => {
+  const data = await new Promise<NeteaseMusicUrlResponse>((resolve, reject) => {
     const options = {
       hostname: 'wyapi-1.toubiec.cn',
       path: '/api/music/url',
@@ -87,7 +96,7 @@ export async function sendMusic(
         res.on('end', () => {
           try {
             resolve(JSON.parse(responseData));
-          } catch (error: any) {
+          } catch (error: unknown) {
             reject(error);
           }
         });
@@ -102,7 +111,7 @@ export async function sendMusic(
     req.end();
   });
 
-  const url = (data as Record<string, any>).data[0].url;
+  const url = data.data[0].url;
   void new SendMessage({ message: new SendRecordMessage(url) }).send({
     recvMessage: message,
   });

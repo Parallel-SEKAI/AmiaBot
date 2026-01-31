@@ -6,7 +6,6 @@ import {
   SendMessage,
   SendImageMessage,
   SendVideoMessage,
-  SendTextMessage,
 } from '../../onebot/message/send.entity.js';
 import { checkFeatureEnabled } from '../../service/db.js';
 import { ReactRenderer } from '../../service/render/react.js';

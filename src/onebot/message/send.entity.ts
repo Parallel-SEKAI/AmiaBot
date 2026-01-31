@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import assert from 'assert';
 import { onebot } from '../index.js';
 import { RecvMessage } from './recv.entity.js';
@@ -13,6 +14,14 @@ interface SendMessageSendArgs {
   recvMessage?: RecvMessage;
   userId?: number | string;
   groupId?: number | string;
+}
+
+interface OneBotActionResponse {
+  status: string;
+  retcode: number;
+  data: {
+    message_id?: number | string;
+  };
 }
 
 /**
@@ -70,26 +79,26 @@ export class SendMessage {
       args.groupId ||
       (args.recvMessage && args.recvMessage.isGroup);
 
-    let data: Record<string, any> = {};
+    let data: OneBotActionResponse;
 
     if (this.messages[0] instanceof SendForwardMessage) {
       const id = is_private
         ? this.userId || args.userId || args.recvMessage?.userId
         : this.groupId || args.groupId || args.recvMessage?.groupId;
-      data = await onebot.action('send_forward_msg', {
+      data = (await onebot.action('send_forward_msg', {
         [is_private ? 'user_id' : 'group_id']: id,
         ...this.messages[0].data,
-      });
+      })) as OneBotActionResponse;
     } else if (is_private) {
-      data = await onebot.action('send_private_msg', {
+      data = (await onebot.action('send_private_msg', {
         user_id: this.userId || args.userId || args.recvMessage?.userId,
         message: this.messages.map((m) => m.toMap()),
-      });
+      })) as OneBotActionResponse;
     } else if (is_group) {
-      data = await onebot.action('send_group_msg', {
+      data = (await onebot.action('send_group_msg', {
         group_id: this.groupId || args.groupId || args.recvMessage?.groupId,
         message: this.messages.map((m) => m.toMap()),
-      });
+      })) as OneBotActionResponse;
     } else {
       throw new Error('Could not determine message type (private or group).');
     }
@@ -97,7 +106,7 @@ export class SendMessage {
     if (args.recvMessage && data.data && data.data.message_id) {
       stateService.addMessageRelation(
         args.recvMessage.messageId,
-        data.data.message_id
+        Number(data.data.message_id)
       );
     }
 
@@ -138,18 +147,18 @@ export class SendMessage {
       ...this.messages,
     ];
 
-    let data: Record<string, any> = {};
+    let data: OneBotActionResponse;
 
     if (recvMessage.isGroup) {
-      data = await onebot.action('send_group_msg', {
+      data = (await onebot.action('send_group_msg', {
         group_id: recvMessage.groupId,
         message: newMessages.map((m) => m.toMap()),
-      });
+      })) as OneBotActionResponse;
     } else if (recvMessage.isPrivate) {
-      data = await onebot.action('send_private_msg', {
+      data = (await onebot.action('send_private_msg', {
         user_id: recvMessage.userId,
         message: newMessages.map((m) => m.toMap()),
-      });
+      })) as OneBotActionResponse;
     } else {
       throw new Error('Could not determine message type (private or group).');
     }
@@ -157,7 +166,7 @@ export class SendMessage {
     if (recvMessage && data.data && data.data.message_id) {
       stateService.addMessageRelation(
         recvMessage.messageId,
-        data.data.message_id
+        Number(data.data.message_id)
       );
     }
 
@@ -189,7 +198,7 @@ export class SendMessage {
     }
   }
 
-  private async processMessages(messages: any[]) {
+  private async processMessages(messages: SendBaseMessage[]) {
     for (const msg of messages) {
       if (msg.type === 'forward' && msg.data?.messages) {
         for (const node of msg.data.messages) {

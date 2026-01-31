@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // oxlint-disable no-unused-vars
 import {
   SendMessage,

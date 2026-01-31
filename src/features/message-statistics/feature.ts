@@ -132,7 +132,7 @@ export async function init() {
     '消息统计',
     '统计群组或个人的消息数据',
     '群统计',
-    async (data, match) => {
+    async (data, _match) => {
       const message = RecvMessage.fromMap(data);
       await handleMessageStatistics(message);
     }
