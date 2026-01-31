@@ -18,7 +18,6 @@ import {
   getUserReplyFaceIds,
 } from './db.js';
 
-
 /**
  * 初始化 回应 功能模块
  * 支持设置对特定用户的表情回应
