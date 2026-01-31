@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS user_reply_faces (
     id SERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     face_id VARCHAR(10) NOT NULL,  -- 表情ID（字符串格式）
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, face_id)
 );
 CREATE INDEX IF NOT EXISTS idx_user_reply_faces_user ON user_reply_faces(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_reply_faces_face ON user_reply_faces(face_id);

@@ -17,6 +17,19 @@ const replyFaceCache = new Map<
 >();
 const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
 
+// 定期清理过期缓存（每10分钟）
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [userId, entry] of replyFaceCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL) {
+        replyFaceCache.delete(userId);
+      }
+    }
+  },
+  10 * 60 * 1000
+);
+
 /**
  * 清除用户的缓存
  * @param userId 用户ID
@@ -38,7 +51,7 @@ export async function addReplyFace(
   const query = `
     INSERT INTO user_reply_faces (user_id, face_id)
     VALUES ($1, $2)
-    ON CONFLICT DO NOTHING
+    ON CONFLICT (user_id, face_id) DO NOTHING
   `;
   await pool.query(query, [userId, faceId]);
 
@@ -104,13 +117,8 @@ export async function getUserReplyFaces(userId: number): Promise<ReplyFace[]> {
  * @returns Promise<boolean>
  */
 export async function hasReplyFaces(userId: number): Promise<boolean> {
-  const query = `
-    SELECT 1 FROM user_reply_faces
-    WHERE user_id = $1
-    LIMIT 1
-  `;
-  const result = await pool.query(query, [userId]);
-  return result.rows.length > 0;
+  const faceIds = await getUserReplyFaceIds(userId);
+  return faceIds.length > 0;
 }
 
 /**

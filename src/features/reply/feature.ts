@@ -129,16 +129,10 @@ export async function init() {
             ];
 
             for (const face of replyFaces) {
-              try {
-                // 尝试将face_id转换为数字，如果失败则跳过
-                const faceId = parseInt(face.face_id);
-                if (!isNaN(faceId)) {
-                  faceMessages.push(new SendFaceMessage(faceId));
-                  faceMessages.push(new SendTextMessage(' ')); // 添加空格分隔
-                }
-              } catch (error) {
-                // 如果转换失败，跳过这个表情
-                continue;
+              const faceId = parseInt(face.face_id);
+              if (!isNaN(faceId)) {
+                faceMessages.push(new SendFaceMessage(faceId));
+                faceMessages.push(new SendTextMessage(' ')); // 添加空格分隔
               }
             }
 
@@ -180,11 +174,11 @@ export async function init() {
     // 只处理群消息
     if (message.messageType === 'group') {
       try {
-        // 检查发送者是否有回应表情设置
-        if (await hasReplyFaces(message.userId)) {
-          // 获取用户的所有回应表情ID
-          const faceIds = await getUserReplyFaceIds(message.userId);
+        // 获取用户的所有回应表情ID（使用缓存）
+        const faceIds = await getUserReplyFaceIds(message.userId);
 
+        // 如果用户设置了回应表情，则进行回应
+        if (faceIds.length > 0) {
           // 使用所有设置的表情进行回应
           for (const faceId of faceIds) {
             // 使用表情回应消息
