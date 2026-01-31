@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -8,7 +7,10 @@ import {
   SendRecordMessage,
 } from '../../onebot/message/send.entity.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
-import { NeteaseSearchResponse } from '../../service/netease/api.js';
+import {
+  NeteaseSearchResponse,
+  NeteaseSearchResult,
+} from '../../service/netease/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -72,7 +74,7 @@ export async function getCharactersSelfIntroduction(
 
 export async function searchMusic(
   query: string
-): Promise<Array<Record<string, any>>> {
+): Promise<NeteaseSearchResult[]> {
   const response = await fetch(
     `https://music.163.com/api/cloudsearch/pc?s=${encodeURIComponent(
       query

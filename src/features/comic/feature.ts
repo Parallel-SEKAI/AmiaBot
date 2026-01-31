@@ -17,8 +17,8 @@ export async function init() {
   onebot.registerCommand(
     '查漫画',
     'comic',
-    '通过图片查询漫画来源',
-    '查漫画 [图片]',
+    '随机 Project Sekai 漫画图片',
+    'comic',
     async (data) => {
       const message = RecvMessage.fromMap(data);
       logger.info(

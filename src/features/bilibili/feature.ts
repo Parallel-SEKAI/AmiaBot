@@ -281,15 +281,18 @@ async function generateVideoInfoImage(info: VideoInfo): Promise<Buffer> {
     hasMorePages: info.pages.length > 5,
     remainingPages: info.pages.length - 5,
     totalEpisodes: info.total_episodes,
-    seasons: info.ugc_season?.sections.slice(0, 2).map((s) => ({
-      title: s.title,
-      episodes: (s.episodes || []).slice(0, 3).map((e) => ({
-        title: e.title,
-        durationStr: formatDuration(e.arc?.duration || 0),
-      })),
-      hasMoreEpisodes: (s.episodes || []).length > 3,
-      remainingEpisodes: (s.episodes || []).length - 3,
-    })),
+    seasons: info.ugc_season?.sections.slice(0, 2).map((s) => {
+      const episodes = s.episodes ?? [];
+      return {
+        title: s.title,
+        episodes: episodes.slice(0, 3).map((e) => ({
+          title: e.title,
+          durationStr: formatDuration(e.arc?.duration || 0),
+        })),
+        hasMoreEpisodes: episodes.length > 3,
+        remainingEpisodes: Math.max(0, episodes.length - 3),
+      };
+    }),
     hasMoreSeasons: (info.ugc_season?.sections.length || 0) > 2,
     remainingSeasons: (info.ugc_season?.sections.length || 0) - 2,
   };

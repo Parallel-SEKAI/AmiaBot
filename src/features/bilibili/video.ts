@@ -5,6 +5,8 @@ import {
   VideoEpisode,
   UgcSeason,
   VideoEpisodeStat,
+  VideoSection,
+  UgcSeasonStat,
 } from './typing.js';
 
 const data = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf';
@@ -210,9 +212,9 @@ export async function getBilibiliVideoInfo(
   let total_share = 0;
 
   // 处理合集信息
-  const ugc_season = info1.ugc_season;
-  if (ugc_season?.sections) {
-    for (const section of ugc_season.sections) {
+  const effectiveUgcSeason = resourceInfo.ugc_season || info1.ugc_season;
+  if (effectiveUgcSeason?.sections) {
+    for (const section of effectiveUgcSeason.sections) {
       for (const episode of section.episodes || []) {
         total_episodes++;
         const arc = episode.arc;
@@ -231,56 +233,58 @@ export async function getBilibiliVideoInfo(
   }
 
   let mappedUgcSeason: UgcSeason | undefined;
-  const rawUgcSeason = resourceInfo.ugc_season || ugc_season;
 
-  if (rawUgcSeason) {
+  if (effectiveUgcSeason) {
     mappedUgcSeason = {
-      id: rawUgcSeason.id,
-      title: rawUgcSeason.title,
-      cover: rawUgcSeason.cover,
-      mid: rawUgcSeason.mid,
-      intro: rawUgcSeason.intro,
-      sign_state: rawUgcSeason.sign_state,
-      attribute: rawUgcSeason.attribute,
-      sections: rawUgcSeason.sections.map((section) => ({
-        title: section.title,
-        season_id: section.season_id,
-        id: section.id,
-        type: section.type,
-        episodes: section.episodes?.map((episode) => {
-          const arc = episode.arc;
-          const stat = arc?.stat;
+      id: effectiveUgcSeason.id,
+      title: effectiveUgcSeason.title,
+      cover: effectiveUgcSeason.cover,
+      mid: effectiveUgcSeason.mid,
+      intro: effectiveUgcSeason.intro,
+      sign_state: effectiveUgcSeason.sign_state,
+      attribute: effectiveUgcSeason.attribute,
+      sections: effectiveUgcSeason.sections.map((section) => {
+        const videoSection: VideoSection = {
+          title: section.title,
+          season_id: section.season_id,
+          id: section.id,
+          type: section.type,
+          episodes: section.episodes?.map((episode) => {
+            const arc = episode.arc;
+            const stat = arc?.stat;
 
-          const videoEpisodeStat: VideoEpisodeStat = {
-            view: stat?.view || 0,
-            like: stat?.like || 0,
-            fav: stat?.fav || 0,
-            coin: stat?.coin || 0,
-            danmaku: stat?.danmaku || 0,
-            reply: stat?.reply || 0,
-            share: stat?.share || 0,
-          };
+            const videoEpisodeStat: VideoEpisodeStat = {
+              view: stat?.view || 0,
+              like: stat?.like || 0,
+              fav: stat?.fav || 0,
+              coin: stat?.coin || 0,
+              danmaku: stat?.danmaku || 0,
+              reply: stat?.reply || 0,
+              share: stat?.share || 0,
+            };
 
-          const videoEpisode: VideoEpisode = {
-            season_id: episode.season_id,
-            section_id: episode.section_id,
-            id: episode.id,
-            aid: episode.aid,
-            cid: episode.cid,
-            title: episode.title,
-            attribute: episode.attribute,
-            arc: {
-              duration: arc?.duration || 0,
-              stat: videoEpisodeStat,
-            },
-          };
-          return videoEpisode;
-        }),
-      })),
-      stat: rawUgcSeason.stat,
-      ep_count: rawUgcSeason.ep_count,
-      season_type: rawUgcSeason.season_type,
-      is_pay_season: rawUgcSeason.is_pay_season,
+            const videoEpisode: VideoEpisode = {
+              season_id: episode.season_id,
+              section_id: episode.section_id,
+              id: episode.id,
+              aid: episode.aid,
+              cid: episode.cid,
+              title: episode.title,
+              attribute: episode.attribute,
+              arc: {
+                duration: arc?.duration || 0,
+                stat: videoEpisodeStat,
+              },
+            };
+            return videoEpisode;
+          }),
+        };
+        return videoSection;
+      }),
+      stat: effectiveUgcSeason.stat as UgcSeasonStat,
+      ep_count: effectiveUgcSeason.ep_count,
+      season_type: effectiveUgcSeason.season_type,
+      is_pay_season: effectiveUgcSeason.is_pay_season,
     };
   }
 
