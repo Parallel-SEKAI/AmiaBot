@@ -8,6 +8,7 @@ import {
   SendRecordMessage,
 } from '../../onebot/message/send.entity.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
+import { NeteaseSearchResponse } from '../../service/netease/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -69,19 +70,23 @@ export async function getCharactersSelfIntroduction(
   }
 }
 
-interface NeteaseSearchResponse {
-  result: {
-    songs: Array<Record<string, any>>;
-  };
-}
-
 export async function searchMusic(
   query: string
 ): Promise<Array<Record<string, any>>> {
   const response = await fetch(
     `https://music.163.com/api/cloudsearch/pc?s=${query}&type=1`
   );
+
+  if (!response.ok) {
+    throw new Error(`Failed to search music: ${response.statusText}`);
+  }
+
   const data = (await response.json()) as NeteaseSearchResponse;
+
+  if (!data.result || !data.result.songs) {
+    return [];
+  }
+
   return data.result.songs;
 }
 
@@ -140,6 +145,11 @@ export async function sendMusic(
   }
 
   const url = data.data[0].url;
+
+  if (!url) {
+    throw new Error('Failed to get music url: url is empty');
+  }
+
   void new SendMessage({ message: new SendRecordMessage(url) }).send({
     recvMessage: message,
   });

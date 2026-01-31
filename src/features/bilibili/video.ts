@@ -1,6 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import assert from 'assert';
-import { AvBvParams, VideoInfo } from './typing.js';
+import {
+  AvBvParams,
+  VideoInfo,
+  VideoSection,
+  VideoEpisode,
+  VideoStat,
+} from './typing.js';
 
 const data = 'FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf';
 const BASE = 58n;
@@ -42,7 +47,7 @@ interface BilibiliViewResponse {
         episodes: Array<{
           title: string;
           bvid: string;
-          arc: {
+          arc?: {
             duration: number;
             stat: {
               view: number;
@@ -61,16 +66,16 @@ interface BilibiliViewResponse {
 }
 
 interface BilibiliResourceInfo {
-  av: number;
-  bv: string;
-  title: string;
-  cover: string;
-  upper: {
+  av?: number;
+  bv?: string;
+  title?: string;
+  cover?: string;
+  upper?: {
     mid: number;
     name: string;
     face: string;
   };
-  cnt_info: {
+  cnt_info?: {
     coin: number;
     collect: number;
     danmaku: number;
@@ -83,19 +88,19 @@ interface BilibiliResourceInfo {
     view_text_1: string;
     vt: number;
   };
-  pages: Array<{
+  pages?: Array<{
     page: number;
     title: string;
     duration: number;
   }>;
-  intro: string;
+  intro?: string;
   ugc_season?: {
     sections: Array<{
       title: string;
       episodes: Array<{
         title: string;
         bvid: string;
-        arc: {
+        arc?: {
           duration: number;
           stat: {
             view: number;
@@ -138,6 +143,11 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
+
+  if (!viewResponse.ok) {
+    throw new Error(`Failed to fetch view info: ${viewResponse.statusText}`);
+  }
+
   const viewData = (await viewResponse.json()) as BilibiliViewResponse;
 
   // 调用第二个API获取资源详情
@@ -152,6 +162,13 @@ export async function getBilibiliVideoInfo(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
     },
   });
+
+  if (!resourceResponse.ok) {
+    throw new Error(
+      `Failed to fetch resource info: ${resourceResponse.statusText}`
+    );
+  }
+
   const resourceData =
     (await resourceResponse.json()) as BilibiliResourceResponse;
 
@@ -183,6 +200,7 @@ export async function getBilibiliVideoInfo(
       for (const episode of section.episodes || []) {
         total_episodes++;
         const arc = episode.arc;
+        if (!arc) continue;
         const stat = arc.stat;
         total_duration += arc.duration || 0;
         total_view += stat.view || 0;
@@ -194,6 +212,45 @@ export async function getBilibiliVideoInfo(
         total_share += stat.share || 0;
       }
     }
+  }
+
+  let mappedUgcSeason: { sections: VideoSection[] } | undefined;
+  const rawUgcSeason = resourceInfo.ugc_season || ugc_season;
+
+  if (rawUgcSeason?.sections) {
+    mappedUgcSeason = {
+      sections: rawUgcSeason.sections.map((section) => ({
+        title: section.title,
+        episodes: section.episodes.map((episode) => {
+          const arc = episode.arc;
+          const stat = arc?.stat;
+
+          const videoStat: VideoStat = {
+            coin: stat?.coin || 0,
+            collect: 0, // Not available in ugc_season.episodes
+            danmaku: stat?.danmaku || 0,
+            play: stat?.view || 0,
+            play_switch: 0,
+            reply: stat?.reply || 0,
+            share: stat?.share || 0,
+            thumb_down: 0,
+            thumb_up: stat?.like || 0,
+            view_text_1: '',
+            vt: 0,
+          };
+
+          const videoEpisode: VideoEpisode = {
+            title: episode.title,
+            bvid: episode.bvid,
+            arc: {
+              duration: arc?.duration || 0,
+              stat: videoStat,
+            },
+          };
+          return videoEpisode;
+        }),
+      })),
+    };
   }
 
   // 构建VideoInfo对象
@@ -218,7 +275,7 @@ export async function getBilibiliVideoInfo(
     },
     pages: Array.isArray(resourceInfo.pages) ? resourceInfo.pages : [],
     intro: resourceInfo.intro || '',
-    ugc_season: (resourceInfo.ugc_season || ugc_season) as any, // VideoInfo in typing.ts has slightly different structure for ugc_season
+    ugc_season: mappedUgcSeason,
     total_episodes,
     total_duration,
     total_view,
