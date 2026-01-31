@@ -54,4 +54,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: xiaocaoooo/amia-bot:latest
+          tags: |
+            xiaocaoooo/amia-bot:latest
+            xiaocaoooo/amia-bot:sha-${{ github.sha }}
