@@ -92,3 +92,15 @@ CREATE TABLE IF NOT EXISTS user_sleep_stats (
 CREATE INDEX IF NOT EXISTS idx_group_user ON user_sleep_stats(group_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_wake_count ON user_sleep_stats(wake_count);
 CREATE INDEX IF NOT EXISTS idx_sleep_count ON user_sleep_stats(sleep_count);
+
+---
+
+-- 回应功能表 - 存储用户设置的回应表情
+CREATE TABLE IF NOT EXISTS user_reply_faces (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    face_id VARCHAR(10) NOT NULL,  -- 表情ID（字符串格式）
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_reply_faces_user ON user_reply_faces(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_reply_faces_face ON user_reply_faces(face_id);
