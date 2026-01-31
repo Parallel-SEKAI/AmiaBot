@@ -52,6 +52,10 @@ async function getRandomEvent(server: string = 'cn'): Promise<EventInfo> {
     res.json()
   )) as Array<PjskEvent>;
 
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new Error('Failed to fetch events or events list is empty');
+  }
+
   // 随机选择一个活动
   const event = events[Math.floor(Math.random() * events.length)];
 
@@ -77,6 +81,10 @@ async function getEventInfoById(
   const events = (await fetch(eventsUrl).then((res) =>
     res.json()
   )) as Array<PjskEvent>;
+
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new Error('Failed to fetch events or events list is empty');
+  }
 
   // 找到对应的活动
   const event = events.find((e) => e.id === eventId);

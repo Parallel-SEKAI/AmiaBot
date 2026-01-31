@@ -12,10 +12,7 @@ import {
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
 import { openai } from '../../service/openai.js'; // 使用已导出的 openai 实例
-import {
-  extractAfterCaseInsensitive,
-  networkImageToBase64DataURL,
-} from '../../utils/index.js';
+import { networkImageToBase64DataURL } from '../../utils/index.js';
 
 /**
  * 初始化 Gemini AI 对话功能
@@ -36,10 +33,7 @@ export async function init() {
         message.userId,
         message.rawMessage
       );
-      const question = extractAfterCaseInsensitive(
-        message.rawMessage,
-        'gemini'
-      ).trim();
+      const question = message.rawMessage;
 
       // OpenAI SDK uses 'ChatCompletionContentPart' but we can define a compatible type or use the SDK's type if available.
       // Since we don't have the SDK types imported here, we'll define a strictly typed union that matches.

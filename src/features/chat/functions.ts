@@ -130,6 +130,15 @@ export async function sendMusic(
     req.end();
   });
 
+  if (
+    !data ||
+    !data.data ||
+    !Array.isArray(data.data) ||
+    data.data.length === 0
+  ) {
+    throw new Error('Failed to get music url: data is invalid or empty');
+  }
+
   const url = data.data[0].url;
   void new SendMessage({ message: new SendRecordMessage(url) }).send({
     recvMessage: message,
