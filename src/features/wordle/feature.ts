@@ -27,7 +27,16 @@ const __dirname = path.dirname(__filename);
 
 const cacheDir = path.resolve(__dirname, '../../../cache');
 // fs.mkdir is async in fs/promises
-await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
+try {
+  await fs.mkdir(cacheDir, { recursive: true });
+} catch (err) {
+  logger.error(
+    '[feature.wordle] Failed to create cache directory %s: %s',
+    cacheDir,
+    err
+  );
+  throw err;
+}
 
 const WORDS_FILE = path.resolve(__dirname, '../../../assets/wordle/words.txt');
 const MAX_ATTEMPTS = 6;
@@ -58,6 +67,9 @@ async function loadWords(): Promise<string[]> {
  */
 async function getRandomWord(): Promise<string> {
   const words = await loadWords();
+  if (words.length === 0) {
+    throw new Error('No words available for Wordle');
+  }
   return words[Math.floor(Math.random() * words.length)];
 }
 
@@ -109,7 +121,17 @@ async function startNewGame(message: RecvMessage) {
   const groupId = message.groupId;
   if (!groupId) return;
 
-  const target = await getRandomWord();
+  let target: string;
+  try {
+    target = await getRandomWord();
+  } catch (error) {
+    logger.error('[feature.wordle] Failed to start game:', error);
+    await new SendMessage({
+      message: [new SendTextMessage('无法开始游戏：词库加载失败')],
+    }).reply(message);
+    return;
+  }
+
   const gameState = {
     target,
     guesses: [] as string[],
