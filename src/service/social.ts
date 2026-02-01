@@ -84,9 +84,14 @@ export class SocialService {
    * 包含幂等性检查、权重随机抽取以及好感度变动逻辑
    * @param groupId 群组 QQ 号
    * @param userId 发起指令的用户 QQ 号
+   * @param specifiedTargetId 指定娶的对象 ID (可选)
    * @returns 匹配结果，包含目标 ID、是否新匹配以及好感度变动信息
    */
-  public static async marry(groupId: number, userId: number) {
+  public static async marry(
+    groupId: number,
+    userId: number,
+    specifiedTargetId?: number
+  ) {
     // 1. 检查今日是否已匹配 (幂等性)
     const checkQuery = `
       SELECT interaction.*, rel.favorability
@@ -106,72 +111,110 @@ export class SocialService {
         Number(record.user_id) === userId
           ? Number(record.target_id)
           : Number(record.user_id);
-      return { targetId, isNew: false, favorability: record.favorability || 0 };
+      return {
+        targetId,
+        isNew: false,
+        favorability: record.favorability || 0,
+        success: true,
+      };
     }
 
-    // 2. 获取群成员
-    const membersRes = await onebot.action('get_group_member_list', {
-      group_id: groupId,
-    });
-    let members = (membersRes.data as Array<{ user_id: number }>)
-      .map((m) => m.user_id)
-      .filter((id: number) => id !== userId && id !== onebot.qq);
+    let targetId: number;
 
-    if (members.length === 0) return null;
+    // 1.5 如果指定了对象
+    if (specifiedTargetId) {
+      if (specifiedTargetId === userId || specifiedTargetId === onebot.qq) {
+        return { success: false, reason: 'INVALID_TARGET' };
+      }
 
-    // 性能优化：针对大型群聊进行采样
-    if (members.length > 500) {
-      members = members.sort(() => Math.random() - 0.5).slice(0, 500);
-    }
+      // 检查对象是否已婚
+      const partnerId = await this.getTodayPartner(groupId, specifiedTargetId);
+      if (partnerId) {
+        return { success: false, reason: 'TARGET_TAKEN' };
+      }
 
-    // 3. 排除今日已匹配的用户
-    const excludeQuery = `
+      // 50% 概率失败
+      if (Math.random() < 0.5) {
+        return { success: false, reason: 'REJECTED' };
+      }
+
+      targetId = specifiedTargetId;
+    } else {
+      // 2. 获取群成员 (随机逻辑)
+      const membersRes = await onebot.action('get_group_member_list', {
+        group_id: groupId,
+      });
+      let members = (membersRes.data as Array<{ user_id: number }>)
+        .map((m) => m.user_id)
+        .filter((id: number) => id !== userId && id !== onebot.qq);
+
+      if (members.length === 0) return null;
+
+      // 性能优化：针对大型群聊进行采样
+      if (members.length > 500) {
+        // Fisher-Yates Shuffle (partial) to pick 500 random members efficiently
+        // We only need to swap 500 times to get 500 random elements at the end of the array
+        const sampleSize = 500;
+        for (
+          let i = members.length - 1;
+          i > members.length - 1 - sampleSize;
+          i--
+        ) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [members[i], members[j]] = [members[j], members[i]];
+        }
+        members = members.slice(members.length - sampleSize);
+      }
+
+      // 3. 排除今日已匹配的用户
+      const excludeQuery = `
       SELECT user_id, target_id FROM user_daily_interactions
       WHERE group_id = $1 AND record_date = CURRENT_DATE AND interaction_type = 'MARRY'
     `;
-    const excludeRes = await pool.query(excludeQuery, [groupId]);
-    const matchedUsers = new Set<number>();
-    excludeRes.rows.forEach((r) => {
-      matchedUsers.add(Number(r.user_id));
-      matchedUsers.add(Number(r.target_id));
-    });
+      const excludeRes = await pool.query(excludeQuery, [groupId]);
+      const matchedUsers = new Set<number>();
+      excludeRes.rows.forEach((r) => {
+        matchedUsers.add(Number(r.user_id));
+        matchedUsers.add(Number(r.target_id));
+      });
 
-    const poolMembers = members.filter((id: number) => !matchedUsers.has(id));
-    if (poolMembers.length === 0) return null;
+      const poolMembers = members.filter((id: number) => !matchedUsers.has(id));
+      if (poolMembers.length === 0) return null;
 
-    // 4. 权重计算：获取当前用户与这些人的关系
-    const relQuery = `
+      // 4. 权重计算：获取当前用户与这些人的关系
+      const relQuery = `
       SELECT user_id_a, user_id_b, favorability FROM user_relationships
       WHERE group_id = $1 AND (user_id_a = $2 OR user_id_b = $2)
     `;
-    const relRes = await pool.query(relQuery, [groupId, userId]);
-    const favorMap = new Map<number, number>();
-    relRes.rows.forEach((r) => {
-      const other =
-        Number(r.user_id_a) === userId
-          ? Number(r.user_id_b)
-          : Number(r.user_id_a);
-      favorMap.set(other, r.favorability);
-    });
+      const relRes = await pool.query(relQuery, [groupId, userId]);
+      const favorMap = new Map<number, number>();
+      relRes.rows.forEach((r) => {
+        const other =
+          Number(r.user_id_a) === userId
+            ? Number(r.user_id_b)
+            : Number(r.user_id_a);
+        favorMap.set(other, r.favorability);
+      });
 
-    // 计算总权重
-    let totalWeight = 0;
-    const items = poolMembers.map((id: number) => {
-      const favor = favorMap.get(id) || 0;
-      const weight = favor > 100 ? 1.2 : 1.0;
-      totalWeight += weight;
-      return { id, weight };
-    });
+      // 计算总权重
+      let totalWeight = 0;
+      const items = poolMembers.map((id: number) => {
+        const favor = favorMap.get(id) || 0;
+        const weight = favor > 100 ? 1.2 : 1.0;
+        totalWeight += weight;
+        return { id, weight };
+      });
 
-    // 随机抽取
-    let random = Math.random() * totalWeight;
-    let targetId = items[items.length - 1].id;
-    for (const item of items) {
-      if (random < item.weight) {
-        targetId = item.id;
-        break;
+      // 随机抽取
+      let random = Math.random() * totalWeight;
+      targetId = items[items.length - 1].id;
+      for (const item of items) {
+        if (random < item.weight) {
+          targetId = item.id;
+          break;
+        }
+        random -= item.weight;
       }
-      random -= item.weight;
     }
 
     // 5. 记录互动并增加好感
@@ -187,7 +230,7 @@ export class SocialService {
       bonus
     );
 
-    return { targetId, isNew: true, bonus, favorability };
+    return { targetId, isNew: true, bonus, favorability, success: true };
   }
 
   /**

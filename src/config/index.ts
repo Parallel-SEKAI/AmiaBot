@@ -37,6 +37,19 @@ const envVarsSchema = z
     BILIBILI_COOKIES: z.string().optional().default(''),
     PLAYWRIGHT_WS_ENDPOINT: z.string().optional().default(''),
     PLAYWRIGHT_CONCURRENCY: z.coerce.number().optional().default(5),
+    MESSAGE_STATISTICS_COOLDOWN_TIME: z.coerce
+      .number()
+      .optional()
+      .default(60000),
+    MESSAGE_STATISTICS_MAX_MESSAGE_COUNT: z.coerce
+      .number()
+      .optional()
+      .default(1000),
+    MESSAGE_STATISTICS_RECENT_DAYS: z.coerce.number().optional().default(3),
+    MESSAGE_STATISTICS_MAX_MESSAGE_TEXT_LENGTH: z.coerce
+      .number()
+      .optional()
+      .default(9000),
   })
   .loose();
 
@@ -79,6 +92,12 @@ export interface IConfig {
     wsEndpoint: string;
     concurrency: number;
   };
+  messageStatistics: {
+    cooldownTime: number;
+    maxMessageCount: number;
+    recentDays: number;
+    maxMessageTextLength: number;
+  };
 }
 
 export const config: IConfig = {
@@ -118,5 +137,11 @@ export const config: IConfig = {
   playwright: {
     wsEndpoint: envVars.PLAYWRIGHT_WS_ENDPOINT || '',
     concurrency: envVars.PLAYWRIGHT_CONCURRENCY,
+  },
+  messageStatistics: {
+    cooldownTime: envVars.MESSAGE_STATISTICS_COOLDOWN_TIME,
+    maxMessageCount: envVars.MESSAGE_STATISTICS_MAX_MESSAGE_COUNT,
+    recentDays: envVars.MESSAGE_STATISTICS_RECENT_DAYS,
+    maxMessageTextLength: envVars.MESSAGE_STATISTICS_MAX_MESSAGE_TEXT_LENGTH,
   },
 };

@@ -1,0 +1,229 @@
+replies:
+  - trigger: /^mzk$/i
+    responses:
+      - - type: text
+          data:
+            text: 诶？是有人叫我吗
+      - - type: text
+          data:
+            text: Amia 在此
+      - - type: text
+          data:
+            text: Amia 不在呢~
+      - - type: text
+          data:
+            text: 找 Amia 有什么事吗？
+      - - type: text
+          data:
+            text: （探头）
+      - - type: text
+          data:
+            text: 一直在哦。
+  - trigger: /^[\?？]$/i
+    responses:
+      - - type: text
+          data:
+            text: '?'
+      - - type: text
+          data:
+            text: '!'
+      - - type: text
+          data:
+            text: 唔？
+      - - type: text
+          data:
+            text: 怎么了吗？
+  - trigger: /^我?不知道$/i
+    responses:
+      - - type: image
+          data:
+            file: https://raw.githubusercontent.com/Parallel-SEKAI/AmiaBot/master/assets/auto-reply/wakaranai.png
+      - - type: text
+          data:
+            text: Amia 也不知道...
+      - - type: text
+          data:
+            text: 这种事情... 还是去问问谷歌老师吧？
+  - trigger: /^(中午好|午安|午好|早中好)[呀啊呢 ]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 中午好！今天午饭打算吃什么呢？
+      - - type: text
+          data:
+            text: 午安~ 记得吃饱了休息一下，效率会更高哦。
+      - - type: text
+          data:
+            text: 是中午了吗？Amia 摸鱼时间到了（小声）。
+      - - type: text
+          data:
+            text: 中午好呀，愿你有愉快的午间时光。
+      - - type: text
+          data:
+            text: 午安！如果不午睡的话，下午可能会犯困哦？
+      - - type: text
+          data:
+            text: 中午好，要不要一起喝杯茶？
+  - trigger: /^(下午好|下好)[呀啊呢 ]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 下午好~ 困了吗？要不要起来活动一下？
+      - - type: text
+          data:
+            text: 下午好呀！阳光正好的话，心情也会变好呢。
+      - - type: text
+          data:
+            text: 下午好！忙碌中也要记得多喝水。
+      - - type: text
+          data:
+            text: 下午好，加油，距离下班/放学又近了一步！
+      - - type: text
+          data:
+            text: 下午好，今天的群里也很热闹呢。
+      - - type: text
+          data:
+            text: 下午好，稍微有点想吃点心了...
+  - trigger: /^([草艹wWw]|kusa|大草|生草)+[ !！?？。.．]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 草
+      - - type: text
+          data:
+            text: www
+      - - type: text
+          data:
+            text: 在中南海种了一片草（？
+      - - type: text
+          data:
+            text: 生 草 不 可 避
+      - - type: text
+          data:
+            text: ？怎么就开始生草了
+      - - type: text
+          data:
+            text: 除草机来了（嗡嗡嗡）
+      - - type: text
+          data:
+            text: 这就是大草原吗...
+  - trigger: /^([哈hH][哈hH]|233+|xswl|笑死|huhu)[哈hH !！]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 哈 哈哈 哈哈 哈 （由于笑得太大声被邻居投诉）
+      - - type: text
+          data:
+            text: 真的有这么好笑吗？那我也：哈哈哈哈！
+      - - type: text
+          data:
+            text: 笑死，根本笑不死。
+      - - type: text
+          data:
+            text: （递上氧气瓶）别笑断气了。
+      - - type: text
+          data:
+            text: '233333333'
+      - - type: text
+          data:
+            text: 虽然不知道在笑什么，但 Amia 也觉得很开心~
+      - - type: text
+          data:
+            text: 独乐乐不如众乐乐，分享一下什么这么好笑？
+      - - type: text
+          data:
+            text: （跟着一起笑）
+  - trigger: /^(喵|nyan?|ニャン|にゃん)+[呜 !！?？。.．～~—-]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 喵~？（歪头看着你）
+      - - type: text
+          data:
+            text: 喵呜——！
+      - - type: text
+          data:
+            text: （摸摸头）怎么啦，是饿了吗？
+      - - type: text
+          data:
+            text: 虽然 Amia 听不懂猫语，但感觉你现在很开心呢。
+      - - type: text
+          data:
+            text: 喵喵喵喵喵喵喵！
+      - - type: text
+          data:
+            text: 不可以随地喵喵叫哦（捏住嘴巴）。
+      - - type: text
+          data:
+            text: （试图模仿）喵... 喵？
+  - trigger: /吃什么/i
+    responses:
+      - - type: text
+          data:
+            text: 劳累了一天，去吃顿好的犒劳自己吧！
+      - - type: text
+          data:
+            text: 唔……火锅？烧烤？还是清淡一点呢？
+      - - type: text
+          data:
+            text: Amia 觉得，只要是和重要的人一起吃，什么都好吃哦。
+      - - type: text
+          data:
+            text: 去食堂看看？
+      - - type: text
+          data:
+            text: Amia 推荐... 薯条！
+      - - type: text
+          data:
+            text: 如果不挑食的话，什么都好养活呢。
+  - trigger: /(贴贴|tietie|贴贴捏|抱抱|蹭蹭|亲亲|mua)/i
+    responses:
+      - - type: text
+          data:
+            text: 贴贴~ (蹭蹭)
+      - - type: text
+          data:
+            text: 不可以这样……（小声：只、只能一下哦）
+      - - type: text
+          data:
+            text: 诶？突然这是怎么了？（脸红）
+      - - type: text
+          data:
+            text: 这么多人看着呢...（害羞）
+      - - type: text
+          data:
+            text: 仅限这一次哦？
+      - - type: text
+          data:
+            text: 好热...
+  - trigger: /(摸鱼|moyu|摸了|不想工作|不想上班|不想上学)/i
+    responses:
+      - - type: text
+          data:
+            text: 不可以偷懒哦！
+      - - type: text
+          data:
+            text: 虽然 Amia 也想休息……但是工作还没做完呢。
+      - - type: text
+          data:
+            text: 稍微休息一下也是为了更好的工作……就一小会儿哦？
+      - - type: text
+          data:
+            text: 被抓到的话 Amia 可不管哦。
+      - - type: text
+          data:
+            text: 摸鱼虽然开心，但是积攒的工作会变成怪兽的！
+  - trigger: /^(笨蛋|baka|白痴|傻瓜)[呀啊呢 ~～]*$/i
+    responses:
+      - - type: text
+          data:
+            text: 唔……Amia 才不是笨蛋！
+      - - type: text
+          data:
+            text: 你才是笨蛋！大笨蛋！
+      - - type: text
+          data:
+            text: 呜呜……
+      - - type: text
+          data:
+            text: 哼... 你才傻呢。

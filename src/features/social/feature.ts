@@ -30,18 +30,33 @@ export async function init() {
   // 娶群友
   onebot.registerCommand(
     'social',
-    '娶群友',
+    '娶',
     '随机抽取一名群友作为今日伴侣',
-    '娶群友',
+    '娶[@群友]',
     async (data: Record<string, any>) => {
       const message = RecvMessage.fromMap(data);
       if (!message.groupId) return;
 
       try {
+        // 检查是否有艾特
+        const atMsg = message.message.find(
+          (m) => m instanceof RecvAtMessage
+        ) as RecvAtMessage | undefined;
+        const specifiedTargetId = atMsg ? parseInt(atMsg.qq) : undefined;
+
+        // 如果解析出来的 targetId 是 NaN，则视为 undefined
+        const effectiveTargetId =
+          specifiedTargetId && !isNaN(specifiedTargetId)
+            ? specifiedTargetId
+            : undefined;
+
         const result = await SocialService.marry(
           message.groupId,
-          message.userId
+          message.userId,
+          effectiveTargetId
         );
+
+        // 如果没有结果，说明群里没法娶了（随机模式下）
         if (!result) {
           await message.reply(
             new SendMessage({
@@ -53,7 +68,35 @@ export async function init() {
           return;
         }
 
+        // 如果有结果但 success 为 false (指定模式下失败)
+        if ('success' in result && result.success === false) {
+          let failMsg = '娶群友失败了...';
+          switch (result.reason) {
+            case 'INVALID_TARGET':
+              failMsg = '不可以娶自己或者机器人哦~';
+              break;
+            case 'TARGET_TAKEN':
+              failMsg = '哎呀，对方今天已经名花有主了~';
+              break;
+            case 'REJECTED':
+              failMsg = '表白失败！对方婉拒了你的心意';
+              break;
+          }
+          await message.reply(
+            new SendMessage({
+              message: new SendTextMessage(failMsg),
+            })
+          );
+          return;
+        }
+
         const { targetId, isNew, bonus, favorability } = result;
+
+        // targetId should never be undefined here if success is true or random logic passed
+        // But let's handle the type check
+        if (!targetId) {
+          throw new Error('Unexpected error: targetId is missing');
+        }
 
         // 使用 User 类获取目标信息
         const targetUser = new User(targetId, message.groupId);

@@ -13,6 +13,7 @@ const issueRegex =
   /github.com\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/issues\/([0-9]+)/g;
 const prRegex =
   /github.com\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/pull\/([0-9]+)/g;
+const repoAllRegex = /(?<![A-Za-z0-9_.-])([A-Za-z0-9_-]+)\/([A-Za-z0-9_.-]+)/g;
 
 /**
  * 初始化 GitHub 功能模块
@@ -93,25 +94,18 @@ export async function init() {
         }
       }
 
-      if (message.content.includes('/')) {
-        const splits = message.content.split('/');
-        for (let i = 0; i < splits.length - 1; i++) {
-          if (splits[i].length > 0) {
-            const success = await getRepoInfo(
-              message,
-              splits[i],
-              splits[i + 1]
-            );
-            if (success) {
-              logger.info(
-                '[feature.github.repo][Group: %d][User: %d] %s',
-                message.groupId,
-                message.userId,
-                message.rawMessage
-              );
-              return;
-            }
-          }
+      for (const match of message.content.matchAll(repoAllRegex)) {
+        const [, owner, repo] = match; // 解构捕获组
+
+        const success = await getRepoInfo(message, owner, repo);
+        if (success) {
+          logger.info(
+            '[feature.github.repo][Group: %d][User: %d] %s',
+            message.groupId,
+            message.userId,
+            message.rawMessage
+          );
+          return; // 命中一个合法仓库即停止
         }
       }
     }

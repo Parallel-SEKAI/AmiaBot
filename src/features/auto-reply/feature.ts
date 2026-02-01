@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs/promises';
 import path from 'path';
+import yaml from 'js-yaml';
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
@@ -9,8 +10,15 @@ import {
   SendMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
+import { fileURLToPath } from 'url';
 
-const CONFIG_PATH = path.resolve(process.cwd(), 'assets/auto-reply/reply.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const CONFIG_PATH = path.join(
+  __dirname,
+  '../../../assets/auto-reply/replies.yaml'
+);
 
 interface ResponseSegment {
   type: string;
@@ -18,10 +26,13 @@ interface ResponseSegment {
 }
 
 interface AutoReplyRule {
-  trigger: {
-    value: string;
-  };
+  trigger: string;
+  regex?: RegExp;
   responses: ResponseSegment[][];
+}
+
+interface AutoReplyConfig {
+  replies: AutoReplyRule[];
 }
 
 let rules: AutoReplyRule[] = [];
@@ -43,7 +54,39 @@ function parseRegex(value: string): RegExp {
 async function loadConfig() {
   try {
     const data = await fs.readFile(CONFIG_PATH, 'utf-8');
-    rules = JSON.parse(data);
+    const config = yaml.load(data) as AutoReplyConfig;
+
+    // Validate config structure
+    if (
+      !config ||
+      typeof config !== 'object' ||
+      !Array.isArray(config.replies)
+    ) {
+      logger.warn(
+        '[feature.auto-reply] Invalid config format: replies array missing or invalid structure'
+      );
+      rules = [];
+      return;
+    }
+
+    rules = config.replies
+      .map((rule) => {
+        try {
+          return {
+            ...rule,
+            regex: parseRegex(rule.trigger),
+          };
+        } catch (e) {
+          logger.error(
+            '[feature.auto-reply] Invalid regex in config "%s": %s',
+            rule.trigger,
+            e
+          );
+          return rule; // Keep the rule but it won't have a valid regex
+        }
+      })
+      .filter((rule) => rule.regex !== undefined);
+
     logger.info('[feature.auto-reply] Loaded %d rules', rules.length);
   } catch (error: unknown) {
     if (
@@ -79,16 +122,8 @@ export async function init() {
     for (const rule of rules) {
       let matched = false;
 
-      try {
-        const regex = parseRegex(rule.trigger.value);
-        matched = regex.test(content);
-      } catch (e: unknown) {
-        logger.error(
-          '[feature.auto-reply] Invalid regex "%s": %s',
-          rule.trigger.value,
-          e
-        );
-        continue;
+      if (rule.regex) {
+        matched = rule.regex.test(content);
       }
 
       if (matched) {

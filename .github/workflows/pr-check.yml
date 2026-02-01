@@ -31,14 +31,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Run lint
-        run: pnpm lint
-
-      - name: Run formatting
-        run: pnpm run format:check
-
-      - name: Run build
-        run: pnpm run build
+      - name: Run CI Script
+        run: |
+          chmod +x ci.sh
+          ./ci.sh
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

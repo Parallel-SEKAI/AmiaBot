@@ -20,16 +20,6 @@ import { StatsCard } from '../../components/message-statistics/StatsCard.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 参数配置常量
-// 冷却时间（毫秒）
-const COOLDOWN_TIME = 60000;
-// 最大消息数量
-const MAX_MESSAGE_COUNT = 1000;
-// 最近天数
-const RECENT_DAYS = 3;
-// 聊天记录组合的字符串最大长度
-const MAX_MESSAGE_TEXT_LENGTH = 9000;
-
 const imagePattern = /\[CQ:image.+\]/g;
 
 // 定义分析结果类型
@@ -62,7 +52,7 @@ interface AnalysisResult {
 const groupLocks: Map<number, Promise<void>> = new Map();
 
 // 定义最后使用时间，用于控制请求频率
-let lastUsedTime = 0;
+const groupLastUsedTime = new Map<number, number>();
 
 // 获取prompt模板
 async function getPromptTemplate(): Promise<string> {
@@ -147,46 +137,71 @@ async function handleMessageStatistics(message: RecvMessage) {
     message.userId,
     message.rawMessage
   );
-  try {
-    // 检查请求频率
-    const now = Date.now();
-    if (now - lastUsedTime < COOLDOWN_TIME) {
-      const waitTime = Math.ceil((COOLDOWN_TIME - (now - lastUsedTime)) / 1000);
-      const waitMessage = await message.reply(
-        new SendMessage({
-          message: new SendTextMessage(`因为请求频率限制，请等待${waitTime}秒`),
-          groupId: message.groupId || undefined,
-        })
-      );
-      await new Promise((resolve) =>
-        setTimeout(resolve, COOLDOWN_TIME - (now - lastUsedTime))
-      );
-      await waitMessage.delete();
-    }
-    lastUsedTime = now;
 
+  let releaseLock: (() => void) | undefined;
+  let lockPromise: Promise<void> | undefined;
+
+  try {
     // 获取群信息
     if (!message.groupId) {
       throw new Error('Group ID not found in message');
     }
+
+    // 检查请求频率
+    const now = Date.now();
+    const lastUsedTime = groupLastUsedTime.get(message.groupId) || 0;
+    if (now - lastUsedTime < config.messageStatistics.cooldownTime) {
+      const waitTime = Math.ceil(
+        (config.messageStatistics.cooldownTime - (now - lastUsedTime)) / 1000
+      );
+      await message.reply(
+        new SendMessage({
+          message: new SendTextMessage(`因为请求频率限制，请等待${waitTime}秒`),
+          groupId: message.groupId,
+        })
+      );
+      return;
+    }
+
+    // 使用锁控制同一群聊的并发请求
+    // Implement a simple queue mechanism
+    const currentLock = groupLocks.get(message.groupId) || Promise.resolve();
+
+    // Create a new lock for this request
+    lockPromise = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+
+    // Update the map to point to our new lock, so next request waits for us
+    groupLocks.set(message.groupId, lockPromise);
+
+    // Wait for the previous request to finish
+    await currentLock;
+
+    // Update timestamp *after* acquiring lock
+    groupLastUsedTime.set(message.groupId, Date.now());
+
     const group = new Group(message.groupId);
     await group.init();
 
-    // 使用锁控制同一群聊的并发请求
-    const lock = groupLocks.get(message.groupId);
-    if (lock) {
-      await lock;
-    }
-
     // 获取消息历史
-    const history = await group.getHistory({ count: MAX_MESSAGE_COUNT });
+    const history = await group.getHistory({
+      count: config.messageStatistics.maxMessageCount,
+    });
     if (!history || history.length === 0) {
       throw new Error(`No messages found for group: ${message.groupId}`);
     }
 
     // 过滤最近RECENT_DAYS天的消息
     const recentDaysAgo = new Date();
-    recentDaysAgo.setDate(recentDaysAgo.getDate() - RECENT_DAYS);
+    // Use Asia/Shanghai timezone offset (+8) to align with business logic if needed,
+    // but here we just need a consistent "days ago" cutoff.
+    // Setting to 00:00:00 of N days ago in local server time is acceptable if consistent.
+    // However, ensuring we don't depend on server timezone for "day start" (which is 00:00)
+    // improves consistency.
+    recentDaysAgo.setDate(
+      recentDaysAgo.getDate() - config.messageStatistics.recentDays
+    );
     recentDaysAgo.setHours(0, 0, 0, 0);
 
     const filteredHistory = history.filter((msg: RecvMessage) => {
@@ -196,12 +211,11 @@ async function handleMessageStatistics(message: RecvMessage) {
 
     if (filteredHistory.length === 0) {
       throw new Error(
-        `No messages found in the last ${RECENT_DAYS} days for group: ${message.groupId}`
+        `No messages found in the last ${config.messageStatistics.recentDays} days for group: ${message.groupId}`
       );
     }
 
     // 格式化消息数据，确保不超过最大长度（优先保留新消息）
-    let formattedMessages = '';
     // 从新到旧排序
     const sortedMessages = filteredHistory.sort(
       (a: RecvMessage, b: RecvMessage) => {
@@ -211,13 +225,23 @@ async function handleMessageStatistics(message: RecvMessage) {
       }
     );
 
+    const selectedMessages: string[] = [];
+    let currentLength = 0;
+
     for (const msg of sortedMessages) {
       const msgStr = msg.toString() + '\n';
-      if (formattedMessages.length + msgStr.length > MAX_MESSAGE_TEXT_LENGTH) {
+      if (
+        currentLength + msgStr.length >
+        config.messageStatistics.maxMessageTextLength
+      ) {
         break;
       }
-      formattedMessages = formattedMessages + msgStr;
+      selectedMessages.push(msgStr);
+      currentLength += msgStr.length;
     }
+
+    // 反转数组以恢复按时间正序（从旧到新）排列
+    let formattedMessages = selectedMessages.reverse().join('');
 
     formattedMessages = formattedMessages.replace(imagePattern, '[CQ:image]');
 
@@ -244,7 +268,9 @@ async function handleMessageStatistics(message: RecvMessage) {
     const startMessage = await message.reply(
       new SendMessage({
         message: new SendTextMessage(
-          `已获取到${filteredHistory.length}条消息\n${startTime} - ${endTime}\n正在分析喵~`
+          `已获取到${filteredHistory.length}条消息
+${startTime} - ${endTime}
+正在分析喵~`
         ),
         groupId: message.groupId,
       })
@@ -302,7 +328,8 @@ async function handleMessageStatistics(message: RecvMessage) {
       analysisResult = JSON.parse(jsonText);
     } catch (error) {
       logger.error(
-        '[feature.message-statistics] Failed to parse OpenAI response:',
+        '[feature.message-statistics] Failed to parse OpenAI response. Raw response: %s. Error: %s',
+        response.choices[0]?.message?.content,
         error
       );
       throw new Error('Failed to parse analysis result');
@@ -339,5 +366,16 @@ async function handleMessageStatistics(message: RecvMessage) {
         groupId: message.groupId || undefined,
       })
     );
+  } finally {
+    if (releaseLock) {
+      releaseLock();
+    }
+
+    // Cleanup the map if we are the last one
+    // Note: This is slightly risky in a high concurrency map, but safe enough here
+    // because if groupLocks.get(id) === lockPromise, it means no one came after us.
+    if (message.groupId && groupLocks.get(message.groupId) === lockPromise) {
+      groupLocks.delete(message.groupId);
+    }
   }
 }
