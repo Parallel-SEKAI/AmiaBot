@@ -187,6 +187,17 @@ async function handleGuess(message: RecvMessage) {
 
   // 检查单词是否存在于列表
   const words = await loadWords();
+
+  if (words.length === 0) {
+    logger.error(
+      '[feature.wordle] Word list unavailable while handling guess.'
+    );
+    await new SendMessage({
+      message: [new SendTextMessage('词库加载失败，请稍后重试')],
+    }).reply(message);
+    return;
+  }
+
   if (!words.includes(guess)) {
     await new SendMessage({
       message: [new SendTextMessage(`单词 "${guess}" 不在词库中`)],
