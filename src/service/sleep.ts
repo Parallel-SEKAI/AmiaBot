@@ -81,34 +81,38 @@ export function toDatabaseTimestamp(date: Date): string {
  * This handles the business logic where the day starts at 4 AM
  */
 export function getDayStart(date: Date): Date {
-  // Get the hour in Asia/Shanghai timezone
-  const shanghaiHour = new Intl.DateTimeFormat('en-US', {
+  const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
     hour: 'numeric',
     hour12: false,
-  }).format(date);
+  });
 
-  const hour = parseInt(shanghaiHour, 10);
+  const parts = formatter.formatToParts(date);
+  const p: Record<string, string> = {};
+  parts.forEach(({ type, value }) => {
+    p[type] = value;
+  });
 
-  // Calculate the Shanghai date components
-  const shanghaiDate = new Date(
-    date.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' })
-  );
+  let year = parseInt(p.year, 10);
+  let month = parseInt(p.month, 10);
+  let day = parseInt(p.day, 10);
+  const hour = parseInt(p.hour, 10);
 
   if (hour < CONSTANTS.DAY_START_HOUR) {
-    // If Shanghai hour is less than DAY_START_HOUR, we need to go back one day in Shanghai time
-    shanghaiDate.setDate(shanghaiDate.getDate() - 1);
+    const d = new Date(Date.UTC(year, month - 1, day - 1));
+    year = d.getUTCFullYear();
+    month = d.getUTCMonth() + 1;
+    day = d.getUTCDate();
   }
 
-  // Set the time to the start of the business day in Shanghai timezone
-  shanghaiDate.setHours(CONSTANTS.DAY_START_HOUR, 0, 0, 0);
+  const mm = month.toString().padStart(2, '0');
+  const dd = day.toString().padStart(2, '0');
+  const hh = CONSTANTS.DAY_START_HOUR.toString().padStart(2, '0');
 
-  // Convert back to a regular Date object in UTC
-  const result = new Date(
-    shanghaiDate.toLocaleString('en-US', { timeZone: 'UTC' })
-  );
-
-  return result;
+  return new Date(`${year}-${mm}-${dd}T${hh}:00:00+08:00`);
 }
 
 /**

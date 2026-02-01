@@ -5,6 +5,7 @@ import { RecvMessage } from './message/recv.entity.js';
 import logger from '../config/logger.js';
 import { config } from '../config/index.js';
 import { checkFeatureEnabled } from '../service/db.js';
+import { convertToSimplified } from '../utils/t2s.js';
 
 /**
  * 指令处理器类型
@@ -348,6 +349,8 @@ export class OneBotClient extends EventEmitter {
           }
         }
 
+        const simplifiedStripped = convertToSimplified(stripped);
+
         // logger.debug(
         //   '[onebot.command] Processing message: "%s", stripped: "%s", hasPrefix: %s',
         //   text,
@@ -360,7 +363,7 @@ export class OneBotClient extends EventEmitter {
         for (const cmd of this.registeredCommands) {
           if (typeof cmd.pattern === 'string') {
             const pattern = cmd.pattern.toLowerCase();
-            const lowerStripped = stripped.toLowerCase();
+            const lowerStripped = simplifiedStripped.toLowerCase();
 
             // logger.debug(
             //   '[onebot.command] Checking command pattern: %s against message: %s',
@@ -385,7 +388,7 @@ export class OneBotClient extends EventEmitter {
               break;
             }
           } else if (cmd.pattern instanceof RegExp) {
-            const match = cmd.pattern.exec(stripped);
+            const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
               matched = true;
               logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
@@ -406,7 +409,7 @@ export class OneBotClient extends EventEmitter {
 
         // 如果没有匹配到注册指令，回退到旧的指令检测机制（基于空格分隔）
         if (!matched) {
-          const command = stripped.split(' ')[0].toLowerCase();
+          const command = simplifiedStripped.split(' ')[0].toLowerCase();
           if (command) {
             this.emit(`message.command.${command}`, eventData);
           }

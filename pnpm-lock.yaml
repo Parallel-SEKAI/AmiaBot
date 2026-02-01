@@ -19,6 +19,9 @@ importers:
       joi:
         specifier: ^18.0.2
         version: 18.0.2
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.4)
@@ -31,6 +34,9 @@ importers:
       openai:
         specifier: ^6.16.0
         version: 6.16.0(ws@8.19.0)(zod@4.3.6)
+      opencc-js:
+        specifier: ^1.0.5
+        version: 1.0.5
       p-limit:
         specifier: 7.2.0
         version: 7.2.0
@@ -74,12 +80,18 @@ importers:
       '@types/fluent-ffmpeg':
         specifier: ^2.1.28
         version: 2.1.28
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/node':
         specifier: ^25.0.10
         version: 25.0.10
       '@types/node-fetch':
         specifier: ^2.6.13
         version: 2.6.13
+      '@types/opencc-js':
+        specifier: ^1.0.3
+        version: 1.0.3
       '@types/pg':
         specifier: ^8.16.0
         version: 8.16.0
@@ -1985,6 +1997,12 @@ packages:
         integrity: sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ==,
       }
 
+  '@types/js-yaml@4.0.9':
+    resolution:
+      {
+        integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==,
+      }
+
   '@types/json-schema@7.0.15':
     resolution:
       {
@@ -2025,6 +2043,12 @@ packages:
     resolution:
       {
         integrity: sha512-zWW5KPngR/yvakJgGOmZ5vTBemDoSqF3AcV/LrO5u5wTWyEAVVh+IT39G4gtyAkh3CtTZs8aX/yRM82OfzHJRg==,
+      }
+
+  '@types/opencc-js@1.0.3':
+    resolution:
+      {
+        integrity: sha512-TENp7YkI2hNlc4dplhivSHj0hU4DORCK56VY7rniaSfA5f87uD3uv+kPIRuH9h64TGv976iVFi4gEHZZtS2y8Q==,
       }
 
   '@types/pg@8.16.0':
@@ -3703,6 +3727,12 @@ packages:
         optional: true
       zod:
         optional: true
+
+  opencc-js@1.0.5:
+    resolution:
+      {
+        integrity: sha512-LD+1SoNnZdlRwtYTjnQdFrSVCAaYpuDqL5CkmOaHOkKoKh7mFxUicLTRVNLU5C+Jmi1vXQ3QL4jWdgSaa4sKjg==,
+      }
 
   optionator@0.9.4:
     resolution:
@@ -5647,6 +5677,8 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
 
+  '@types/js-yaml@4.0.9': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/linkify-it@5.0.0': {}
@@ -5670,6 +5702,8 @@ snapshots:
   '@types/node@25.0.10':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/opencc-js@1.0.3': {}
 
   '@types/pg@8.16.0':
     dependencies:
@@ -6718,6 +6752,8 @@ snapshots:
     optionalDependencies:
       ws: 8.19.0
       zod: 4.3.6
+
+  opencc-js@1.0.5: {}
 
   optionator@0.9.4:
     dependencies:

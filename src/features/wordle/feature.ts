@@ -1,5 +1,5 @@
 import React from 'react';
-import * as fs from 'fs';
+import fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import logger from '../../config/logger.js';
@@ -25,6 +25,10 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const cacheDir = path.resolve(__dirname, '../../../cache');
+// fs.mkdir is async in fs/promises
+await fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
+
 const WORDS_FILE = path.resolve(__dirname, '../../../assets/wordle/words.txt');
 const MAX_ATTEMPTS = 6;
 const GAME_TYPE = 'wordle';
@@ -34,10 +38,10 @@ let wordsCache: string[] = [];
 /**
  * 加载单词列表
  */
-function loadWords(): string[] {
+async function loadWords(): Promise<string[]> {
   if (wordsCache.length > 0) return wordsCache;
   try {
-    const data = fs.readFileSync(WORDS_FILE, 'utf-8');
+    const data = await fs.readFile(WORDS_FILE, 'utf-8');
     wordsCache = data
       .split('\n')
       .map((w) => w.trim().toLowerCase())
@@ -52,15 +56,15 @@ function loadWords(): string[] {
 /**
  * 获取随机单词
  */
-function getRandomWord(): string {
-  const words = loadWords();
+async function getRandomWord(): Promise<string> {
+  const words = await loadWords();
   return words[Math.floor(Math.random() * words.length)];
 }
 
 /**
  * 校验单词并返回状态
  */
-function checkGuess(guess: string, target: string): LetterStatus[] {
+export function checkGuess(guess: string, target: string): LetterStatus[] {
   const result: LetterStatus[] = Array(5).fill('absent');
   const targetChars = target.split('');
   const guessChars = guess.split('');
@@ -105,7 +109,7 @@ async function startNewGame(message: RecvMessage) {
   const groupId = message.groupId;
   if (!groupId) return;
 
-  const target = getRandomWord();
+  const target = await getRandomWord();
   const gameState = {
     target,
     guesses: [] as string[],
@@ -124,11 +128,8 @@ async function startNewGame(message: RecvMessage) {
     undefined,
     '请输入 5 位字母单词进行猜测'
   );
-  const tempPath = path.join(
-    process.cwd(),
-    `wordle_${groupId}_${Date.now()}.png`
-  );
-  fs.writeFileSync(tempPath, imageBuffer);
+  const tempPath = path.join(cacheDir, `wordle_${groupId}_${Date.now()}.png`);
+  await fs.writeFile(tempPath, imageBuffer);
 
   try {
     const fileUrl = await onebot.uploadFileStream(tempPath);
@@ -136,7 +137,11 @@ async function startNewGame(message: RecvMessage) {
       message: [new SendImageMessage(fileUrl)],
     }).reply(message);
   } finally {
-    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    try {
+      await fs.unlink(tempPath);
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -159,7 +164,7 @@ async function handleGuess(message: RecvMessage) {
   }
 
   // 检查单词是否存在于列表
-  const words = loadWords();
+  const words = await loadWords();
   if (!words.includes(guess)) {
     await new SendMessage({
       message: [new SendTextMessage(`单词 "${guess}" 不在词库中`)],
@@ -189,11 +194,8 @@ async function handleGuess(message: RecvMessage) {
     endMessage
   );
 
-  const tempPath = path.join(
-    process.cwd(),
-    `wordle_${groupId}_${Date.now()}.png`
-  );
-  fs.writeFileSync(tempPath, imageBuffer);
+  const tempPath = path.join(cacheDir, `wordle_${groupId}_${Date.now()}.png`);
+  await fs.writeFile(tempPath, imageBuffer);
 
   try {
     const fileUrl = await onebot.uploadFileStream(tempPath);
@@ -207,11 +209,27 @@ async function handleGuess(message: RecvMessage) {
       await setGameState(groupId, GAME_TYPE, gameState);
     }
   } finally {
-    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    try {
+      await fs.unlink(tempPath);
+    } catch {
+      // ignore
+    }
   }
 }
 
 export async function init() {
+  // Startup cleanup: Delete any stale wordle_*.png files in cacheDir
+  try {
+    const files = await fs.readdir(cacheDir);
+    for (const file of files) {
+      if (file.startsWith('wordle_') && file.endsWith('.png')) {
+        await fs.unlink(path.join(cacheDir, file)).catch(() => {});
+      }
+    }
+  } catch (error) {
+    logger.warn('[feature.wordle] Failed to cleanup cache:', error);
+  }
+
   onebot.registerCommand(
     GAME_TYPE,
     'wordle',
