@@ -7,7 +7,7 @@ import {
   SendImageMessage,
   SendVideoMessage,
 } from '../../onebot/message/send.entity.js';
-import { checkFeatureEnabled } from '../../service/db.js';
+// import { checkFeatureEnabled } from '../../service/db.js';
 import { ReactRenderer } from '../../service/render/react.js';
 import { VideoCard } from '../../components/bilibili/VideoCard.js';
 import { AvBvParams, VideoInfo } from './typing.js';

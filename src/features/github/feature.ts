@@ -1,7 +1,7 @@
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
-import { checkFeatureEnabled } from '../../service/db.js';
+// import { checkFeatureEnabled } from '../../service/db.js';
 import { getRepoInfo } from './repo.js';
 import { getUserInfo } from './user.js';
 import { getIssueInfo } from './issue.js';
