@@ -1,5 +1,5 @@
 import pkg from 'pg';
-const { Pool } = pkg;
+const { Pool, types } = pkg;
 import type { PoolConfig } from 'pg';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -10,6 +10,10 @@ import logger from '../config/logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const TIMESTAMP_OID = 1114;
+
+types.setTypeParser(TIMESTAMP_OID, (value: string) => new Date(`${value}Z`));
+
 // 数据库连接配置
 const dbConfig: PoolConfig = {
   host: config.db.host,
@@ -17,6 +21,7 @@ const dbConfig: PoolConfig = {
   database: config.db.name,
   user: config.db.user,
   password: config.db.password,
+  options: '-c timezone=UTC',
   // 连接超时设置
   connectionTimeoutMillis: 5000,
   // 客户端超时设置

@@ -159,13 +159,12 @@ describe('Sleep Service Logic', () => {
   });
 
   describe('toDatabaseTimestamp', () => {
-    it('should format date to Asia/Shanghai string with timezone offset', () => {
+    it('should format date to UTC string without timezone offset', () => {
       // 2024-02-01 12:34:56 UTC
-      // Shanghai is +8, so 20:34:56
       const date = new Date('2024-02-01T12:34:56Z');
       const timestamp = toDatabaseTimestamp(date);
-      // Expected format: YYYY-MM-DD HH:MM:SS+08:00
-      expect(timestamp).toBe('2024-02-01 20:34:56+08:00');
+      // Expected format: YYYY-MM-DD HH:MM:SS (UTC)
+      expect(timestamp).toBe('2024-02-01 12:34:56');
     });
   });
 });
