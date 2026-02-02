@@ -12,12 +12,14 @@ interface WordleCardProps {
   rows: WordleRow[];
   targetWord?: string; // Optional: show answer if game is over
   message?: string;
+  wordLength?: number;
 }
 
 export const WordleCard: React.FC<WordleCardProps> = ({
   rows,
   targetWord,
   message,
+  wordLength = 5,
 }) => {
   const getStatusColor = (status: LetterStatus) => {
     switch (status) {
@@ -37,10 +39,19 @@ export const WordleCard: React.FC<WordleCardProps> = ({
       <div className="flex flex-col items-center">
         <h1 className="text-3xl font-bold mb-6 text-primary">Wordle</h1>
 
-        <div className="grid grid-rows-6 gap-2 mb-6">
+        <div
+          className="grid gap-2 mb-6"
+          style={{ gridTemplateRows: `repeat(6, minmax(0, 1fr))` }}
+        >
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 5 }).map((_, colIndex) => {
+            <div
+              key={rowIndex}
+              className="grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${wordLength}, minmax(0, 1fr))`,
+              }}
+            >
+              {Array.from({ length: wordLength }).map((_, colIndex) => {
                 const letter = row.letters[colIndex] || '';
                 const status = row.statuses[colIndex] || 'empty';
                 return (

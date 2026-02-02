@@ -140,7 +140,12 @@ export class OneBotClient extends EventEmitter {
     action: string,
     params: Record<string, any> = {}
   ): Promise<Record<string, any>> {
-    logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
+    if (action !== 'upload_file_stream')
+      logger.debug(
+        '[onebot.action.%s] Send: %s',
+        action,
+        JSON.stringify(params)
+      );
     const url = `${this.httpUrl}/${action}`;
     const options = {
       method: 'POST',

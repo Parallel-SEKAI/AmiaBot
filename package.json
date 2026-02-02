@@ -14,8 +14,8 @@
     "test:run": "vitest run",
     "lint": "eslint \"{src,tests}/**/*.ts\" --max-warnings 0",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format": "prettier --write \"{src,assets}/**/*.{ts,js,json,css,md,yml}\"",
+    "format:check": "prettier --check \"{src,assets}/**/*.{ts,js,json,css,md,yml}\"",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

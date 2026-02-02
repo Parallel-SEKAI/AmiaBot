@@ -38,11 +38,16 @@ try {
   throw err;
 }
 
-const WORDS_FILE = path.resolve(__dirname, '../../../assets/wordle/words.txt');
+const WORDS_FILE = path.resolve(__dirname, '../../../assets/wordle/words.json');
 const MAX_ATTEMPTS = 6;
 const GAME_TYPE = 'wordle';
 
 let wordsCache: string[] = [];
+
+interface WordEntry {
+  name: string;
+  trans: string[];
+}
 
 /**
  * 加载单词列表
@@ -51,10 +56,20 @@ async function loadWords(): Promise<string[]> {
   if (wordsCache.length > 0) return wordsCache;
   try {
     const data = await fs.readFile(WORDS_FILE, 'utf-8');
-    wordsCache = data
-      .split('\n')
-      .map((w) => w.trim().toLowerCase())
-      .filter((w) => w.length === 5);
+    const json: WordEntry[] = JSON.parse(data);
+    const wordsSet = new Set<string>();
+
+    json.forEach((item) => {
+      const names = item.name.split('/');
+      names.forEach((name: string) => {
+        const cleanName = name.trim().toLowerCase();
+        if (/^[a-z]+$/.test(cleanName)) {
+          wordsSet.add(cleanName);
+        }
+      });
+    });
+
+    wordsCache = Array.from(wordsSet);
     return wordsCache;
   } catch (error) {
     logger.error('[feature.wordle] Failed to load words:', error);
@@ -65,24 +80,27 @@ async function loadWords(): Promise<string[]> {
 /**
  * 获取随机单词
  */
-async function getRandomWord(): Promise<string> {
+async function getRandomWord(length: number): Promise<string> {
   const words = await loadWords();
-  if (words.length === 0) {
-    throw new Error('No words available for Wordle');
+  const availableWords = words.filter((w) => w.length === length);
+
+  if (availableWords.length === 0) {
+    throw new Error(`No words of length ${length} available for Wordle`);
   }
-  return words[Math.floor(Math.random() * words.length)];
+  return availableWords[Math.floor(Math.random() * availableWords.length)];
 }
 
 /**
  * 校验单词并返回状态
  */
 export function checkGuess(guess: string, target: string): LetterStatus[] {
-  const result: LetterStatus[] = Array(5).fill('absent');
+  const length = target.length;
+  const result: LetterStatus[] = Array(length).fill('absent');
   const targetChars = target.split('');
   const guessChars = guess.split('');
 
   // First pass: find correct letters
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < length; i++) {
     if (guessChars[i] === targetChars[i]) {
       result[i] = 'correct';
       targetChars[i] = ''; // Mark as used
@@ -91,7 +109,7 @@ export function checkGuess(guess: string, target: string): LetterStatus[] {
   }
 
   // Second pass: find present letters
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < length; i++) {
     if (guessChars[i] !== '' && targetChars.includes(guessChars[i])) {
       result[i] = 'present';
       targetChars[targetChars.indexOf(guessChars[i])] = ''; // Mark as used
@@ -106,11 +124,12 @@ export function checkGuess(guess: string, target: string): LetterStatus[] {
  */
 async function renderGameImage(
   rows: WordleRow[],
+  wordLength: number,
   targetWord?: string,
   message?: string
 ): Promise<Buffer> {
   return await ReactRenderer.renderToImage(
-    React.createElement(WordleCard, { rows, targetWord, message })
+    React.createElement(WordleCard, { rows, targetWord, message, wordLength })
   );
 }
 
@@ -121,16 +140,34 @@ async function startNewGame(message: RecvMessage) {
   const groupId = message.groupId;
   if (!groupId) return;
 
+  // 解析消息中的数字作为单词长度
+  const content = message.content.trim();
+  const match = content.match(/^wordle\s*(\d+)?$/i);
+  let wordLength = 5;
+
+  if (match && match[1]) {
+    const len = parseInt(match[1]);
+    if (len >= 2 && len <= 13) {
+      // 限制合理长度
+      wordLength = len;
+    }
+  }
+
   let target: string;
   try {
-    target = await getRandomWord();
+    target = await getRandomWord(wordLength);
   } catch (error) {
     logger.error('[feature.wordle] Failed to start game:', error);
     await new SendMessage({
-      message: [new SendTextMessage('无法开始游戏：词库加载失败')],
+      message: [
+        new SendTextMessage(`无法开始游戏：找不到长度为 ${wordLength} 的单词`),
+      ],
     }).reply(message);
     return;
   }
+
+  // answer
+  logger.debug('[feature.wordle] Answer: %s', target);
 
   const gameState = {
     target,
@@ -147,8 +184,9 @@ async function startNewGame(message: RecvMessage) {
 
   const imageBuffer = await renderGameImage(
     initialRows,
+    wordLength,
     undefined,
-    '请输入 5 位字母单词进行猜测'
+    `请输入 ${wordLength} 位字母单词进行猜测`
   );
   const tempPath = path.join(cacheDir, `wordle_${groupId}_${Date.now()}.png`);
   await fs.writeFile(tempPath, imageBuffer);
@@ -178,11 +216,13 @@ async function handleGuess(message: RecvMessage) {
   if (!state) return;
 
   const gameState = state.answer_data;
+  const targetLength = gameState.target.length;
   const guess = message.content.trim().toLowerCase();
 
-  // 验证输入是否为 5 位字母
-  if (!/^[a-z]{5}$/.test(guess)) {
-    return; // 忽略非 5 位字母输入
+  // 验证输入是否为指定长度的字母
+  const regex = new RegExp(`^[a-z]{${targetLength}}$`);
+  if (!regex.test(guess)) {
+    return; // 忽略长度不符或含非字母的输入
   }
 
   // 检查单词是否存在于列表
@@ -223,6 +263,7 @@ async function handleGuess(message: RecvMessage) {
 
   const imageBuffer = await renderGameImage(
     rows,
+    targetLength,
     isGameOver ? gameState.target : undefined,
     endMessage
   );
