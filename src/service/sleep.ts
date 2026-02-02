@@ -20,6 +20,7 @@ export interface SleepRecordResult {
 // Configuration Constants
 const CONSTANTS = {
   DAY_START_HOUR: 4,
+  SHANGHAI_OFFSET_HOURS: 8,
   MAX_SLEEP_DURATION_HOURS: 24,
   MIN_SLEEP_DURATION_HOURS: 0,
   MIN_THRESHOLD_HOURS: 2, // Minimum sleep duration threshold to prevent short records
@@ -38,94 +39,52 @@ const CONSTANTS = {
 };
 
 /**
- * Convert a Date object to a timezone-aware string for database storage
- * This ensures consistent timezone handling across different server configurations
+ * Convert a Date object to a UTC timestamp string for database storage
+ * Stored as "YYYY-MM-DD HH:MM:SS" (UTC)
  */
 export function toDatabaseTimestamp(date: Date): string {
-  // Use Intl.DateTimeFormat to explicitly format the date in Asia/Shanghai timezone
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  const year = date.getUTCFullYear();
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = date.getUTCDate().toString().padStart(2, '0');
+  const hour = date.getUTCHours().toString().padStart(2, '0');
+  const minute = date.getUTCMinutes().toString().padStart(2, '0');
+  const second = date.getUTCSeconds().toString().padStart(2, '0');
 
-  // Format the date using the formatter
-  const parts = formatter.formatToParts(date);
-  const partMap = parts.reduce(
-    (acc, part) => {
-      acc[part.type] = part.value;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
-
-  // Extract the individual components
-  const year = partMap.year;
-  const month = partMap.month;
-  const day = partMap.day;
-  const hour = partMap.hour;
-  const minute = partMap.minute;
-  const second = partMap.second;
-
-  // Format as 'YYYY-MM-DD HH:MM:SS' and append +08:00 for Asia/Shanghai
-  return `${year}-${month}-${day} ${hour}:${minute}:${second}+08:00`;
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
 /**
- * Normalize a date to the business day start (4:00 AM)
- * This handles the business logic where the day starts at 4 AM
+ * Normalize a date to the business day start (4:00 AM Asia/Shanghai)
+ * This handles the business logic where the day starts at 4 AM Shanghai time
  */
 export function getDayStart(date: Date): Date {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    hour12: false,
-  });
+  const offsetMs = CONSTANTS.SHANGHAI_OFFSET_HOURS * 60 * 60 * 1000;
+  const shanghaiDate = new Date(date.getTime() + offsetMs);
 
-  const parts = formatter.formatToParts(date);
-  const p: Record<string, string> = {};
-  parts.forEach(({ type, value }) => {
-    p[type] = value;
-  });
-
-  let year = parseInt(p.year, 10);
-  let month = parseInt(p.month, 10);
-  let day = parseInt(p.day, 10);
-  const hour = parseInt(p.hour, 10);
+  let year = shanghaiDate.getUTCFullYear();
+  let month = shanghaiDate.getUTCMonth();
+  let day = shanghaiDate.getUTCDate();
+  const hour = shanghaiDate.getUTCHours();
 
   if (hour < CONSTANTS.DAY_START_HOUR) {
-    const d = new Date(Date.UTC(year, month - 1, day - 1));
-    year = d.getUTCFullYear();
-    month = d.getUTCMonth() + 1;
-    day = d.getUTCDate();
+    const prev = new Date(Date.UTC(year, month, day - 1));
+    year = prev.getUTCFullYear();
+    month = prev.getUTCMonth();
+    day = prev.getUTCDate();
   }
 
-  const mm = month.toString().padStart(2, '0');
-  const dd = day.toString().padStart(2, '0');
-  const hh = CONSTANTS.DAY_START_HOUR.toString().padStart(2, '0');
+  const dayStartUtcMs =
+    Date.UTC(year, month, day, CONSTANTS.DAY_START_HOUR, 0, 0) - offsetMs;
 
-  return new Date(`${year}-${mm}-${dd}T${hh}:00:00+08:00`);
+  return new Date(dayStartUtcMs);
 }
 
 /**
- * Normalize hour for comparison (0-3 becomes 24-27 relative to previous day)
+ * Normalize hour for comparison using Asia/Shanghai local time (0-3 becomes 24-27)
  */
 export function getAdjustedHour(date: Date): number {
-  const hour = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Shanghai',
-    hour: 'numeric',
-    hour12: false,
-  }).format(date);
-
-  const shanghaiHour = parseInt(hour, 10);
+  const offsetMs = CONSTANTS.SHANGHAI_OFFSET_HOURS * 60 * 60 * 1000;
+  const shanghaiHour = new Date(date.getTime() + offsetMs).getUTCHours();
   return shanghaiHour < CONSTANTS.DAY_START_HOUR
     ? shanghaiHour + 24
     : shanghaiHour;
@@ -292,11 +251,11 @@ export class SleepService {
         // Upsert with timezone-aware timestamp and proper timezone handling in SQL
         const upsertQuery = `
           INSERT INTO user_sleep_stats (user_id, group_id, wake_count, last_wake_time)
-          VALUES ($1, $2, 1, $3::timestamptz)
+          VALUES ($1, $2, 1, $3::timestamp)
           ON CONFLICT (user_id, group_id)
           DO UPDATE SET
             wake_count = user_sleep_stats.wake_count + 1,
-            last_wake_time = $3::timestamptz
+            last_wake_time = $3::timestamp
         `;
         await client.query(upsertQuery, [
           userId,
@@ -381,11 +340,11 @@ export class SleepService {
 
         const upsertQuery = `
           INSERT INTO user_sleep_stats (user_id, group_id, sleep_count, last_sleep_time)
-          VALUES ($1, $2, 1, $3::timestamptz)
+          VALUES ($1, $2, 1, $3::timestamp)
           ON CONFLICT (user_id, group_id)
           DO UPDATE SET
             sleep_count = user_sleep_stats.sleep_count + 1,
-            last_sleep_time = $3::timestamptz
+            last_sleep_time = $3::timestamp
         `;
         await client.query(upsertQuery, [
           userId,
