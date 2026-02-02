@@ -25,6 +25,7 @@ import { jokeFeature } from './joke/index.js';
 import { sleepTracker } from './sleep-tracker/index.js';
 import { replyFeature } from './reply/index.js';
 import { wordleFeature } from './wordle/index.js';
+import { welcomeFeature } from './welcome/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -50,6 +51,7 @@ const FEATURES = [
   sleepTracker,
   replyFeature,
   wordleFeature,
+  welcomeFeature,
 ];
 
 /**
