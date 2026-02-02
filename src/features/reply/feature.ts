@@ -167,42 +167,49 @@ export async function init() {
   );
 
   // 监听所有消息事件，检查是否需要回应
-  onebot.on('message', async (data) => {
-    const message = RecvMessage.fromMap(data);
+  onebot.registerCommand(
+    'reply',
+    /.*/,
+    '自动表情回应',
+    undefined,
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
 
-    // 只处理群消息
-    if (message.messageType === 'group') {
-      try {
-        // 获取用户的所有回应表情ID（使用缓存）
-        const faceIds = await getUserReplyFaceIds(message.userId);
+      // 只处理群消息
+      if (message.messageType === 'group') {
+        try {
+          // 获取用户的所有回应表情ID（使用缓存）
+          const faceIds = await getUserReplyFaceIds(message.userId);
 
-        // 如果用户设置了回应表情，则进行回应
-        if (faceIds.length > 0) {
-          // 使用所有设置的表情进行回应
-          for (const faceId of faceIds) {
-            // 使用表情回应消息
-            const success = await message.like(faceId);
+          // 如果用户设置了回应表情，则进行回应
+          if (faceIds.length > 0) {
+            // 使用所有设置的表情进行回应
+            for (const faceId of faceIds) {
+              // 使用表情回应消息
+              const success = await message.like(faceId);
 
-            if (success) {
-              logger.info(
-                '[feature.reply] Liked message from user %d with face %s',
-                message.userId,
-                faceId
-              );
-            } else {
-              logger.error(
-                '[feature.reply] Failed to like message from user %d with face %s',
-                message.userId,
-                faceId
-              );
+              if (success) {
+                logger.info(
+                  '[feature.reply] Liked message from user %d with face %s',
+                  message.userId,
+                  faceId
+                );
+              } else {
+                logger.error(
+                  '[feature.reply] Failed to like message from user %d with face %s',
+                  message.userId,
+                  faceId
+                );
+              }
             }
           }
+        } catch (error) {
+          logger.error('[feature.reply] Error checking reply faces:', error);
         }
-      } catch (error) {
-        logger.error('[feature.reply] Error checking reply faces:', error);
       }
-    }
-  });
+    },
+    { suppressLike: true }
+  );
 
   logger.info('[feature.reply] Reply feature initialized');
 }

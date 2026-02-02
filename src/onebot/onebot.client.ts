@@ -17,12 +17,17 @@ export type CommandHandler = (
   match?: string | RegExpExecArray
 ) => Promise<void>;
 
+export interface CommandOptions {
+  suppressLike?: boolean;
+}
+
 export interface RegisteredCommand {
   featureName?: string;
   pattern: string | RegExp;
   description?: string;
   example?: string;
   handler: CommandHandler;
+  options?: CommandOptions;
 }
 
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
@@ -66,13 +71,15 @@ export class OneBotClient extends EventEmitter {
    * @param description 指令功能简述
    * @param example 指令使用示例
    * @param handler 触发后的异步回调函数
+   * @param options 额外配置选项
    */
   public registerCommand(
     featureName: string | undefined,
     pattern: string | RegExp,
     description: string | undefined,
     example: string | undefined,
-    handler: CommandHandler
+    handler: CommandHandler,
+    options?: CommandOptions
   ) {
     const wrappedHandler = async (
       data: Record<string, any>,
@@ -99,6 +106,7 @@ export class OneBotClient extends EventEmitter {
       featureName,
       description,
       example,
+      options,
     });
 
     logger.debug(
@@ -375,7 +383,7 @@ export class OneBotClient extends EventEmitter {
             if (lowerStripped.startsWith(pattern)) {
               matched = true;
               logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
-              if (config.messageMatchLikeFaceId) {
+              if (config.messageMatchLikeFaceId && !cmd.options?.suppressLike) {
                 void message.like(config.messageMatchLikeFaceId.toString());
               }
               cmd.handler(eventData, cmd.pattern).catch((err) => {
@@ -385,14 +393,14 @@ export class OneBotClient extends EventEmitter {
                   err
                 );
               });
-              break;
+              // break; // Removed to allow multiple commands to match
             }
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
               matched = true;
               logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
-              if (config.messageMatchLikeFaceId) {
+              if (config.messageMatchLikeFaceId && !cmd.options?.suppressLike) {
                 void message.like(config.messageMatchLikeFaceId.toString());
               }
               cmd.handler(eventData, match).catch((err) => {
@@ -402,7 +410,7 @@ export class OneBotClient extends EventEmitter {
                   err
                 );
               });
-              break;
+              // break; // Removed to allow multiple commands to match
             }
           }
         }

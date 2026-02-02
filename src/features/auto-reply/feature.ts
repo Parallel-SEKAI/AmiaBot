@@ -111,43 +111,50 @@ async function loadConfig() {
 export async function init() {
   await loadConfig();
 
-  // 監聽所有消息事件
-  onebot.on('message', async (data: Record<string, unknown>) => {
-    if (data.user_id === onebot.qq) return;
+  // 注册自動回復監聽
+  onebot.registerCommand(
+    'auto-reply',
+    /.*/,
+    '自動回復',
+    undefined,
+    async (data: Record<string, unknown>) => {
+      if (data.user_id === onebot.qq) return;
 
-    const message = RecvMessage.fromMap(data);
-    const content = message.content;
-    if (!content) return;
+      const message = RecvMessage.fromMap(data);
+      const content = message.content;
+      if (!content) return;
 
-    for (const rule of rules) {
-      let matched = false;
+      for (const rule of rules) {
+        let matched = false;
 
-      if (rule.regex) {
-        matched = rule.regex.test(content);
-      }
-
-      if (matched) {
-        logger.info('[feature.auto-reply] Matched rule for: %s', content);
-        const randomIndex = Math.floor(Math.random() * rule.responses.length);
-        const responseSegments = rule.responses[randomIndex];
-
-        try {
-          const messages = responseSegments.map(
-            (seg) =>
-              new SendBaseMessage(seg.type, seg.data as Record<string, any>)
-          );
-          await new SendMessage({
-            message: messages,
-          }).send({ recvMessage: message });
-        } catch (e: unknown) {
-          logger.error('[feature.auto-reply] Failed to send reply: %s', e);
+        if (rule.regex) {
+          matched = rule.regex.test(content);
         }
 
-        // 匹配到第一條後停止，避免多重回復
-        break;
+        if (matched) {
+          logger.info('[feature.auto-reply] Matched rule for: %s', content);
+          const randomIndex = Math.floor(Math.random() * rule.responses.length);
+          const responseSegments = rule.responses[randomIndex];
+
+          try {
+            const messages = responseSegments.map(
+              (seg) =>
+                new SendBaseMessage(seg.type, seg.data as Record<string, any>)
+            );
+            await new SendMessage({
+              message: messages,
+            }).send({ recvMessage: message });
+          } catch (e: unknown) {
+            logger.error('[feature.auto-reply] Failed to send reply: %s', e);
+          }
+
+          // 匹配到第一條後停止，避免多重回復
+          break;
+        }
       }
-    }
-  });
+    },
+    { suppressLike: true }
+  );
 
   // 註冊重載命令
   onebot.registerCommand(
