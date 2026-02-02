@@ -106,3 +106,7 @@ New bot features should be added to `src/features/<feature-name>/`.
 - Write unit tests for logic-heavy utilities and services.
 - Place tests in `tests/` or alongside source files (e.g., `foo.test.ts`).
 - Mock external services (API calls, Database) when testing business logic.
+
+## IMPORTANT
+
+- Do not execute `git commit` without an explicit user request.
