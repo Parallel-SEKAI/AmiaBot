@@ -230,7 +230,7 @@ export async function init() {
         return;
       }
     },
-    { suppressLike: true }
+    { suppressLike: true, isGeneral: true }
   );
 }
 

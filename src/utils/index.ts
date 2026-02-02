@@ -239,3 +239,15 @@ export function levenshtein_similarity(s1: string, s2: string): number {
 
   return similarity;
 }
+
+/**
+ * Extract content within XML-style tags from a string.
+ * @param text The input string containing the tags
+ * @param tagName The name of the tag to extract (e.g., 'dialogue')
+ * @returns The content inside the tag, or null if not found
+ */
+export function extractXmlTag(text: string, tagName: string): string | null {
+  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}

@@ -114,6 +114,7 @@ export async function init() {
           return; // 命中一个合法仓库即停止
         }
       }
-    }
+    },
+    { isGeneral: true }
   );
 }

@@ -110,7 +110,10 @@ export async function checkFeatureEnabled(groupId: number, feature: string) {
     WHERE group_id = $1 AND feature_name = $2
   `;
   const result = await pool.query(query, [groupId, feature]);
-  const isEnabled = result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
+  const isEnabled =
+    result.rows.length > 0
+      ? result.rows[0].is_enabled
+      : config.featuresDefaultEnabled;
 
   featureEnabledCache.set(cacheKey, isEnabled);
   return isEnabled;

@@ -26,6 +26,8 @@ import { sleepTracker } from './sleep-tracker/index.js';
 import { replyFeature } from './reply/index.js';
 import { wordleFeature } from './wordle/index.js';
 import { welcomeFeature } from './welcome/index.js';
+import { likeFeature } from './like/index.js';
+import { choiceFeature } from './choice/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -52,6 +54,8 @@ const FEATURES = [
   replyFeature,
   wordleFeature,
   welcomeFeature,
+  likeFeature,
+  choiceFeature,
 ];
 
 /**

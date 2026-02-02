@@ -17,6 +17,7 @@ import { config } from '../../config/index.js';
 import {
   renderTemplate,
   networkImageToBase64DataURL,
+  extractXmlTag,
 } from '../../utils/index.js';
 import { Group } from '../../onebot/group/group.entity.js';
 import { User } from '../../onebot/user/user.entity.js';
@@ -192,7 +193,7 @@ VIP等级: ${user.vipLevel}
         { role: 'system', content: system },
         { role: 'user', content: content }, // 添加包含图片的消息内容
       ],
-      response_format: { type: 'json_object' },
+      // response_format: { type: 'json_object' }, // 移除 JSON 限制
       ...(config.openai.maxToken > 0
         ? { max_tokens: config.openai.maxToken }
         : {}),
@@ -208,15 +209,31 @@ VIP等级: ${user.vipLevel}
 
     if (responseText) {
       try {
-        // 解析JSON响应
+        // 清理可能存在的 markdown 代码块标记
         let cleanedResponse = responseText.trim();
         if (cleanedResponse.startsWith('```')) {
           cleanedResponse = cleanedResponse
-            .replace(/^```(?:json)?\s*|```$/g, '')
+            .replace(/^```(?:xml)?\s*|```$/g, '')
             .trim();
         }
 
-        const parsedResponse = JSON.parse(cleanedResponse);
+        // 提取 XML 标签内容
+        const dialogue = extractXmlTag(cleanedResponse, 'dialogue');
+        const favorStr = extractXmlTag(cleanedResponse, 'favor');
+        const memory = extractXmlTag(cleanedResponse, 'memory');
+
+        if (!dialogue) {
+          throw new Error('Missing <dialogue> tag in response');
+        }
+
+        const favor = favorStr ? parseInt(favorStr, 0) : 0;
+
+        // 构建解析后的对象
+        const parsedResponse = {
+          dialogue,
+          favor: isNaN(favor) ? 0 : favor,
+          memory: memory || userInfo?.memory || '',
+        };
 
         // 使用Zod schema验证响应
         const validatedResponse = ChatResponseSchema.parse(parsedResponse);

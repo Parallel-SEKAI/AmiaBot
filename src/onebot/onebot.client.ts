@@ -19,6 +19,7 @@ export type CommandHandler = (
 
 export interface CommandOptions {
   suppressLike?: boolean;
+  isGeneral?: boolean;
 }
 
 export interface RegisteredCommand {
@@ -31,6 +32,13 @@ export interface RegisteredCommand {
 }
 
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
+
+function isGeneralPattern(pattern: string | RegExp): boolean {
+  if (typeof pattern === 'string') {
+    return pattern === '';
+  }
+  return pattern.source === '.*' || pattern.source === '^.*$';
+}
 
 /**
  * OneBot 客户端类，负责与 OneBot 实现端（如 NapCat）进行通信
@@ -382,8 +390,19 @@ export class OneBotClient extends EventEmitter {
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
               matched = true;
-              logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
-              if (config.messageMatchLikeFaceId && !cmd.options?.suppressLike) {
+              const isGeneral =
+                cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
+              if (!isGeneral) {
+                logger.debug(
+                  '[onebot.command] Matched command: %s',
+                  cmd.pattern
+                );
+              }
+              if (
+                config.messageMatchLikeFaceId &&
+                !cmd.options?.suppressLike &&
+                !isGeneral
+              ) {
                 void message.like(config.messageMatchLikeFaceId.toString());
               }
               cmd.handler(eventData, cmd.pattern).catch((err) => {
@@ -399,8 +418,19 @@ export class OneBotClient extends EventEmitter {
             const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
               matched = true;
-              logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
-              if (config.messageMatchLikeFaceId && !cmd.options?.suppressLike) {
+              const isGeneral =
+                cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
+              if (!isGeneral) {
+                logger.debug(
+                  '[onebot.command] Matched command: %s',
+                  cmd.pattern
+                );
+              }
+              if (
+                config.messageMatchLikeFaceId &&
+                !cmd.options?.suppressLike &&
+                !isGeneral
+              ) {
                 void message.like(config.messageMatchLikeFaceId.toString());
               }
               cmd.handler(eventData, match).catch((err) => {
@@ -523,9 +553,11 @@ export class OneBotClient extends EventEmitter {
         switch (eventData.message_type) {
           case 'group':
             logger.info(
-              '[onebot.recv][Group: %d][User: %d] %s',
+              '[onebot.recv][Group: %d][User: %d] %s%s: %s',
               eventData.group_id,
               eventData.user_id,
+              `(${eventData.group_name}) `,
+              eventData.sender.card || eventData.sender.nickname,
               eventData.raw_message
             );
         }

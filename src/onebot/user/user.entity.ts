@@ -98,4 +98,25 @@ export class User {
       this.title = groupMemberData.title;
     }
   }
+
+  public async sendLike(times: number = 50) {
+    const MAX_PER_REQUEST = 5;
+
+    if (times <= MAX_PER_REQUEST) {
+      return await onebot.action('send_like', { user_id: this.id, times });
+    }
+
+    const tasks = [];
+    let remaining = times;
+
+    while (remaining > 0) {
+      const batch = Math.min(remaining, MAX_PER_REQUEST);
+      tasks.push(
+        onebot.action('send_like', { user_id: this.id, times: batch })
+      );
+      remaining -= batch;
+    }
+
+    return await Promise.all(tasks);
+  }
 }
