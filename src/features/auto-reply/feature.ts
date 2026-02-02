@@ -153,7 +153,7 @@ export async function init() {
         }
       }
     },
-    { suppressLike: true }
+    { suppressLike: true, isGeneral: true }
   );
 
   // 註冊重載命令
