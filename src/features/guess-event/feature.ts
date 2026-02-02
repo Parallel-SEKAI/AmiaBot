@@ -363,8 +363,14 @@ export async function init() {
       await guessEvent(data);
     }
   );
-  onebot.on('message.group', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    await checkAnswer(message);
-  });
+  onebot.registerCommand(
+    'guess-event',
+    /.*/,
+    '猜活动猜测',
+    undefined,
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
+      await checkAnswer(message);
+    }
+  );
 }

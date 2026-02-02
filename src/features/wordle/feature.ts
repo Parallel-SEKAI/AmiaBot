@@ -281,8 +281,14 @@ export async function init() {
     }
   );
 
-  onebot.on('message.group', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    await handleGuess(message);
-  });
+  onebot.registerCommand(
+    GAME_TYPE,
+    /.*/,
+    'Wordle 游戏猜测',
+    undefined,
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
+      await handleGuess(message);
+    }
+  );
 }

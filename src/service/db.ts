@@ -28,6 +28,9 @@ const dbConfig: PoolConfig = {
 // 创建连接池
 let pool = new Pool(dbConfig);
 
+// 功能开关缓存: key = `${groupId}:${featureName}`, value = boolean
+const featureEnabledCache = new Map<string, boolean>();
+
 // 自动重连配置
 const RECONNECT_INTERVAL = 5000; // 重连间隔（毫秒）
 const MAX_RECONNECT_ATTEMPTS = 5; // 最大重连尝试次数
@@ -96,13 +99,21 @@ export async function initDb() {
  * @returns 是否开启（若无记录则遵循默认配置）
  */
 export async function checkFeatureEnabled(groupId: number, feature: string) {
+  const cacheKey = `${groupId}:${feature}`;
+  if (featureEnabledCache.has(cacheKey)) {
+    return featureEnabledCache.get(cacheKey)!;
+  }
+
   const query = `
     SELECT is_enabled
     FROM group_features
     WHERE group_id = $1 AND feature_name = $2
   `;
   const result = await pool.query(query, [groupId, feature]);
-  return result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
+  const isEnabled = result.rows[0]?.is_enabled || config.featuresDefaultEnabled;
+
+  featureEnabledCache.set(cacheKey, isEnabled);
+  return isEnabled;
 }
 
 /**
@@ -123,6 +134,10 @@ export async function setFeatureEnabled(
     DO UPDATE SET is_enabled = EXCLUDED.is_enabled
   `;
   await pool.query(query, [groupId, feature, enabled]);
+
+  // 更新缓存
+  const cacheKey = `${groupId}:${feature}`;
+  featureEnabledCache.set(cacheKey, enabled);
 }
 
 export async function getGameState(groupId: number, gameType: string) {

@@ -1,7 +1,7 @@
 import logger from '../../config/logger.js';
 import { onebot } from '../../onebot/index.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
-import { checkFeatureEnabled } from '../../service/db.js';
+// import { checkFeatureEnabled } from '../../service/db.js';
 import { getRepoInfo } from './repo.js';
 import { getUserInfo } from './user.js';
 import { getIssueInfo } from './issue.js';
@@ -21,8 +21,14 @@ const repoAllRegex = /(?<![A-Za-z0-9_.-])([A-Za-z0-9_-]+)\/([A-Za-z0-9_.-]+)/g;
  */
 export async function init() {
   logger.info('[feature] Init github feature');
-  onebot.on('message.group', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'github')) {
+  onebot.registerCommand(
+    'github',
+    /.*/,
+    'GitHub 链接解析',
+    undefined,
+    async (data) => {
+      // Feature enabled check is handled by registerCommand
+
       const message = RecvMessage.fromMap(data);
 
       // issue 信息
@@ -109,5 +115,5 @@ export async function init() {
         }
       }
     }
-  });
+  );
 }

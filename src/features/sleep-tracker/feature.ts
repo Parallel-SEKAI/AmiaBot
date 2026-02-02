@@ -33,15 +33,17 @@ function getRandomMock(type: 'WAKE' | 'SLEEP'): string {
 export async function init() {
   logger.info('[feature] Init sleep-tracker feature');
 
-  onebot.on('message', async (data: Record<string, any>) => {
-    if (data.user_id === onebot.qq) return;
+  onebot.registerCommand(
+    'sleep-tracker',
+    WAKE_KEYWORDS,
+    '起床记录',
+    undefined,
+    async (data: Record<string, any>) => {
+      if (data.user_id === onebot.qq) return;
 
-    const message = RecvMessage.fromMap(data);
-    const content = message.content?.trim();
-    if (!content || !message.groupId) return;
+      const message = RecvMessage.fromMap(data);
+      if (!message.groupId) return;
 
-    // Handle Wake
-    if (WAKE_KEYWORDS.test(content)) {
       try {
         const result = await SleepService.recordWakeTime(
           message.userId,
@@ -70,11 +72,20 @@ export async function init() {
       } catch (err) {
         logger.error('[feature.sleep-tracker] Error recording wake time:', err);
       }
-      return;
     }
+  );
 
-    // Handle Sleep
-    if (SLEEP_KEYWORDS.test(content)) {
+  onebot.registerCommand(
+    'sleep-tracker',
+    SLEEP_KEYWORDS,
+    '睡觉记录',
+    undefined,
+    async (data: Record<string, any>) => {
+      if (data.user_id === onebot.qq) return;
+
+      const message = RecvMessage.fromMap(data);
+      if (!message.groupId) return;
+
       try {
         const result = await SleepService.recordSleepTime(
           message.userId,
@@ -106,7 +117,6 @@ export async function init() {
           err
         );
       }
-      return;
     }
-  });
+  );
 }

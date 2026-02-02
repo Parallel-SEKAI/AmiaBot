@@ -7,7 +7,7 @@ import {
   SendImageMessage,
   SendVideoMessage,
 } from '../../onebot/message/send.entity.js';
-import { checkFeatureEnabled } from '../../service/db.js';
+// import { checkFeatureEnabled } from '../../service/db.js';
 import { ReactRenderer } from '../../service/render/react.js';
 import { VideoCard } from '../../components/bilibili/VideoCard.js';
 import { AvBvParams, VideoInfo } from './typing.js';
@@ -24,8 +24,14 @@ import { stateService } from '../../service/state.js';
  */
 export async function init() {
   logger.info('[feature] Init bilibili feature');
-  onebot.on('message.group', async (data) => {
-    if (await checkFeatureEnabled(data.group_id, 'bilibili')) {
+  onebot.registerCommand(
+    'bilibili',
+    /.*/,
+    'Bilibili 视频解析',
+    undefined,
+    async (data) => {
+      // Feature enabled check is handled by registerCommand
+
       const message = RecvMessage.fromMap(data);
 
       let bvId: string | null = null;
@@ -223,8 +229,9 @@ export async function init() {
         }
         return;
       }
-    }
-  });
+    },
+    { suppressLike: true }
+  );
 }
 
 async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {

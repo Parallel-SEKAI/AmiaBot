@@ -46,10 +46,16 @@ export async function init() {
       await guessCard(data);
     }
   );
-  onebot.on('message.group', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    await checkAnswer(message);
-  });
+  onebot.registerCommand(
+    'guess-card',
+    /.*/,
+    '猜卡面猜测',
+    undefined,
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
+      await checkAnswer(message);
+    }
+  );
 }
 
 async function guessCard(data: Record<string, any>) {

@@ -477,8 +477,14 @@ export async function init() {
       await guessSong(data);
     }
   );
-  onebot.on('message.group', async (data) => {
-    const message = RecvMessage.fromMap(data);
-    await checkAnswer(message);
-  });
+  onebot.registerCommand(
+    'guess-song',
+    /.*/,
+    '听歌识曲猜测',
+    undefined,
+    async (data) => {
+      const message = RecvMessage.fromMap(data);
+      await checkAnswer(message);
+    }
+  );
 }
