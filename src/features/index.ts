@@ -28,6 +28,7 @@ import { wordleFeature } from './wordle/index.js';
 import { welcomeFeature } from './welcome/index.js';
 import { likeFeature } from './like/index.js';
 import { choiceFeature } from './choice/index.js';
+import { diceFeature } from './dice/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -56,6 +57,7 @@ const FEATURES = [
   welcomeFeature,
   likeFeature,
   choiceFeature,
+  diceFeature,
 ];
 
 /**
