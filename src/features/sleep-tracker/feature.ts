@@ -9,9 +9,9 @@ import {
 import { SleepService } from '../../service/sleep.js';
 
 const WAKE_KEYWORDS =
-  /^(早|早安|早上好|早啊|good\s*morning|ohayou|ohayo|おはよう|早安安)$/i;
+  /^(早安|早上好|早啊|good\s*morning|ohayou|ohayo|おはよう|早安安)|^早$/i;
 const SLEEP_KEYWORDS =
-  /^(晚安|晚安安|睡了|睡觉了|good\s*night|oyasumi|おやすみ|去睡了)$/i;
+  /^(晚安|晚安安|good\s*night|oyasumi|おやすみ|去睡了)|^睡觉?了/i;
 
 const WAKE_MOCKS = [
   '都几点了还起床，太阳都晒屁股了！',
