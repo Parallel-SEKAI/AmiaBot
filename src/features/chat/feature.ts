@@ -91,8 +91,8 @@ async function chat(data: Record<string, any>) {
     const [, , onebotHistory, dbHistory] = await Promise.all([
       group.init(),
       user.init(),
-      group.getHistory({ count: 20 }), // Onebot获取的历史记录
-      getLatestChatHistory(message.groupId!, 50), // 数据库获取的历史记录
+      group.getHistory({ count: 5 }), // Onebot获取的历史记录
+      getLatestChatHistory(message.groupId!, 5), // 数据库获取的历史记录
     ]);
 
     // 3. 格式化Onebot历史记录
