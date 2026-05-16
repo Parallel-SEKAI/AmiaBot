@@ -30,6 +30,12 @@ const envVarsSchema = z
     APP_DB_PASSWORD: z.string().optional().default(''),
     OPENAI_API_KEY: z.string().optional().default(''),
     OPENAI_BASEURL: z.string().optional().default(''),
+    OPENAI_USER_AGENT: z
+      .string()
+      .optional()
+      .default(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+      ),
     OPENAI_MODEL: z.string().optional().default(''),
     OPENAI_MAX_TOKEN: z.coerce.number().optional().default(0),
     GITHUB_TOKEN: z.string().optional().default(''),
@@ -76,6 +82,7 @@ export interface IConfig {
   openai: {
     apiKey: string;
     baseUrl: string;
+    userAgent: string;
     model: string;
     maxToken: number;
   };
@@ -122,6 +129,9 @@ export const config: IConfig = {
   openai: {
     apiKey: envVars.OPENAI_API_KEY || '',
     baseUrl: envVars.OPENAI_BASEURL || '',
+    userAgent:
+      envVars.OPENAI_USER_AGENT ||
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
     model: envVars.OPENAI_MODEL || '',
     maxToken: envVars.OPENAI_MAX_TOKEN || 0,
   },
