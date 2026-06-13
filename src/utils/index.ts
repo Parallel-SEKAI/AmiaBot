@@ -241,13 +241,47 @@ export function levenshtein_similarity(s1: string, s2: string): number {
 }
 
 /**
- * Extract content within XML-style tags from a string.
- * @param text The input string containing the tags
- * @param tagName The name of the tag to extract (e.g., 'dialogue')
- * @returns The content inside the tag, or null if not found
+ * 将 Emoji 转换为 FaceId
+ * 移除变体选择符，并将结果转换为 UTF-32 BE 编码的大端序整数字符串
+ * @param emoji 输入的 Emoji 字符串
+ * @returns FaceId 字符串
  */
-export function extractXmlTag(text: string, tagName: string): string | null {
-  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, 'i');
-  const match = text.match(regex);
-  return match ? match[1].trim() : null;
+export function emojiToFaceId(emoji: string): string {
+  const cleaned = emoji.replace(/\ufe0f|\ufe0e/g, '');
+  const codePoints = Array.from(cleaned).map((c) => c.codePointAt(0)!);
+  let id = BigInt(0);
+  for (const cp of codePoints) {
+    id = (id << 32n) | BigInt(cp);
+  }
+  return id.toString();
+}
+
+/**
+ * 将 FaceId 转换为 Emoji
+ * 将 FaceId 字符串还原为 UTF-32 码点并转换为 Emoji 字符串
+ * @param faceId 输入的 FaceId 字符串
+ * @returns 还原后的 Emoji 字符串，若转换失败则返回 [faceId]
+ */
+export function faceIdToEmoji(faceId: string): string {
+  try {
+    let id = BigInt(faceId);
+    const bytes = [];
+    while (id > 0n) {
+      bytes.unshift(Number(id & 0xffn));
+      id >>= 8n;
+    }
+    while (bytes.length % 4 !== 0) bytes.unshift(0);
+    const codePoints = [];
+    for (let i = 0; i < bytes.length; i += 4) {
+      const cp =
+        (bytes[i] << 24) |
+        (bytes[i + 1] << 16) |
+        (bytes[i + 2] << 8) |
+        bytes[i + 3];
+      if (cp !== 0) codePoints.push(cp);
+    }
+    return String.fromCodePoint(...codePoints);
+  } catch {
+    return `[${faceId}]`;
+  }
 }
