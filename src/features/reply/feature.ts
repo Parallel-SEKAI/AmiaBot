@@ -20,6 +20,8 @@ import {
   clearUserReplyFaces,
   getUserReplyFaces,
   getUserReplyFaceIds,
+  bulkAddReplyFaces,
+  bulkRemoveReplyFaces,
 } from './db.js';
 
 /**
@@ -56,16 +58,14 @@ export async function init() {
             .map((msg) => (msg as RecvFaceMessage).id);
 
           const emojis =
-            message.content.match(/\p{Emoji_Presentation}/gu) || [];
+            message.content.match(/\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu) || [];
           const emojiIds = emojis.map((emoji) => `e:${emojiToFaceId(emoji)}`);
 
           const finalFaceIds = [...new Set([...faceIds, ...emojiIds])];
 
           if (finalFaceIds.length > 0) {
             // 批量添加回应表情
-            for (const faceId of finalFaceIds) {
-              await addReplyFace(message.userId, faceId);
-            }
+            await bulkAddReplyFaces(message.userId, finalFaceIds);
 
             const responseMessages = [
               new SendTextMessage('已设置对您的消息使用以下表情进行回应： '),
@@ -104,16 +104,14 @@ export async function init() {
             .map((msg) => (msg as RecvFaceMessage).id);
 
           const emojis =
-            message.content.match(/\p{Emoji_Presentation}/gu) || [];
+            message.content.match(/\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu) || [];
           const emojiIds = emojis.map((emoji) => `e:${emojiToFaceId(emoji)}`);
 
           const finalFaceIds = [...new Set([...faceIds, ...emojiIds])];
 
           if (finalFaceIds.length > 0) {
             // 批量删除回应表情
-            for (const faceId of finalFaceIds) {
-              await removeReplyFace(message.userId, faceId);
-            }
+            await bulkRemoveReplyFaces(message.userId, finalFaceIds);
 
             const responseMessages = [
               new SendTextMessage('已关闭以下表情的回应功能： '),

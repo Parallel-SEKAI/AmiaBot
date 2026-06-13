@@ -60,6 +60,46 @@ export async function addReplyFace(
 }
 
 /**
+ * 批量添加回应表情（事务）
+ * @param userId 用户ID
+ * @param faceIds 表情ID数组
+ * @returns Promise<void>
+ */
+export async function bulkAddReplyFaces(
+  userId: number,
+  faceIds: string[]
+): Promise<void> {
+  if (faceIds.length === 0) {
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const query = `
+      INSERT INTO user_reply_faces (user_id, face_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, face_id) DO NOTHING
+    `;
+
+    for (const faceId of faceIds) {
+      await client.query(query, [userId, faceId]);
+    }
+
+    await client.query('COMMIT');
+
+    // 清除缓存
+    clearUserCache(userId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * 删除特定回应表情
  * @param userId 用户ID
  * @param faceId 表情ID
@@ -77,6 +117,45 @@ export async function removeReplyFace(
 
   // 清除缓存
   clearUserCache(userId);
+}
+
+/**
+ * 批量删除回应表情（事务）
+ * @param userId 用户ID
+ * @param faceIds 表情ID数组
+ * @returns Promise<void>
+ */
+export async function bulkRemoveReplyFaces(
+  userId: number,
+  faceIds: string[]
+): Promise<void> {
+  if (faceIds.length === 0) {
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const query = `
+      DELETE FROM user_reply_faces
+      WHERE user_id = $1 AND face_id = $2
+    `;
+
+    for (const faceId of faceIds) {
+      await client.query(query, [userId, faceId]);
+    }
+
+    await client.query('COMMIT');
+
+    // 清除缓存
+    clearUserCache(userId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 /**
