@@ -9,7 +9,11 @@ import {
   SendTextMessage,
   SendFaceMessage,
 } from '../../onebot/message/send.entity.js';
-import { parseCommandLineArgs } from '../../utils/index.js';
+import {
+  parseCommandLineArgs,
+  emojiToFaceId,
+  faceIdToEmoji,
+} from '../../utils/index.js';
 import {
   addReplyFace,
   removeReplyFace,
@@ -47,28 +51,46 @@ export async function init() {
 
         if (command === 'on') {
           // 提取消息中的表情
-          const faceMessages = message.message.filter(
-            (msg) => msg.type === 'face'
-          ) as RecvFaceMessage[];
+          const faceIds = message.message
+            .filter((msg) => msg.type === 'face')
+            .map((msg) => (msg as RecvFaceMessage).id);
 
-          if (faceMessages.length > 0) {
-            const faceId = faceMessages[0].id;
+          const emojis =
+            message.content.match(/\p{Emoji_Presentation}/gu) || [];
+          const emojiIds = emojis.map((emoji) => `e:${emojiToFaceId(emoji)}`);
 
-            // 添加回应表情
-            await addReplyFace(message.userId, faceId);
+          const finalFaceIds = [...new Set([...faceIds, ...emojiIds])];
+
+          if (finalFaceIds.length > 0) {
+            // 批量添加回应表情
+            for (const faceId of finalFaceIds) {
+              await addReplyFace(message.userId, faceId);
+            }
+
+            const responseMessages = [
+              new SendTextMessage('已设置对您的消息使用以下表情进行回应： '),
+            ];
+
+            for (const faceId of finalFaceIds) {
+              if (faceId.startsWith('e:')) {
+                responseMessages.push(
+                  new SendTextMessage(faceIdToEmoji(faceId.slice(2)))
+                );
+              } else {
+                const id = parseInt(faceId);
+                responseMessages.push(new SendFaceMessage(id));
+              }
+              responseMessages.push(new SendTextMessage(' '));
+            }
 
             await new SendMessage({
-              message: [
-                new SendTextMessage('已设置对您的消息使用表情 '),
-                new SendFaceMessage(parseInt(faceId)),
-                new SendTextMessage(' 进行回应'),
-              ],
+              message: responseMessages,
             }).reply(message);
 
             logger.info(
-              '[feature.reply] User %d set reply face %s',
+              '[feature.reply] User %d set reply faces %s',
               message.userId,
-              faceId
+              finalFaceIds.join(', ')
             );
           } else {
             await new SendMessage({
@@ -76,29 +98,47 @@ export async function init() {
             }).reply(message);
           }
         } else if (command === 'off') {
-          // 删除特定回应表情
-          const faceMessages = message.message.filter(
-            (msg) => msg.type === 'face'
-          ) as RecvFaceMessage[];
+          // 提取消息中的表情
+          const faceIds = message.message
+            .filter((msg) => msg.type === 'face')
+            .map((msg) => (msg as RecvFaceMessage).id);
 
-          if (faceMessages.length > 0) {
-            const faceId = faceMessages[0].id;
+          const emojis =
+            message.content.match(/\p{Emoji_Presentation}/gu) || [];
+          const emojiIds = emojis.map((emoji) => `e:${emojiToFaceId(emoji)}`);
 
-            // 删除回应表情
-            await removeReplyFace(message.userId, faceId);
+          const finalFaceIds = [...new Set([...faceIds, ...emojiIds])];
+
+          if (finalFaceIds.length > 0) {
+            // 批量删除回应表情
+            for (const faceId of finalFaceIds) {
+              await removeReplyFace(message.userId, faceId);
+            }
+
+            const responseMessages = [
+              new SendTextMessage('已关闭以下表情的回应功能： '),
+            ];
+
+            for (const faceId of finalFaceIds) {
+              if (faceId.startsWith('e:')) {
+                responseMessages.push(
+                  new SendTextMessage(faceIdToEmoji(faceId.slice(2)))
+                );
+              } else {
+                const id = parseInt(faceId);
+                responseMessages.push(new SendFaceMessage(id));
+              }
+              responseMessages.push(new SendTextMessage(' '));
+            }
 
             await new SendMessage({
-              message: [
-                new SendTextMessage('已关闭表情 '),
-                new SendFaceMessage(parseInt(faceId)),
-                new SendTextMessage(' 的回应功能'),
-              ],
+              message: responseMessages,
             }).reply(message);
 
             logger.info(
-              '[feature.reply] User %d removed reply face %s',
+              '[feature.reply] User %d removed reply faces %s',
               message.userId,
-              faceId
+              finalFaceIds.join(', ')
             );
           } else {
             await new SendMessage({
@@ -128,11 +168,16 @@ export async function init() {
             ];
 
             for (const face of replyFaces) {
-              const faceId = parseInt(face.face_id);
-              if (!isNaN(faceId)) {
-                faceMessages.push(new SendFaceMessage(faceId));
-                faceMessages.push(new SendTextMessage(' ')); // 添加空格分隔
+              const faceId = face.face_id;
+              if (faceId.startsWith('e:')) {
+                faceMessages.push(
+                  new SendTextMessage(faceIdToEmoji(faceId.slice(2)))
+                );
+              } else {
+                const id = parseInt(faceId);
+                faceMessages.push(new SendFaceMessage(id));
               }
+              faceMessages.push(new SendTextMessage(' ')); // 添加空格分隔
             }
 
             await new SendMessage({
