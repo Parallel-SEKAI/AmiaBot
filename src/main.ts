@@ -1,7 +1,9 @@
 import { initDb } from './service/db.js';
+import pool from './service/db.js';
 import logger from './config/logger.js';
 import { init as initFeatures } from './features/index.js';
 import { onebot } from './onebot/index.js';
+import { startHealthCheckServer } from './server/health.js';
 
 /**
  * 应用程序主入口函数
@@ -11,6 +13,7 @@ async function main(): Promise<void> {
   await initDb();
   await initFeatures();
   await onebot.run();
+  await startHealthCheckServer(onebot, pool);
 }
 
 main().catch((e) => {
