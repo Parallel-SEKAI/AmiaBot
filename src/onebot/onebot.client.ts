@@ -55,6 +55,11 @@ export class OneBotClient extends EventEmitter {
   private reconnectAttempts: number = 0;
   private maxReconnectDelay: number = 30000; // 最大重连延迟30秒
 
+  // 心跳检测相关
+  private lastMessageTimestamp: number = Date.now();
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private monitorTimer: NodeJS.Timeout | null = null;
+
   // 存储注册的指令
   private registeredCommands: RegisteredCommand[] = [];
 
@@ -147,6 +152,10 @@ export class OneBotClient extends EventEmitter {
         JSON.stringify(params)
       );
     const url = `${this.httpUrl}/${action}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const options = {
       method: 'POST',
       headers: {
@@ -154,6 +163,7 @@ export class OneBotClient extends EventEmitter {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(params),
+      signal: controller.signal,
     };
 
     try {
@@ -176,9 +186,17 @@ export class OneBotClient extends EventEmitter {
       }
       logger.debug('[onebot.action.%s] Recv: %s', action, JSON.stringify(data));
       return data;
-    } catch (error: unknown) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        logger.error('[onebot.action.%s] Request timeout after 10s', action);
+        throw new Error(
+          `HTTP request timeout for action ${action} (AbortError)`
+        );
+      }
       logger.error('[onebot.action.%s] Failed: %s', action, error);
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -330,6 +348,41 @@ export class OneBotClient extends EventEmitter {
     throw new Error('Buffer stream upload failed to return server file path');
   }
 
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+      this.monitorTimer = null;
+    }
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.lastMessageTimestamp = Date.now();
+
+    // 每 30 秒发送一次 WebSocket ping
+    this.heartbeatTimer = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        logger.debug('[onebot] Sending heartbeat ping');
+        this.ws.ping();
+      }
+    }, 30000);
+
+    // 每 10 秒检查一次是否超时 (超过 60 秒未收到任何消息/pong)
+    this.monitorTimer = setInterval(() => {
+      const now = Date.now();
+      if (now - this.lastMessageTimestamp > 60000) {
+        logger.warn(
+          '[onebot] Heartbeat timeout! No message received for 60s. Terminating connection...'
+        );
+        this.ws?.terminate();
+      }
+    }, 10000);
+  }
+
   private connectWebSocket(): void {
     this.ws = new WebSocket(this.wsUrl, {
       headers: {
@@ -341,9 +394,15 @@ export class OneBotClient extends EventEmitter {
       logger.info('[onebot] WebSocket connected');
       this.reconnectAttempts = 0; // 重置重连次数
       this.isReconnecting = false;
+      this.startHeartbeat();
     };
 
+    this.ws.on('pong', () => {
+      this.lastMessageTimestamp = Date.now();
+    });
+
     this.ws.onmessage = (event) => {
+      this.lastMessageTimestamp = Date.now();
       // console.debug('Received message:', event.data);
       const dataStr = event.data.toString();
       logger.debug('[onebot] Received message: %s', dataStr);
@@ -463,6 +522,7 @@ export class OneBotClient extends EventEmitter {
     };
 
     this.ws.onclose = (event) => {
+      this.stopHeartbeat();
       logger.warn(
         '[onebot] WebSocket disconnected, code: %d, reason: %s',
         event.code,
@@ -480,6 +540,7 @@ export class OneBotClient extends EventEmitter {
     };
 
     this.ws.onerror = (error) => {
+      this.stopHeartbeat();
       logger.error('[onebot] WebSocket error:', error);
       this.ws = null;
       if (config.exitWhenError) {
@@ -541,15 +602,50 @@ export class OneBotClient extends EventEmitter {
       return lenB - lenA;
     });
 
-    const loginInfo = (await this.action('get_login_info')).data as Record<
-      string,
-      any
-    >;
-    this.qq = loginInfo.user_id;
-    this.nickname = loginInfo.nickname;
+    // 异步获取登录信息，避免阻塞 WS 连接并增加重试机制
+    this.initLoginInfo().catch((err) => {
+      logger.error(
+        '[onebot] Failed to fetch login info after retries: %s',
+        err
+      );
+    });
 
     this.on('all', this.echoMessage);
     this.connectWebSocket();
+  }
+
+  /**
+   * 初始化登录信息，包含重试机制
+   */
+  private async initLoginInfo(): Promise<void> {
+    const maxAttempts = 3;
+    const delay = 2000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await this.action('get_login_info');
+        const loginInfo = response.data as Record<string, any>;
+        this.qq = loginInfo.user_id;
+        this.nickname = loginInfo.nickname;
+        logger.info(
+          '[onebot] Login info fetched successfully: %s (%d)',
+          this.nickname,
+          this.qq
+        );
+        return;
+      } catch (error) {
+        logger.warn(
+          '[onebot] Attempt %d/%d to fetch login info failed: %s',
+          attempt,
+          maxAttempts,
+          error
+        );
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw new Error('Max retries reached for get_login_info');
   }
 
   public async echoMessage(eventData: Record<string, any>) {
