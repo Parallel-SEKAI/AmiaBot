@@ -371,7 +371,7 @@ export class OneBotClient extends EventEmitter {
         : { status: 'DOWN' as const, details: 'Not authenticated (qq is 0)' };
 
     let apiStatus: { status: 'UP' | 'DOWN'; details: string };
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | undefined = undefined;
     try {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(
@@ -387,7 +387,7 @@ export class OneBotClient extends EventEmitter {
         details: `API check failed: ${error.message}`,
       };
     } finally {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     }
 
     return {

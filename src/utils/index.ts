@@ -257,6 +257,18 @@ export function emojiToFaceId(emoji: string): string {
 }
 
 /**
+ * 提取 XML 标签中的内容
+ * @param xml 待处理的 XML 字符串
+ * @param tag 要提取的标签名
+ * @returns 标签内的内容，若未找到则返回空字符串
+ */
+export function extractXmlTag(xml: string, tag: string): string {
+  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
+  const match = xml.match(regex);
+  return match ? match[1] : '';
+}
+
+/**
  * 将 FaceId 转换为 Emoji
  * 将 FaceId 字符串还原为 UTF-32 码点并转换为 Emoji 字符串
  * @param faceId 输入的 FaceId 字符串
