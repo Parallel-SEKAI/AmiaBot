@@ -348,6 +348,55 @@ export class OneBotClient extends EventEmitter {
     throw new Error('Buffer stream upload failed to return server file path');
   }
 
+  /**
+   * 获取客户端健康状态
+   */
+  public async getHealthStatus() {
+    const wsOpen = this.ws?.readyState === WebSocket.OPEN;
+    const wsHeartbeat = Date.now() - this.lastMessageTimestamp < 60000;
+    const wsStatus =
+      wsOpen && wsHeartbeat
+        ? {
+            status: 'UP' as const,
+            details: 'WebSocket is open and receiving messages',
+          }
+        : {
+            status: 'DOWN' as const,
+            details: `WebSocket readyState: ${this.ws?.readyState}, last message: ${Date.now() - this.lastMessageTimestamp}ms ago`,
+          };
+
+    const authStatus =
+      this.qq !== 0
+        ? { status: 'UP' as const, details: `Authenticated as ${this.qq}` }
+        : { status: 'DOWN' as const, details: 'Not authenticated (qq is 0)' };
+
+    let apiStatus: { status: 'UP' | 'DOWN'; details: string };
+    let timeoutId: NodeJS.Timeout;
+    try {
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error('Timeout after 5s')),
+          5000
+        );
+      });
+      await Promise.race([this.action('get_login_info'), timeoutPromise]);
+      apiStatus = { status: 'UP', details: 'API is responsive' };
+    } catch (error: any) {
+      apiStatus = {
+        status: 'DOWN',
+        details: `API check failed: ${error.message}`,
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    return {
+      ws: wsStatus,
+      auth: authStatus,
+      api: apiStatus,
+    };
+  }
+
   private stopHeartbeat(): void {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
