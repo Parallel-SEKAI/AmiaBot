@@ -135,7 +135,7 @@ async function downloadFile(
     return true;
   } catch (error) {
     logger.error(
-      '[feature.bilibili.download] Failed to download %s:',
+      '[feature.bilibili.download] Failed to download %s: %s',
       filename,
       error
     );
@@ -295,7 +295,7 @@ export async function downloadBilibiliVideo(
     return finalVideoPath;
   } catch (error) {
     logger.error(
-      '[feature.bilibili.download] Failed to download Bilibili video %s:',
+      '[feature.bilibili.download] Failed to download Bilibili video %s: %s',
       bv,
       error
     );

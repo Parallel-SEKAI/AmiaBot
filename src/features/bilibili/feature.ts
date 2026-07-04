@@ -141,7 +141,7 @@ export async function init() {
           await Promise.all([infoPromise, videoPromise]);
         } catch (error) {
           logger.error(
-            '[feature.bilibili] Failed to get video info after retries:',
+            '[feature.bilibili] Failed to get video info after retries: %s',
             error
           );
           // await new SendMessage({
@@ -196,7 +196,7 @@ async function sendVideoInfoImage(
     );
   } catch (e) {
     logger.error(
-      '[feature.bilibili] Failed to send info image after retries:',
+      '[feature.bilibili] Failed to send info image after retries: %s',
       e
     );
   }
@@ -233,7 +233,7 @@ async function sendBilibiliVideo(
     );
   } catch (e) {
     logger.error(
-      '[feature.bilibili] Failed to download/send video after retries:',
+      '[feature.bilibili] Failed to download/send video after retries: %s',
       e
     );
   }
