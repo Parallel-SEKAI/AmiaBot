@@ -135,59 +135,10 @@ export async function init() {
           // 记录已解析的视频ID到缓存中
           stateService.addBilibiliParseRecord(message.groupId, videoId);
 
-          const sendInfoPromise = retry(
-            async () => {
-              const infoImage = await generateVideoInfoImage(info);
-              await new SendMessage({
-                message: new SendImageMessage(infoImage),
-              }).reply(message);
-            },
-            { maxAttempts: 3, delay: 2000, logger }
-          ).catch(async (e) => {
-            logger.error(
-              '[feature.bilibili] Failed to send info image after retries:',
-              e
-            );
-            // await new SendMessage({
-            //   message: new SendTextMessage('生成视频预览图失败了喵~'),
-            // }).send({ recvMessage: message });
-          });
+          const infoPromise = sendVideoInfoImage(message, info);
+          const videoPromise = sendBilibiliVideo(message, info);
 
-          const downloadVideoPromise = retry(
-            async () => {
-              if (info.bv) {
-                const videoPath = await downloadBilibiliVideo(info.bv);
-                if (videoPath) {
-                  try {
-                    const uploadedPath =
-                      await onebot.uploadFileStream(videoPath);
-                    await new SendMessage({
-                      message: new SendVideoMessage(uploadedPath),
-                    }).send({
-                      recvMessage: message,
-                    });
-                  } finally {
-                    await safeUnlink(videoPath);
-                    logger.info(
-                      '[feature.bilibili] Deleted cached video file: %s',
-                      videoPath
-                    );
-                  }
-                }
-              }
-            },
-            { maxAttempts: 3, delay: 2000, logger }
-          ).catch(async (e) => {
-            logger.error(
-              '[feature.bilibili] Failed to download/send video after retries:',
-              e
-            );
-            // await new SendMessage({
-            //   message: new SendTextMessage('视频下载失败了喵~'),
-            // }).send({ recvMessage: message });
-          });
-
-          await Promise.all([sendInfoPromise, downloadVideoPromise]);
+          await Promise.all([infoPromise, videoPromise]);
         } catch (error) {
           logger.error(
             '[feature.bilibili] Failed to get video info after retries:',
@@ -226,6 +177,65 @@ async function resolveB23ShortUrl(shortCode: string): Promise<string | null> {
   } catch (error) {
     logger.error('[feature.bilibili] Error resolving short URL: %s', error);
     return null;
+  }
+}
+
+async function sendVideoInfoImage(
+  message: RecvMessage,
+  info: VideoInfo
+): Promise<void> {
+  try {
+    await retry(
+      async () => {
+        const infoImage = await generateVideoInfoImage(info);
+        await new SendMessage({
+          message: new SendImageMessage(infoImage),
+        }).reply(message);
+      },
+      { maxAttempts: 3, delay: 1000, logger }
+    );
+  } catch (e) {
+    logger.error(
+      '[feature.bilibili] Failed to send info image after retries:',
+      e
+    );
+  }
+}
+
+async function sendBilibiliVideo(
+  message: RecvMessage,
+  info: VideoInfo
+): Promise<void> {
+  try {
+    await retry(
+      async () => {
+        if (info.bv) {
+          const videoPath = await downloadBilibiliVideo(info.bv);
+          if (videoPath) {
+            try {
+              const uploadedPath = await onebot.uploadFileStream(videoPath);
+              await new SendMessage({
+                message: new SendVideoMessage(uploadedPath),
+              }).send({
+                recvMessage: message,
+              });
+            } finally {
+              await safeUnlink(videoPath);
+              logger.info(
+                '[feature.bilibili] Deleted cached video file: %s',
+                videoPath
+              );
+            }
+          }
+        }
+      },
+      { maxAttempts: 5, delay: 3000, backoff: 'exponential', logger }
+    );
+  } catch (e) {
+    logger.error(
+      '[feature.bilibili] Failed to download/send video after retries:',
+      e
+    );
   }
 }
 
