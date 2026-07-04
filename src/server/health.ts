@@ -57,7 +57,9 @@ export async function startHealthCheckServer(
             },
           })
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         logger.error('[health-server] Health check failed: %s', error);
         res.writeHead(503, { 'Content-Type': 'application/json' });
         res.end(
@@ -65,7 +67,7 @@ export async function startHealthCheckServer(
             status: 'DOWN',
             uptime: process.uptime(),
             timestamp: new Date().toISOString(),
-            error: error.message,
+            error: errorMessage,
           })
         );
       }

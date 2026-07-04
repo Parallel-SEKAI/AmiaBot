@@ -16,6 +16,7 @@ import { AV_PATTERN, BV_PATTERN, SHORT_URL_PATTERN } from './const.js';
 import fetch from 'node-fetch';
 import { downloadBilibiliVideo } from './download.js';
 import { safeUnlink } from '../../utils/index.js';
+import { retry } from '../../utils/retry.js';
 import { stateService } from '../../service/state.js';
 
 /**
@@ -124,39 +125,12 @@ export async function init() {
         if (avId) params.av = avId;
         if (bvId) params.bv = bvId;
 
-        const retry = async <T>(
-          fn: () => Promise<T>,
-          retries: number,
-          delay: number,
-          context: string
-        ): Promise<T> => {
-          let lastError;
-          for (let i = 0; i < retries; i++) {
-            try {
-              return await fn();
-            } catch (e) {
-              lastError = e;
-              logger.error(
-                '[feature.bilibili] %s attempt %d failed:',
-                context,
-                i + 1,
-                e
-              );
-              if (i < retries - 1) {
-                await new Promise((res) => setTimeout(res, delay));
-              }
-            }
-          }
-          throw lastError;
-        };
-
         try {
-          const info = await retry(
-            () => getBilibiliVideoInfo(params),
-            3,
-            2000,
-            'Get Video Info'
-          );
+          const info = await retry(() => getBilibiliVideoInfo(params), {
+            maxAttempts: 3,
+            delay: 2000,
+            logger,
+          });
 
           // 记录已解析的视频ID到缓存中
           stateService.addBilibiliParseRecord(message.groupId, videoId);
@@ -168,9 +142,7 @@ export async function init() {
                 message: new SendImageMessage(infoImage),
               }).reply(message);
             },
-            3,
-            2000,
-            'Send Info Image'
+            { maxAttempts: 3, delay: 2000, logger }
           ).catch(async (e) => {
             logger.error(
               '[feature.bilibili] Failed to send info image after retries:',
@@ -204,9 +176,7 @@ export async function init() {
                 }
               }
             },
-            3,
-            2000,
-            'Download Video'
+            { maxAttempts: 3, delay: 2000, logger }
           ).catch(async (e) => {
             logger.error(
               '[feature.bilibili] Failed to download/send video after retries:',

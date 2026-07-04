@@ -1,11 +1,14 @@
-import logger from '../config/logger.js';
-
 export interface RetryOptions {
   maxAttempts: number;
   delay: number;
   maxDelay?: number;
   backoff?: 'fixed' | 'exponential';
   shouldRetry?: (error: Error) => boolean;
+  logger?: {
+    debug?: (...args: unknown[]) => void;
+    error?: (...args: unknown[]) => void;
+    warn?: (...args: unknown[]) => void;
+  };
 }
 
 /**
@@ -24,27 +27,33 @@ export async function retry<T>(
     maxDelay = delay * 10,
     backoff = 'exponential',
     shouldRetry = defaultRetryPredicate,
+    logger,
   } = options;
+
+  const log = logger || console;
 
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      logger.debug(`[retry] Attempt ${attempt}/${maxAttempts}`);
+      if (log.debug) log.debug(`[retry] Attempt ${attempt}/${maxAttempts}`);
       return await operation();
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
       const errorMessage = lastError.message;
 
       if (attempt === maxAttempts || !shouldRetry(lastError)) {
-        logger.error(`[retry] All attempts failed: ${errorMessage}`);
+        if (log.error)
+          log.error(`[retry] All attempts failed: ${errorMessage}`);
         throw lastError;
       }
 
       const currentDelay = calculateDelay(attempt, delay, maxDelay, backoff);
-      logger.warn(
-        `[retry] Attempt ${attempt} failed: ${errorMessage}. Retrying in ${currentDelay}ms...`
-      );
+      if (log.warn) {
+        log.warn(
+          `[retry] Attempt ${attempt} failed: ${errorMessage}. Retrying in ${currentDelay}ms...`
+        );
+      }
 
       await new Promise((resolve) => setTimeout(resolve, currentDelay));
     }
@@ -58,21 +67,10 @@ export async function retry<T>(
 
 /**
  * 默认的重试条件判断
- * 只对连接错误、超时错误和特定渲染错误重试
+ * 返回 true 表示允许重试
  */
-function defaultRetryPredicate(error: Error): boolean {
-  const retryableMessages = [
-    'Browser is not initialized',
-    'Operation timeout',
-    'Failed to initialize browser',
-    'Render failed',
-    'accessdenied',
-    'failed',
-  ];
-
-  return retryableMessages.some((message) =>
-    error.message.toLowerCase().includes(message.toLowerCase())
-  );
+function defaultRetryPredicate(_error: Error): boolean {
+  return true;
 }
 
 /**

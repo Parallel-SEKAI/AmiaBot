@@ -17,6 +17,7 @@ import {
 import { ReactRenderer } from '../../service/render/react.js';
 import { SearchCard } from '../../components/netease/SearchCard.js';
 import { parseCommandLineArgs } from '../../utils/index.js';
+import { retry } from '../../utils/retry.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -137,62 +138,41 @@ export async function emojilyric(message: RecvMessage): Promise<void> {
 
     // 调用OpenAI API生成emoji歌词，添加重试机制
     let emojiLyric = '';
-    const maxRetries = 3;
-    let retryCount = 0;
-    let success = false;
+    try {
+      emojiLyric = await retry(
+        async () => {
+          const response = await openai.chat.completions.create({
+            model: config.openai.model,
+            messages: [{ role: 'user', content: filledPrompt }],
+            ...(config.openai.maxToken > 0
+              ? { max_tokens: config.openai.maxToken }
+              : {}),
+          });
 
-    while (retryCount < maxRetries && !success) {
-      retryCount++;
-      try {
-        logger.info(
-          '[feature.netease.emojilyric] Starting attempt %d to generate emoji lyric',
-          retryCount
-        );
+          const content = response.choices[0]?.message?.content || '';
 
-        // 调用OpenAI API生成emoji歌词，限制超时时间
-        const response = await openai.chat.completions.create({
-          model: config.openai.model,
-          messages: [{ role: 'user', content: filledPrompt }],
-          ...(config.openai.maxToken > 0
-            ? { max_tokens: config.openai.maxToken }
-            : {}),
-        });
+          // 记录Token使用情况
+          const usage = response.usage;
+          if (usage) {
+            const usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens || 0}, Completion: ${usage.completion_tokens || 0}, Total: ${usage.total_tokens || 0}`;
+            logger.info('[feature.netease.emojilyric] %s', usageInfo);
+          }
 
-        // 处理OpenAI API响应
-        emojiLyric = response.choices[0]?.message?.content || '';
-
-        // 记录Token使用情况
-        const usage = response.usage;
-        if (usage) {
-          const usageInfo = `Token Usage: Prompt: ${usage.prompt_tokens || 0}, Completion: ${usage.completion_tokens || 0}, Total: ${usage.total_tokens || 0}`;
-          logger.info('[feature.netease.emojilyric] %s', usageInfo);
+          return content;
+        },
+        {
+          maxAttempts: 3,
+          delay: 1000,
+          backoff: 'exponential',
+          logger,
         }
-
-        success = true;
-        logger.info(
-          '[feature.netease.emojilyric] Successfully generated emoji lyric on attempt %d',
-          retryCount
-        );
-      } catch (error) {
-        logger.error(
-          '[feature.netease.emojilyric] Attempt %d failed to generate emoji lyric:',
-          retryCount,
-          error
-        );
-        if (retryCount < maxRetries) {
-          logger.info(
-            '[feature.netease.emojilyric] Retrying in %d seconds...',
-            retryCount
-          );
-          await new Promise((resolve) =>
-            setTimeout(resolve, retryCount * 1000)
-          ); // 指数退避重试
-        } else {
-          logger.error(
-            '[feature.netease.emojilyric] All attempts failed to generate emoji lyric'
-          );
-        }
-      }
+      );
+    } catch (error) {
+      logger.error(
+        '[feature.netease.emojilyric] All attempts failed to generate emoji lyric',
+        error
+      );
+      // emojiLyric remains ''
     }
 
     // 如果没有生成结果，返回原始歌词
