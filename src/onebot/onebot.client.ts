@@ -154,7 +154,7 @@ export class OneBotClient extends EventEmitter {
     const url = `${this.httpUrl}/${action}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 300000);
 
     const options = {
       method: 'POST',
@@ -188,7 +188,7 @@ export class OneBotClient extends EventEmitter {
       return data;
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        logger.error('[onebot.action.%s] Request timeout after 10s', action);
+        logger.error('[onebot.action.%s] Request timeout after 300s', action);
         throw new Error(
           `HTTP request timeout for action ${action} (AbortError)`
         );
