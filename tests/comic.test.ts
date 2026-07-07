@@ -21,6 +21,40 @@ function createResponse(
   } as Response;
 }
 
+function createComicFetchMock() {
+  return vi.fn((url: string | URL | Request) => {
+    const requestUrl = String(url);
+
+    if (requestUrl.includes('storage.sekai.best')) {
+      return Promise.resolve(
+        createResponse(`
+          <ListBucketResult>
+            <Contents><Key>comic/one_frame/001.png</Key></Contents>
+          </ListBucketResult>
+        `)
+      );
+    }
+
+    if (requestUrl.includes('MoeSekai-Hub')) {
+      return Promise.resolve(
+        createResponse({
+          '367': {
+            id: 367,
+            title: '加油吧一日署长！',
+            manga: 'https://example.com/manga.png',
+            url: 'https://www.bilibili.com/opus/1220643737236930563',
+            contributors: {
+              翻译: '金诺佩蒂斯@金诺佩蒂斯',
+            },
+          },
+        })
+      );
+    }
+
+    return Promise.reject(new Error(`Unexpected URL: ${requestUrl}`));
+  });
+}
+
 describe('Comic Feature', () => {
   it('parses sekai.best comics from bucket XML', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
@@ -130,17 +164,44 @@ describe('Comic Feature', () => {
     ]);
   });
 
-  it('can return comics from either source', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        createResponse(`
-          <ListBucketResult>
-            <Contents><Key>comic/one_frame/001.png</Key></Contents>
-          </ListBucketResult>
-        `)
-      )
-      .mockResolvedValueOnce(
+  it('can select the MoeSekai source', async () => {
+    const fetchMock = createComicFetchMock();
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.75);
+
+    try {
+      await expect(getRandomComic(fetchMock)).resolves.toMatchObject({
+        source: 'moe-sekai',
+        title: '加油吧一日署长！',
+      });
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+
+  it('can select the sekai.best source', async () => {
+    const fetchMock = createComicFetchMock();
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.25);
+
+    try {
+      await expect(getRandomComic(fetchMock)).resolves.toMatchObject({
+        source: 'sekai.best',
+        imageUrl:
+          'https://storage.sekai.best/sekai-cn-assets/comic/one_frame/001.png',
+      });
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+
+  it('falls back to the surviving source when one source rejects', async () => {
+    const fetchMock = vi.fn((url: string | URL | Request) => {
+      const requestUrl = String(url);
+
+      if (requestUrl.includes('storage.sekai.best')) {
+        return Promise.reject(new Error('sekai.best down'));
+      }
+
+      return Promise.resolve(
         createResponse({
           '367': {
             id: 367,
@@ -153,16 +214,11 @@ describe('Comic Feature', () => {
           },
         })
       );
+    });
 
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.75);
-
-    try {
-      await expect(getRandomComic(fetchMock)).resolves.toMatchObject({
-        source: 'moe-sekai',
-        title: '加油吧一日署长！',
-      });
-    } finally {
-      randomSpy.mockRestore();
-    }
+    await expect(getRandomComic(fetchMock)).resolves.toMatchObject({
+      source: 'moe-sekai',
+      title: '加油吧一日署长！',
+    });
   });
 });

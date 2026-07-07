@@ -9,6 +9,8 @@ const SEKAI_BEST_COMIC_LIST_URL =
 const MOESEKAI_MANGA_METADATA_URL =
   'https://raw.githubusercontent.com/moe-sekai/MoeSekai-Hub/main/mangas/mangas.json';
 
+const COMIC_FETCH_TIMEOUT_MS = 10_000;
+
 interface ListBucketResult {
   ListBucketResult: {
     Contents: Array<{
@@ -43,6 +45,10 @@ export type Comic = SekaiBestComic | MoeSekaiManga;
 
 type FetchLike = typeof fetch;
 
+function createFetchSignal(): AbortSignal {
+  return AbortSignal.timeout(COMIC_FETCH_TIMEOUT_MS);
+}
+
 function pickRandom<T>(items: T[]): T {
   const item = items[Math.floor(Math.random() * items.length)];
   if (!item) {
@@ -55,18 +61,18 @@ export async function getRandomComic(
   fetchImpl: FetchLike = fetch
 ): Promise<Comic> {
   const results = await Promise.allSettled([
-    getSekaiBestComics(fetchImpl),
-    getMoeSekaiMangas(fetchImpl),
+    getSekaiBestComics(fetchImpl, createFetchSignal()),
+    getMoeSekaiMangas(fetchImpl, createFetchSignal()),
   ]);
 
-  const comics: Comic[] = [];
+  const comicPools: Comic[][] = [];
   for (const result of results) {
-    if (result.status === 'fulfilled') {
-      comics.push(...result.value);
+    if (result.status === 'fulfilled' && result.value.length > 0) {
+      comicPools.push(result.value);
     }
   }
 
-  if (comics.length === 0) {
+  if (comicPools.length === 0) {
     const reasons = results
       .filter((result) => result.status === 'rejected')
       .map((result) => String(result.reason))
@@ -74,13 +80,14 @@ export async function getRandomComic(
     throw new Error(`No comic images found${reasons ? `: ${reasons}` : ''}`);
   }
 
-  return pickRandom(comics);
+  return pickRandom(pickRandom(comicPools));
 }
 
 export async function getSekaiBestComics(
-  fetchImpl: FetchLike = fetch
+  fetchImpl: FetchLike = fetch,
+  signal: AbortSignal = createFetchSignal()
 ): Promise<SekaiBestComic[]> {
-  const response = await fetchImpl(SEKAI_BEST_COMIC_LIST_URL);
+  const response = await fetchImpl(SEKAI_BEST_COMIC_LIST_URL, { signal });
 
   if (!response.ok) {
     throw new Error(`sekai.best HTTP error: ${response.status}`);
@@ -106,9 +113,10 @@ export async function getSekaiBestComics(
 }
 
 export async function getMoeSekaiMangas(
-  fetchImpl: FetchLike = fetch
+  fetchImpl: FetchLike = fetch,
+  signal: AbortSignal = createFetchSignal()
 ): Promise<MoeSekaiManga[]> {
-  const response = await fetchImpl(MOESEKAI_MANGA_METADATA_URL);
+  const response = await fetchImpl(MOESEKAI_MANGA_METADATA_URL, { signal });
 
   if (!response.ok) {
     throw new Error(`MoeSekai HTTP error: ${response.status}`);
