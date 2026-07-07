@@ -6,7 +6,11 @@ import {
 } from '../src/features/comic/api.js';
 import { createComicMessages } from '../src/features/comic/message.js';
 
-function createResponse(body: string | object, ok = true, status = 200): Response {
+function createResponse(
+  body: string | object,
+  ok = true,
+  status = 200
+): Response {
   return {
     ok,
     status,
