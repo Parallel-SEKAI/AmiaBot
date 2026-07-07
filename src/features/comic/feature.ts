@@ -1,12 +1,12 @@
 import { onebot } from '../../onebot/index.js';
 import {
   SendMessage,
-  SendImageMessage,
   SendTextMessage,
 } from '../../onebot/message/send.entity.js';
 import { RecvMessage } from '../../onebot/message/recv.entity.js';
 import logger from '../../config/logger.js';
 import { getRandomComic } from './api.js';
+import { createComicMessages } from './message.js';
 
 /**
  * 初始化漫画查询功能模块
@@ -28,16 +28,13 @@ export async function init() {
         message.rawMessage
       );
       try {
-        // 获取随机漫画图片URL
-        const randomImageUrl = await getRandomComic();
+        const comic = await getRandomComic();
 
-        // 发送图片消息
         void new SendMessage({
-          message: new SendImageMessage(randomImageUrl),
+          message: createComicMessages(comic),
         }).reply(message);
       } catch (error) {
         logger.error('[feature.comic] Error in comic feature:', error);
-        // 发送错误提示
         void new SendMessage({
           message: new SendTextMessage('获取漫画失败，请稍后重试'),
         }).reply(message);

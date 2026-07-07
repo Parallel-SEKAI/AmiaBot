@@ -7,12 +7,13 @@ import {
   SendRecordMessage,
 } from '../../onebot/message/send.entity.js';
 import { getRandomComic } from '../comic/api.js';
+import { createComicMessages } from '../comic/message.js';
 
 export const functions = [sendComic, sendDialog, sendCard];
 
 async function sendComic(groupId: number, _userId: number) {
-  const comicUrl = await getRandomComic();
-  void new SendMessage({ message: new SendImageMessage(comicUrl) }).send({
+  const comic = await getRandomComic();
+  void new SendMessage({ message: createComicMessages(comic) }).send({
     groupId: groupId,
   });
 }
