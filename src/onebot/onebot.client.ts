@@ -162,7 +162,7 @@ export class OneBotClient extends EventEmitter {
           .join('');
         if (textContent) {
           // 这里的 groupId 在私聊时是 user_id
-          const contextKey = `g${groupId}`; 
+          const contextKey = `g${groupId}`;
           const cached = this.sentMessagesCache.get(contextKey) || [];
           cached.push(textContent);
           if (cached.length > this.CACHE_LIMIT) {
@@ -528,7 +528,10 @@ export class OneBotClient extends EventEmitter {
         const contextKey = groupId ? `g${groupId}` : `p${userId}`;
         const cachedMessages = this.sentMessagesCache.get(contextKey) || [];
         if (cachedMessages.includes(simplifiedStripped)) {
-          logger.debug('[onebot.command] Potential bot loop detected for message: %s', simplifiedStripped);
+          logger.debug(
+            '[onebot.command] Potential bot loop detected for message: %s',
+            simplifiedStripped
+          );
           return;
         }
 
