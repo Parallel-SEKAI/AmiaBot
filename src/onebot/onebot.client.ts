@@ -31,6 +31,11 @@ export interface RegisteredCommand {
   options?: CommandOptions;
 }
 
+interface MessageSegment {
+  type: string;
+  data: Record<string, any>;
+}
+
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
 
 function isGeneralPattern(pattern: string | RegExp): boolean {
@@ -54,6 +59,12 @@ export class OneBotClient extends EventEmitter {
   private isReconnecting: boolean = false;
   private reconnectAttempts: number = 0;
   private maxReconnectDelay: number = 30000; // 最大重连延迟30秒
+
+  // 指令触发频率限制与循环防止
+  private commandCooldowns: Map<string, number> = new Map();
+  private sentMessagesCache: Map<string, string[]> = new Map();
+  private readonly COOLDOWN_MS = 1000;
+  private readonly CACHE_LIMIT = 10;
 
   // 心跳检测相关
   private lastMessageTimestamp: number = Date.now();
@@ -145,12 +156,8 @@ export class OneBotClient extends EventEmitter {
     action: string,
     params: Record<string, any> = {}
   ): Promise<Record<string, any>> {
-    if (action !== 'upload_file_stream')
-      logger.debug(
-        '[onebot.action.%s] Send: %s',
-        action,
-        JSON.stringify(params)
-      );
+    // ... (rest of the action method)
+    logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
     const url = `${this.httpUrl}/${action}`;
 
     const controller = new AbortController();
@@ -172,6 +179,38 @@ export class OneBotClient extends EventEmitter {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = (await response.json()) as Record<string, any>;
+      // Cache only after a successful send to avoid storing unsent messages and to
+      // ensure private/group keys match inbound lookup (g{groupId} / p{userId}).
+      if (
+        (action === 'send_group_msg' || action === 'send_private_msg') &&
+        data?.retcode === 0
+      ) {
+        const groupId = params.group_id as number | undefined;
+        const userId = params.user_id as number | undefined;
+        const messages = params.message as MessageSegment[];
+        if (Array.isArray(messages)) {
+          const textContent = messages
+            .filter((m) => m.type === 'text')
+            .map((m) => m.data.text)
+            .join('');
+          if (textContent) {
+            // Strip configured prefixes (same logic as inbound message handling)
+            let stripped = textContent;
+            for (const prefix of config.prefixes) {
+              if (stripped.startsWith(prefix)) {
+                stripped = stripped.slice(prefix.length).trim();
+                break;
+              }
+            }
+            const simplified = convertToSimplified(stripped);
+            const contextKey = groupId ? `g${groupId}` : `p${userId}`;
+            const cached = this.sentMessagesCache.get(contextKey) || [];
+            cached.push(simplified);
+            if (cached.length > this.CACHE_LIMIT) cached.shift();
+            this.sentMessagesCache.set(contextKey, cached);
+          }
+        }
+      }
       if (data.retcode !== 0) {
         logger.error(
           '[onebot.action.%s] Send: %s',
@@ -466,6 +505,16 @@ export class OneBotClient extends EventEmitter {
       this.emit(eventData.post_type, eventData);
       this.emit(`${eventData.post_type}.${eventData.sub_type}`, eventData);
       if (eventData.post_type === 'message') {
+        const userId = eventData.user_id;
+        const groupId = eventData.group_id;
+
+        // 1. 防止自身触发
+        // Fallback to eventData.self_id if this.qq is not yet populated (startup race)
+        const botId = this.qq || eventData.self_id;
+        if (userId === botId) {
+          return;
+        }
+
         this.emit(`message.${eventData.message_type}`, eventData);
         const message = RecvMessage.fromMap(eventData);
         const text = message.content;
@@ -480,12 +529,16 @@ export class OneBotClient extends EventEmitter {
 
         const simplifiedStripped = convertToSimplified(stripped);
 
-        // logger.debug(
-        //   '[onebot.command] Processing message: "%s", stripped: "%s", hasPrefix: %s',
-        //   text,
-        //   stripped,
-        //   hasPrefix
-        // );
+        // 3. 内容重复检测 (防止 Bot 循环)
+        const contextKey = groupId ? `g${groupId}` : `p${userId}`;
+        const cachedMessages = this.sentMessagesCache.get(contextKey) || [];
+        if (cachedMessages.includes(simplifiedStripped)) {
+          logger.debug(
+            '[onebot.command] Potential bot loop detected for message: %s',
+            simplifiedStripped
+          );
+          return;
+        }
 
         // 尝试匹配注册的指令
         let matched = false;
@@ -494,15 +547,20 @@ export class OneBotClient extends EventEmitter {
             const pattern = cmd.pattern.toLowerCase();
             const lowerStripped = simplifiedStripped.toLowerCase();
 
-            // logger.debug(
-            //   '[onebot.command] Checking command pattern: %s against message: %s',
-            //   pattern,
-            //   lowerStripped
-            // );
-
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
+              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+              const cooldownKey = groupId
+                ? `g${groupId}:u${userId}`
+                : `p${userId}`;
+              const now = Date.now();
+              const lastTrigger = this.commandCooldowns.get(cooldownKey);
+              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+                continue;
+              }
+
               matched = true;
+              this.commandCooldowns.set(cooldownKey, now);
               const isGeneral =
                 cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
               if (!isGeneral) {
@@ -530,7 +588,18 @@ export class OneBotClient extends EventEmitter {
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
+              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+              const cooldownKey = groupId
+                ? `g${groupId}:u${userId}`
+                : `p${userId}`;
+              const now = Date.now();
+              const lastTrigger = this.commandCooldowns.get(cooldownKey);
+              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+                continue;
+              }
+
               matched = true;
+              this.commandCooldowns.set(cooldownKey, now);
               const isGeneral =
                 cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
               if (!isGeneral) {
@@ -562,6 +631,17 @@ export class OneBotClient extends EventEmitter {
         if (!matched) {
           const command = simplifiedStripped.split(' ')[0].toLowerCase();
           if (command) {
+            // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+            const cooldownKey = groupId
+              ? `g${groupId}:u${userId}`
+              : `p${userId}`;
+            const now = Date.now();
+            const lastTrigger = this.commandCooldowns.get(cooldownKey);
+            if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+              return;
+            }
+
+            this.commandCooldowns.set(cooldownKey, now);
             this.emit(`message.command.${command}`, eventData);
           }
         }
