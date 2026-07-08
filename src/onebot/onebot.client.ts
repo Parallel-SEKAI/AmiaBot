@@ -31,6 +31,11 @@ export interface RegisteredCommand {
   options?: CommandOptions;
 }
 
+interface MessageSegment {
+  type: string;
+  data: Record<string, any>;
+}
+
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
 
 function isGeneralPattern(pattern: string | RegExp): boolean {
@@ -154,7 +159,7 @@ export class OneBotClient extends EventEmitter {
     // 记录发送的消息内容以防止循环 (仅针对文本消息)
     if (action === 'send_group_msg' || action === 'send_private_msg') {
       const groupId = params.group_id || params.user_id;
-      const messages = params.message as any[];
+      const messages = params.message as MessageSegment[];
       if (Array.isArray(messages)) {
         const textContent = messages
           .filter((m) => m.type === 'text')
@@ -172,8 +177,7 @@ export class OneBotClient extends EventEmitter {
         }
       }
     }
-
-    if (action !== 'upload_file_stream')
+    // ... (rest of the action method)
       logger.debug(
         '[onebot.action.%s] Send: %s',
         action,
@@ -498,15 +502,9 @@ export class OneBotClient extends EventEmitter {
         const groupId = eventData.group_id;
 
         // 1. 防止自身触发
-        if (userId === this.qq) {
-          return;
-        }
-
-        // 2. 指令冷却检查 (1s)
-        const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
-        const now = Date.now();
-        const lastTrigger = this.commandCooldowns.get(cooldownKey);
-        if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+        // Fallback to eventData.self_id if this.qq is not yet populated (startup race)
+        const botId = this.qq || eventData.self_id;
+        if (userId === botId) {
           return;
         }
 
@@ -544,6 +542,14 @@ export class OneBotClient extends EventEmitter {
 
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
+              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+              const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+              const now = Date.now();
+              const lastTrigger = this.commandCooldowns.get(cooldownKey);
+              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+                continue; 
+              }
+              
               matched = true;
               this.commandCooldowns.set(cooldownKey, now);
               const isGeneral =
@@ -573,6 +579,14 @@ export class OneBotClient extends EventEmitter {
           } else if (cmd.pattern instanceof RegExp) {
             const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
+              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+              const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+              const now = Date.now();
+              const lastTrigger = this.commandCooldowns.get(cooldownKey);
+              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+                continue;
+              }
+
               matched = true;
               this.commandCooldowns.set(cooldownKey, now);
               const isGeneral =
@@ -606,6 +620,14 @@ export class OneBotClient extends EventEmitter {
         if (!matched) {
           const command = simplifiedStripped.split(' ')[0].toLowerCase();
           if (command) {
+            // 2. 指令冷却检查 (1s) - Moved here to only affect commands
+            const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+            const now = Date.now();
+            const lastTrigger = this.commandCooldowns.get(cooldownKey);
+            if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
+              return;
+            }
+
             this.commandCooldowns.set(cooldownKey, now);
             this.emit(`message.command.${command}`, eventData);
           }
