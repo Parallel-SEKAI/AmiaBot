@@ -156,27 +156,6 @@ export class OneBotClient extends EventEmitter {
     action: string,
     params: Record<string, any> = {}
   ): Promise<Record<string, any>> {
-    // 记录发送的消息内容以防止循环 (仅针对文本消息)
-    if (action === 'send_group_msg' || action === 'send_private_msg') {
-      const groupId = params.group_id || params.user_id;
-      const messages = params.message as MessageSegment[];
-      if (Array.isArray(messages)) {
-        const textContent = messages
-          .filter((m) => m.type === 'text')
-          .map((m) => m.data.text)
-          .join('');
-        if (textContent) {
-          // 这里的 groupId 在私聊时是 user_id
-          const contextKey = `g${groupId}`;
-          const cached = this.sentMessagesCache.get(contextKey) || [];
-          cached.push(textContent);
-          if (cached.length > this.CACHE_LIMIT) {
-            cached.shift();
-          }
-          this.sentMessagesCache.set(contextKey, cached);
-        }
-      }
-    }
     // ... (rest of the action method)
     logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
     const url = `${this.httpUrl}/${action}`;
@@ -200,6 +179,35 @@ export class OneBotClient extends EventEmitter {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = (await response.json()) as Record<string, any>;
+      // Cache only after a successful send to avoid storing unsent messages and to
+      // ensure private/group keys match inbound lookup (g{groupId} / p{userId}).
+      if ((action === 'send_group_msg' || action === 'send_private_msg') && data?.retcode === 0) {
+        const groupId = params.group_id as number | undefined;
+        const userId = params.user_id as number | undefined;
+        const messages = params.message as MessageSegment[];
+        if (Array.isArray(messages)) {
+          const textContent = messages
+            .filter((m) => m.type === 'text')
+            .map((m) => m.data.text)
+            .join('');
+          if (textContent) {
+            // Strip configured prefixes (same logic as inbound message handling)
+            let stripped = textContent;
+            for (const prefix of config.prefixes) {
+              if (stripped.startsWith(prefix)) {
+                stripped = stripped.slice(prefix.length).trim();
+                break;
+              }
+            }
+            const simplified = convertToSimplified(stripped);
+            const contextKey = groupId ? `g${groupId}` : `p${userId}`;
+            const cached = this.sentMessagesCache.get(contextKey) || [];
+            cached.push(simplified);
+            if (cached.length > this.CACHE_LIMIT) cached.shift();
+            this.sentMessagesCache.set(contextKey, cached);
+          }
+        }
+      }
       if (data.retcode !== 0) {
         logger.error(
           '[onebot.action.%s] Send: %s',
