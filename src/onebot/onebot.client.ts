@@ -181,7 +181,10 @@ export class OneBotClient extends EventEmitter {
       const data = (await response.json()) as Record<string, any>;
       // Cache only after a successful send to avoid storing unsent messages and to
       // ensure private/group keys match inbound lookup (g{groupId} / p{userId}).
-      if ((action === 'send_group_msg' || action === 'send_private_msg') && data?.retcode === 0) {
+      if (
+        (action === 'send_group_msg' || action === 'send_private_msg') &&
+        data?.retcode === 0
+      ) {
         const groupId = params.group_id as number | undefined;
         const userId = params.user_id as number | undefined;
         const messages = params.message as MessageSegment[];
