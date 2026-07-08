@@ -178,11 +178,7 @@ export class OneBotClient extends EventEmitter {
       }
     }
     // ... (rest of the action method)
-      logger.debug(
-        '[onebot.action.%s] Send: %s',
-        action,
-        JSON.stringify(params)
-      );
+    logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
     const url = `${this.httpUrl}/${action}`;
 
     const controller = new AbortController();
@@ -543,13 +539,15 @@ export class OneBotClient extends EventEmitter {
             // 检查是否以 pattern 开头
             if (lowerStripped.startsWith(pattern)) {
               // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-              const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+              const cooldownKey = groupId
+                ? `g${groupId}:u${userId}`
+                : `p${userId}`;
               const now = Date.now();
               const lastTrigger = this.commandCooldowns.get(cooldownKey);
               if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
-                continue; 
+                continue;
               }
-              
+
               matched = true;
               this.commandCooldowns.set(cooldownKey, now);
               const isGeneral =
@@ -580,7 +578,9 @@ export class OneBotClient extends EventEmitter {
             const match = cmd.pattern.exec(simplifiedStripped);
             if (match) {
               // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-              const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+              const cooldownKey = groupId
+                ? `g${groupId}:u${userId}`
+                : `p${userId}`;
               const now = Date.now();
               const lastTrigger = this.commandCooldowns.get(cooldownKey);
               if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
@@ -621,7 +621,9 @@ export class OneBotClient extends EventEmitter {
           const command = simplifiedStripped.split(' ')[0].toLowerCase();
           if (command) {
             // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-            const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+            const cooldownKey = groupId
+              ? `g${groupId}:u${userId}`
+              : `p${userId}`;
             const now = Date.now();
             const lastTrigger = this.commandCooldowns.get(cooldownKey);
             if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
