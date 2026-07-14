@@ -2,6 +2,10 @@
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import { RecvMessage } from './message/recv.entity.js';
+import {
+  getMessageTextLength,
+  MAX_SEND_TEXT_LENGTH,
+} from './message/text-limit.js';
 import logger from '../config/logger.js';
 import { config } from '../config/index.js';
 import { checkFeatureEnabled } from '../service/db.js';
@@ -157,6 +161,19 @@ export class OneBotClient extends EventEmitter {
     params: Record<string, any> = {}
   ): Promise<Record<string, any>> {
     // ... (rest of the action method)
+    if (action === 'send_group_msg' || action === 'send_private_msg') {
+      const textLength = getMessageTextLength(params.message);
+      if (textLength > MAX_SEND_TEXT_LENGTH) {
+        logger.warn(
+          '[onebot.action.%s] Rejected: text length %d exceeds limit %d',
+          action,
+          textLength,
+          MAX_SEND_TEXT_LENGTH
+        );
+        throw new Error('Error: Text Too Long');
+      }
+    }
+
     logger.debug('[onebot.action.%s] Send: %s', action, JSON.stringify(params));
     const url = `${this.httpUrl}/${action}`;
 
