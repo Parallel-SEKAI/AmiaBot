@@ -25,9 +25,9 @@ describe('message text limit', () => {
 
   it('supports plain string and single segment payloads', () => {
     expect(getMessageTextLength('abc')).toBe(3);
-    expect(
-      getMessageTextLength({ type: 'text', data: { text: 'xyz' } })
-    ).toBe(3);
+    expect(getMessageTextLength({ type: 'text', data: { text: 'xyz' } })).toBe(
+      3
+    );
   });
 
   it('allows text length up to the max', () => {
