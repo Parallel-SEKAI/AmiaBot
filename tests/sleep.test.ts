@@ -250,6 +250,8 @@ describe('Sleep Feature Tracker', () => {
     const textMsg = sentMessage.messages[0];
     expect(textMsg.text).toContain('第 1 个起床');
     expect(textMsg.text).toContain('睡了 8 小时');
+    expect(textMsg.text).toMatch(/^记录成功！/);
+    expect(textMsg.text).not.toMatch(/^(早安|早上好|早啊)/);
   });
 
   it('should process sleep messages', async () => {
@@ -282,6 +284,8 @@ describe('Sleep Feature Tracker', () => {
     const textMsg = sentMessage.messages[0];
     expect(textMsg.text).toContain('第 2 个睡觉');
     expect(textMsg.text).toContain('清醒了 14 小时');
+    expect(textMsg.text).toMatch(/^记录成功！/);
+    expect(textMsg.text).not.toMatch(/^(晚安|晚安安)/);
   });
 
   it('should reply with mock if time is unreasonable (wake)', async () => {

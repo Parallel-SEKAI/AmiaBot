@@ -35,11 +35,6 @@ export interface RegisteredCommand {
   options?: CommandOptions;
 }
 
-interface MessageSegment {
-  type: string;
-  data: Record<string, any>;
-}
-
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
 
 function isGeneralPattern(pattern: string | RegExp): boolean {
@@ -66,9 +61,7 @@ export class OneBotClient extends EventEmitter {
 
   // 指令触发频率限制与循环防止
   private commandCooldowns: Map<string, number> = new Map();
-  private sentMessagesCache: Map<string, string[]> = new Map();
   private readonly COOLDOWN_MS = 1000;
-  private readonly CACHE_LIMIT = 10;
 
   // 心跳检测相关
   private lastMessageTimestamp: number = Date.now();
@@ -196,38 +189,6 @@ export class OneBotClient extends EventEmitter {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = (await response.json()) as Record<string, any>;
-      // Cache only after a successful send to avoid storing unsent messages and to
-      // ensure private/group keys match inbound lookup (g{groupId} / p{userId}).
-      if (
-        (action === 'send_group_msg' || action === 'send_private_msg') &&
-        data?.retcode === 0
-      ) {
-        const groupId = params.group_id as number | undefined;
-        const userId = params.user_id as number | undefined;
-        const messages = params.message as MessageSegment[];
-        if (Array.isArray(messages)) {
-          const textContent = messages
-            .filter((m) => m.type === 'text')
-            .map((m) => m.data.text)
-            .join('');
-          if (textContent) {
-            // Strip configured prefixes (same logic as inbound message handling)
-            let stripped = textContent;
-            for (const prefix of config.prefixes) {
-              if (stripped.startsWith(prefix)) {
-                stripped = stripped.slice(prefix.length).trim();
-                break;
-              }
-            }
-            const simplified = convertToSimplified(stripped);
-            const contextKey = groupId ? `g${groupId}` : `p${userId}`;
-            const cached = this.sentMessagesCache.get(contextKey) || [];
-            cached.push(simplified);
-            if (cached.length > this.CACHE_LIMIT) cached.shift();
-            this.sentMessagesCache.set(contextKey, cached);
-          }
-        }
-      }
       if (data.retcode !== 0) {
         logger.error(
           '[onebot.action.%s] Send: %s',
@@ -546,118 +507,68 @@ export class OneBotClient extends EventEmitter {
 
         const simplifiedStripped = convertToSimplified(stripped);
 
-        // 3. 内容重复检测 (防止 Bot 循环)
-        const contextKey = groupId ? `g${groupId}` : `p${userId}`;
-        const cachedMessages = this.sentMessagesCache.get(contextKey) || [];
-        if (cachedMessages.includes(simplifiedStripped)) {
-          logger.debug(
-            '[onebot.command] Potential bot loop detected for message: %s',
-            simplifiedStripped
-          );
-          return;
+        const cooldownKey = groupId ? `g${groupId}:u${userId}` : `p${userId}`;
+        const now = Date.now();
+        const lastTrigger = this.commandCooldowns.get(cooldownKey);
+        const isCoolingDown =
+          lastTrigger !== undefined && now - lastTrigger < this.COOLDOWN_MS;
+        if (lastTrigger !== undefined && !isCoolingDown) {
+          this.commandCooldowns.delete(cooldownKey);
         }
 
-        // 尝试匹配注册的指令
         let matched = false;
+        let matchedSpecificCommand = false;
         for (const cmd of this.registeredCommands) {
+          const isGeneral =
+            cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
+          let match: string | RegExpExecArray | undefined;
+
           if (typeof cmd.pattern === 'string') {
-            const pattern = cmd.pattern.toLowerCase();
-            const lowerStripped = simplifiedStripped.toLowerCase();
-
-            // 检查是否以 pattern 开头
-            if (lowerStripped.startsWith(pattern)) {
-              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-              const cooldownKey = groupId
-                ? `g${groupId}:u${userId}`
-                : `p${userId}`;
-              const now = Date.now();
-              const lastTrigger = this.commandCooldowns.get(cooldownKey);
-              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
-                continue;
-              }
-
-              matched = true;
-              this.commandCooldowns.set(cooldownKey, now);
-              const isGeneral =
-                cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
-              if (!isGeneral) {
-                logger.debug(
-                  '[onebot.command] Matched command: %s',
-                  cmd.pattern
-                );
-              }
-              if (
-                config.messageMatchLikeFaceId &&
-                !cmd.options?.suppressLike &&
-                !isGeneral
-              ) {
-                void message.like(config.messageMatchLikeFaceId.toString());
-              }
-              cmd.handler(eventData, cmd.pattern).catch((err) => {
-                logger.error(
-                  '[onebot.command] Error executing command handler for %s:',
-                  cmd.pattern,
-                  err
-                );
-              });
-              // break; // Removed to allow multiple commands to match
+            if (
+              simplifiedStripped
+                .toLowerCase()
+                .startsWith(cmd.pattern.toLowerCase())
+            ) {
+              match = cmd.pattern;
             }
-          } else if (cmd.pattern instanceof RegExp) {
-            const match = cmd.pattern.exec(simplifiedStripped);
-            if (match) {
-              // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-              const cooldownKey = groupId
-                ? `g${groupId}:u${userId}`
-                : `p${userId}`;
-              const now = Date.now();
-              const lastTrigger = this.commandCooldowns.get(cooldownKey);
-              if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
-                continue;
-              }
-
-              matched = true;
-              this.commandCooldowns.set(cooldownKey, now);
-              const isGeneral =
-                cmd.options?.isGeneral || isGeneralPattern(cmd.pattern);
-              if (!isGeneral) {
-                logger.debug(
-                  '[onebot.command] Matched command: %s',
-                  cmd.pattern
-                );
-              }
-              if (
-                config.messageMatchLikeFaceId &&
-                !cmd.options?.suppressLike &&
-                !isGeneral
-              ) {
-                void message.like(config.messageMatchLikeFaceId.toString());
-              }
-              cmd.handler(eventData, match).catch((err) => {
-                logger.error(
-                  '[onebot.command] Error executing command handler for %s:',
-                  cmd.pattern,
-                  err
-                );
-              });
-              // break; // Removed to allow multiple commands to match
-            }
+          } else {
+            cmd.pattern.lastIndex = 0;
+            match = cmd.pattern.exec(simplifiedStripped) ?? undefined;
           }
+
+          if (match === undefined || (!isGeneral && isCoolingDown)) {
+            continue;
+          }
+
+          matched = true;
+          if (!isGeneral) {
+            matchedSpecificCommand = true;
+            logger.debug('[onebot.command] Matched command: %s', cmd.pattern);
+          }
+          if (
+            config.messageMatchLikeFaceId &&
+            !cmd.options?.suppressLike &&
+            !isGeneral
+          ) {
+            void message.like(config.messageMatchLikeFaceId.toString());
+          }
+          cmd.handler(eventData, match).catch((err) => {
+            logger.error(
+              '[onebot.command] Error executing command handler for %s:',
+              cmd.pattern,
+              err
+            );
+          });
+        }
+
+        if (matchedSpecificCommand) {
+          this.commandCooldowns.set(cooldownKey, now);
         }
 
         // 如果没有匹配到注册指令，回退到旧的指令检测机制（基于空格分隔）
-        if (!matched) {
+        if (!matched && !isCoolingDown) {
           const command = simplifiedStripped.split(' ')[0].toLowerCase();
           if (command) {
-            // 2. 指令冷却检查 (1s) - Moved here to only affect commands
-            const cooldownKey = groupId
-              ? `g${groupId}:u${userId}`
-              : `p${userId}`;
-            const now = Date.now();
-            const lastTrigger = this.commandCooldowns.get(cooldownKey);
-            if (lastTrigger && now - lastTrigger < this.COOLDOWN_MS) {
-              return;
-            }
-
             this.commandCooldowns.set(cooldownKey, now);
             this.emit(`message.command.${command}`, eventData);
           }

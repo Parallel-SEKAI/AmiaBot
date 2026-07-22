@@ -59,7 +59,7 @@ export async function init() {
           return;
         }
 
-        let replyText = `早上好！你是在本群第 ${result.rank} 个起床的，在所有群第 ${result.globalRank} 个起床的。`;
+        let replyText = `记录成功！你是在本群第 ${result.rank} 个起床的，在所有群第 ${result.globalRank} 个起床的。`;
         if (result.sleepDuration !== undefined) {
           replyText += `\n昨晚睡了 ${result.sleepDuration} 小时。`;
         }
@@ -101,7 +101,7 @@ export async function init() {
           return;
         }
 
-        let replyText = `晚安！你是在本群第 ${result.rank} 个睡觉的，在所有群第 ${result.globalRank} 个睡觉的。`;
+        let replyText = `记录成功！你是在本群第 ${result.rank} 个睡觉的，在所有群第 ${result.globalRank} 个睡觉的。`;
         if (result.wakeDuration !== undefined) {
           replyText += `\n今天清醒了 ${result.wakeDuration} 小时。`;
         }
