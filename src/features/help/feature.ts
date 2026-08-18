@@ -36,6 +36,8 @@ export async function init() {
       try {
         const groupedCommands: Record<string, CommandInfo[]> = {};
         for (const cmd of onebot.commands) {
+          if (cmd.isHidden) continue;
+
           const feature = cmd.featureName
             ? featureManager.getFeature(cmd.featureName)
             : undefined;

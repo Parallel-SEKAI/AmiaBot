@@ -20,6 +20,7 @@ export type CommandHandler = (
 export interface CommandOptions {
   suppressLike?: boolean;
   isGeneral?: boolean;
+  isHidden?: boolean;
 }
 
 export interface RegisteredCommand {
@@ -29,6 +30,7 @@ export interface RegisteredCommand {
   example?: string;
   handler: CommandHandler;
   options?: CommandOptions;
+  isHidden?: boolean;
 }
 
 const DEFAULT_CHUNK_SIZE = 512 * 1024; // 512KB chunks for better balance
@@ -84,7 +86,7 @@ export class OneBotClient extends EventEmitter {
    * @param description 指令功能简述
    * @param example 指令使用示例
    * @param handler 触发后的异步回调函数
-   * @param options 额外配置选项
+   * @param options 额外配置选项（包含 isHidden 等）
    */
   public registerCommand(
     featureName: string | undefined,
@@ -120,6 +122,7 @@ export class OneBotClient extends EventEmitter {
       description,
       example,
       options,
+      isHidden: options?.isHidden ?? false,
     });
 
     logger.debug(

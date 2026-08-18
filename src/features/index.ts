@@ -29,6 +29,7 @@ import { welcomeFeature } from './welcome/index.js';
 import { likeFeature } from './like/index.js';
 import { choiceFeature } from './choice/index.js';
 import { diceFeature } from './dice/index.js';
+import { dglabFeature } from './dglab/index.js';
 
 const FEATURES = [
   chatFeature,
@@ -58,6 +59,7 @@ const FEATURES = [
   likeFeature,
   choiceFeature,
   diceFeature,
+  dglabFeature,
 ];
 
 /**
